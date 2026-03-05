@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$FLY — Firefly Aerospace Inc. | Equity Research Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0a0a; color: #e8e0d0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; }
+.mono, .num { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+a { color: #d4a843; text-decoration: none; }
+
+/* Header */
+.header { background: #141414; border-bottom: 1px solid #2a2a2a; padding: 18px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.header-left h1 { font-size: 1.5rem; color: #d4a843; font-weight: 700; }
+.header-left .subtitle { color: #8a8a7a; font-size: 0.85rem; margin-top: 2px; }
+.header-right { display: flex; gap: 18px; align-items: center; }
+.header-badge { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 8px; padding: 6px 14px; text-align: center; }
+.header-badge .val { font-size: 1.1rem; font-weight: 700; color: #e8e0d0; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+.header-badge .lbl { font-size: 0.65rem; color: #8a8a7a; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Tabs */
+.tab-bar { display: flex; overflow-x: auto; background: #111; border-bottom: 2px solid #2a2a2a; padding: 0 10px; scrollbar-width: thin; scrollbar-color: #2a2a2a #111; }
+.tab-btn { flex-shrink: 0; padding: 10px 11px; font-size: 11px; color: #8a8a7a; background: transparent; border: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; font-family: inherit; }
+.tab-btn:hover { color: #d4a843; background: #1a1a1a; }
+.tab-btn.active { color: #d4a843; border-bottom-color: #d4a843; background: #1a1a14; }
+
+/* Content */
+.tab-content { display: none; padding: 24px; max-width: 1400px; margin: 0 auto; }
+.tab-content.active { display: block; }
+
+/* Cards */
+.card { background: #141414; border: 1px solid #2a2a2a; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.card-title { color: #d4a843; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 10px; }
+.card-value { font-size: 1.8rem; font-weight: 700; color: #e8e0d0; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+.card-label { font-size: 0.78rem; color: #8a8a7a; margin-top: 4px; }
+
+/* Grids */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+
+/* Metric Strip */
+.metric-strip { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.metric-item { background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px 16px; min-width: 120px; flex: 1; text-align: center; }
+.metric-item .val { font-size: 1.05rem; font-weight: 700; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; color: #e8e0d0; }
+.metric-item .lbl { font-size: 0.65rem; color: #8a8a7a; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+/* Prose */
+.analysis-prose { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 10px; padding: 22px 24px; margin-bottom: 20px; position: relative; line-height: 1.75; font-size: 0.92rem; color: #ccc8b8; }
+.analysis-prose p { margin-bottom: 12px; }
+.analysis-prose p:last-child { margin-bottom: 0; }
+.analysis-prose ul, .analysis-prose ol { margin: 8px 0 12px 20px; }
+.analysis-prose li { margin-bottom: 6px; }
+.analysis-label { display: inline-block; background: #d4a843; color: #0a0a0a; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; padding: 3px 10px; border-radius: 4px; margin-bottom: 14px; }
+
+/* Section elements */
+.section-header { color: #d4a843; font-size: 1.25rem; font-weight: 700; margin: 24px 0 16px 0; }
+.section-divider { border: none; border-top: 1px solid #2a2a2a; margin: 28px 0; }
+
+/* Thesis Box */
+.thesis-box { background: linear-gradient(135deg, #1a1708, #141414); border: 1px solid #3a3520; border-radius: 12px; padding: 22px; margin-bottom: 16px; }
+
+/* Badges */
+.badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.badge-green { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); }
+.badge-red { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+.badge-yellow { background: rgba(241,196,15,0.15); color: #f1c40f; border: 1px solid rgba(241,196,15,0.3); }
+.badge-gold { background: rgba(212,168,67,0.15); color: #d4a843; border: 1px solid rgba(212,168,67,0.3); }
+.badge-blue { background: rgba(93,173,226,0.15); color: #5dade2; border: 1px solid rgba(93,173,226,0.3); }
+
+/* Source badges */
+.source-badge { display: inline-block; background: #d4a843; color: #0a0a0a; font-size: 0.6rem; font-weight: 700; padding: 1px 7px; border-radius: 3px; margin: 0 2px; vertical-align: middle; letter-spacing: 0.3px; }
+.source-badge.unverified { background: #e74c3c; color: #fff; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.85rem; }
+th { background: #1a1708; color: #d4a843; text-align: left; padding: 10px 12px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #3a3520; }
+td { padding: 9px 12px; border-bottom: 1px solid #1e1e1e; color: #ccc8b8; }
+tr:nth-child(even) td { background: #0f0f0f; }
+td.num, th.num { text-align: right; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+
+/* Semantic colors */
+.positive { color: #4caf50; }
+.negative { color: #e74c3c; }
+.neutral { color: #f1c40f; }
+
+/* Scenario cards */
+.scenario-card { border-radius: 12px; padding: 20px; background: #141414; border: 1px solid #2a2a2a; border-left: 4px solid #8a8a7a; }
+.scenario-card.bull { border-left-color: #4caf50; }
+.scenario-card.base { border-left-color: #d4a843; }
+.scenario-card.bear { border-left-color: #e74c3c; }
+
+/* Probability bar */
+.prob-bar-container { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 10px 0; }
+.prob-bar-container > div { display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; }
+
+/* Timeline */
+.timeline-item { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+.timeline-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.timeline-dot.bullish { background: #4caf50; }
+.timeline-dot.bearish { background: #e74c3c; }
+.timeline-dot.neutral-dot { background: #8a8a7a; }
+
+/* Kill items */
+.kill-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 0.88rem; color: #ccc8b8; }
+.kill-checkbox { width: 18px; height: 18px; border: 2px solid #2a2a2a; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
+
+/* Revision cards */
+.revision-card { background: #1a1010; border: 1px solid #3a1515; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.revision-card .old-text { text-decoration: line-through; color: #8a8a7a; font-style: italic; }
+.revision-card .new-text { color: #4caf50; }
+.revision-card .why-text { color: #8a8a7a; font-size: 0.85rem; margin-top: 8px; }
+.revision-label { display: inline-block; background: #e74c3c; color: #fff; font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 3px; text-transform: uppercase; margin-bottom: 8px; }
+
+/* Charts */
+.chart-container { background: #141414; border: 1px solid #2a2a2a; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.chart-container canvas { max-height: 350px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .metric-strip { flex-direction: column; }
+  .tab-btn { padding: 8px 8px; font-size: 10px; }
+  .header { padding: 12px 16px; }
+  .tab-content { padding: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>$FLY — Firefly Aerospace Inc.</h1>
+    <div class="subtitle">Equity Research Dashboard &nbsp;|&nbsp; Data as of 2026-03-04</div>
+  </div>
+  <div class="header-right">
+    <div class="header-badge"><div class="val">~$21.00</div><div class="lbl">Current Price</div></div>
+    <div class="header-badge"><div class="val" style="color:#f1c40f;">HOLD</div><div class="lbl">Rating</div></div>
+    <div class="header-badge"><div class="val" style="color:#e74c3c;">$17.07</div><div class="lbl">Target</div></div>
+    <div class="header-badge"><div class="val" style="color:#e74c3c;">−18.7%</div><div class="lbl">Expected Move</div></div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+  <button class="tab-btn" onclick="switchTab(1)">2. Narrative</button>
+  <button class="tab-btn" onclick="switchTab(2)">3. Fundamentals</button>
+  <button class="tab-btn" onclick="switchTab(3)">4. Balance Sheet</button>
+  <button class="tab-btn" onclick="switchTab(4)">5. Cash Flow</button>
+  <button class="tab-btn" onclick="switchTab(5)">6. Earnings Quality</button>
+  <button class="tab-btn" onclick="switchTab(6)">7. Forward Model</button>
+  <button class="tab-btn" onclick="switchTab(7)">8. Key Ratios</button>
+  <button class="tab-btn" onclick="switchTab(8)">9. Ownership</button>
+  <button class="tab-btn" onclick="switchTab(9)">10. Scenarios</button>
+  <button class="tab-btn" onclick="switchTab(10)">11. Risks</button>
+  <button class="tab-btn" onclick="switchTab(11)">12. Catalysts</button>
+  <button class="tab-btn" onclick="switchTab(12)">Revisions</button>
+</div>
+
+<!-- ===================== TAB 1: EXECUTIVE SUMMARY ===================== -->
+<div class="tab-content active" id="tab-0">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <ul>
+      <li><strong>Execution vs. Aspiration:</strong> Firefly Aerospace ($FLY) possesses an elite $1.3B backlog and is actively pivoting to high-margin defense software via its $855M SciTec acquisition, but catastrophic hardware failures continue to plague its core Alpha rocket program.</li>
+      <li><strong>The M&A Mask:</strong> Management is using the SciTec acquisition's $164M run-rate to mask a ~$12M organic guidance cut for FY25, damaging their credibility.</li>
+      <li><strong>Cash Fortress:</strong> A $1B post-IPO liquidity pile provides a massive margin of safety and time to fix hardware issues, but the ~$62M Q3 cash burn is accelerating.</li>
+      <li><strong>Strategic Shift:</strong> The company is intentionally transforming from a pure-play launch provider to a DoD data/software prime targeting the $175B Golden Dome program.</li>
+      <li><strong>Conviction Level:</strong> <span class="badge badge-yellow">Low</span> for swing (broken technicals, headline risk) | <span class="badge badge-gold">Medium</span> for position (SciTec software pivot provides a defensible floor).</li>
+      <li><strong>Quick Rating:</strong> <span class="badge badge-yellow">Hold</span> | Expected move: <strong class="negative">−18.7%</strong> (Target: <strong>$17.07</strong>, 12–18 month timeframe). <span class="source-badge">Calc</span></li>
+      <li><em>Note: This downside forecast is derived from the Base Case 2027E Price-to-Sales valuation bridge detailed in Section 7, anchoring on a blended 6.9x P/S multiple.</em></li>
+      <li><strong>The Single Most Important Thing:</strong> Firefly is currently a "show-me" story where the massive potential of its defense software and lunar data contracts is entirely hostage to whether they can stop their Alpha rockets from exploding on the pad.</li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <!-- Thesis Box -->
+  <div class="thesis-box">
+    <div class="card-title">Investment Thesis</div>
+    <p style="margin-bottom:10px;">Firefly Aerospace is at an inflection point — pivoting from a troubled small-lift launch company into an integrated defense software + space platform. The $855M SciTec acquisition transforms the revenue model, but catastrophic hardware failures (Flight 6, Flight 7 ground test) and management credibility issues keep conviction low.</p>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+      <span class="source-badge">SEC 10-Q</span>
+      <span class="source-badge">Earnings Call</span>
+      <span class="source-badge">Calc</span>
+    </div>
+  </div>
+
+  <!-- Conviction & Rating Badges -->
+  <div style="display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
+    <span class="badge badge-yellow" style="font-size:0.85rem; padding:6px 16px;">Rating: HOLD</span>
+    <span class="badge badge-yellow" style="font-size:0.85rem; padding:6px 16px;">Swing Conviction: LOW</span>
+    <span class="badge badge-gold" style="font-size:0.85rem; padding:6px 16px;">Position Conviction: MEDIUM</span>
+  </div>
+
+  <!-- Key Metrics Strip -->
+  <div class="metric-strip">
+    <div class="metric-item"><div class="val">~$21.00</div><div class="lbl">Current Price</div></div>
+    <div class="metric-item"><div class="val">~$3.3B</div><div class="lbl">Market Cap</div></div>
+    <div class="metric-item"><div class="val">N/A</div><div class="lbl">P/E (TTM)</div></div>
+    <div class="metric-item"><div class="val">N/A</div><div class="lbl">P/E (Fwd)</div></div>
+    <div class="metric-item"><div class="val">Neg.</div><div class="lbl">EV/EBITDA</div></div>
+    <div class="metric-item"><div class="val negative">Neg.</div><div class="lbl">FCF Yield</div></div>
+    <div class="metric-item"><div class="val">0%</div><div class="lbl">Div. Yield</div></div>
+    <div class="metric-item"><div class="val" style="color:#e74c3c;">$17.07</div><div class="lbl">Target Price</div></div>
+  </div>
+
+  <!-- Top 3 Pillars -->
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Pillar 1: AI/Defense Software Pivot</div>
+      <p style="font-size:0.88rem;">$855M SciTec acquisition transforms Firefly into DoD data/software prime targeting $175B Golden Dome program.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Pillar 2: Cash Fortress</div>
+      <p style="font-size:0.88rem;">$1B liquidity cushion (6.2x current ratio) provides ~15–16 months of runway at current burn rate.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Pillar 3: Elite Backlog</div>
+      <p style="font-size:0.88rem;">$1.3B backlog across launch, lunar, and defense software — but execution risk is the binding constraint.</p>
+    </div>
+  </div>
+
+  <!-- Expected Value Card -->
+  <div class="card">
+    <div class="card-title">Probability-Weighted Expected Value <span class="source-badge">Calc</span></div>
+    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+      <div>
+        <div class="card-value">$16.60</div>
+        <div class="card-label">vs. Current ~$21.00 → <span class="negative">−20.9% downside</span></div>
+      </div>
+      <div style="flex:1; min-width:250px;">
+        <div class="prob-bar-container">
+          <div style="width:20%; background:#4caf50; color:#0a0a0a;">20% Bull</div>
+          <div style="width:50%; background:#d4a843; color:#0a0a0a;">50% Base</div>
+          <div style="width:30%; background:#e74c3c; color:#fff;">30% Bear</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#8a8a7a; margin-top:4px;">
+          <span class="positive">$33.00</span>
+          <span style="color:#d4a843;">$17.00</span>
+          <span class="negative">$5.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 2: NARRATIVE ===================== -->
+<div class="tab-content" id="tab-1">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The prevailing narrative surrounding Firefly is a tug-of-war between an elite space/defense backlog and deeply troubling operational unreliability. Following a highly anticipated IPO at <strong>$45</strong> that briefly spiked to <strong>$73.80</strong>, the stock has suffered a brutal post-IPO fade to the <strong>$21</strong> level. The sentiment is currently driven by two opposing events: the brilliant $855M acquisition of defense software contractor SciTec, and a catastrophic first-stage explosion during a September 2025 ground test of the Alpha rocket, which indefinitely delayed Flight 7.</p>
+    <p>In Q3 2025, Firefly reported <strong>$30.8M</strong> in revenue (down 56.9% sequentially from Q2's $71.4M) but posted a massive <strong>−$133.4M</strong> net loss. <span class="source-badge">SEC 10-Q</span> Management raised FY25 revenue guidance to <strong>$150M–$158M</strong>. However, Wall Street analysts quickly noted this included two months of SciTec revenue; organically, the legacy launch guidance was cut.</p>
+    <p>Sell-side consensus remains a <strong>Moderate Buy</strong>, with average price targets in the <strong>$38–$39</strong> range. However, recent revisions are downward, most notably JPMorgan slashing its target from $55 to $28 in the last 90 days. Retail FinTwit sentiment is mildly bullish, hoping for a technical rotation to catch up with space peers like ASTS and RKLB.</p>
+    <p><strong>Contrarian Signal Check:</strong> The strongest differentiated bear argument (via L/S hedge fund commentary) is that Firefly should not be valued as a hyper-growth commercial space tech company. Because the company relies heavily on anchor DoD/NASA tenancy with no scalable commercial market, it is effectively a "government contractor in commercial drag" and should de-rate to standard defense-contractor multiples (8–12x EBITDA), implying severe downside from current speculative P/S multiples.</p>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Q3 2025 Headlines</div>
+      <div class="card-value">$30.8M</div>
+      <div class="card-label">Revenue <span class="negative">(−56.9% seq.)</span> <span class="source-badge">SEC 10-Q</span></div>
+      <div class="card-value" style="font-size:1.3rem; margin-top:10px;">−$133.4M</div>
+      <div class="card-label">Net Loss</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Market Sentiment</div>
+      <p style="font-size:0.88rem; margin-bottom:8px;"><span class="badge badge-green" style="font-size:0.7rem;">Moderate Buy</span> Sell-side consensus</p>
+      <p style="font-size:0.88rem;">Price target range: <strong class="mono">$28–$55</strong>, avg. ~$38–$39</p>
+      <p style="font-size:0.85rem; color:#8a8a7a; margin-top:6px;">JPM slashed target $55→$28 (last 90 days)</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Bear Thesis (Contrarian)</div>
+      <p style="font-size:0.88rem;">"Government contractor in commercial drag" — should de-rate to defense-contractor multiples (8–12x EBITDA), implying severe downside from current speculative P/S multiples.</p>
+      <span class="source-badge">Earnings Call</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 3: FUNDAMENTALS ===================== -->
+<div class="tab-content" id="tab-2">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Firefly operates across three main segments: small-lift launch vehicles (Alpha, Eclipse), space vehicles/lunar landers (Elytra, Blue Ghost), and now, defense software and data analytics (SciTec). Historically, revenue has been lumpy and hardware-centric, driven by milestone completions for NASA and the Space Force.</p>
+    <p>Historical revenue growth is erratic due to the company's early stage, but Q3 2025 showed a <strong>38% YoY</strong> increase. Moving forward, the SciTec acquisition fundamentally alters the revenue model. SciTec generated <strong>$164M</strong> in trailing 12-month revenue prior to the acquisition. This introduces a recurring, high-margin software/data stream that roughly doubles Firefly's run-rate overnight.</p>
+    <p>Profitability remains non-existent. Over the trailing quarters, Firefly has burned immense capital, highlighted by a TTM operating margin of <strong>−254%</strong> and a net profit margin of <strong>−299%</strong>. Gross margins are beginning to stabilize (TTM gross margin is <strong>2.05%</strong>), but manufacturing replacement boosters for failed tests obliterates operating leverage. ROE and ROA are deeply negative at <strong>−431%</strong> and <strong>−56%</strong>, respectively.</p>
+    <p>Firefly's competitive moat in launch is <strong>weak</strong>. They lack the scale and pricing power of SpaceX and the reliability track record of Rocket Lab. However, their moat in integrated space defense is <strong>strengthening</strong>. The combination of Elytra space vehicles with SciTec's software positions them uniquely as an end-to-end node for the DoD's missile tracking initiatives.</p>
+    <p>Management's capital allocation is impressive—funding the $855M SciTec deal largely with $50/share equity shortly after the IPO was a masterstroke that protected their cash. However, operational credibility is severely damaged; CEO Jason Kim's attempts to spin a blown-up rocket as a "minute hydrocarbon contamination" signals a concerning lack of transparency.</p>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <!-- Q1 Highlight Cards -->
+  <div class="grid-4">
+    <div class="card"><div class="card-title">Revenue (Q3)</div><div class="card-value">$30.8M</div><div class="card-label">+38% YoY <span class="source-badge">SEC 10-Q</span></div></div>
+    <div class="card"><div class="card-title">GAAP EPS</div><div class="card-value negative">Deep Loss</div><div class="card-label">−$133.4M Net Income</div></div>
+    <div class="card"><div class="card-title">Op. Margin (TTM)</div><div class="card-value negative">−254%</div><div class="card-label">Severe burn</div></div>
+    <div class="card"><div class="card-title">SciTec Run-Rate</div><div class="card-value">$164M</div><div class="card-label">TTM pre-acquisition <span class="source-badge">SEC</span></div></div>
+  </div>
+
+  <!-- Revenue & EPS Chart -->
+  <div class="chart-container">
+    <div class="card-title">Revenue & Margin Trajectory (Historical + Forward)</div>
+    <canvas id="chart-rev-eps"></canvas>
+  </div>
+
+  <!-- Growth Rates Table -->
+  <div class="card">
+    <div class="card-title">Growth Rates & Forward Estimates</div>
+    <table>
+      <thead>
+        <tr><th>Metric</th><th class="num">Q3 '25 (A)</th><th class="num">FY25E</th><th class="num">2026E</th><th class="num">2027E</th><th class="num">2028E</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Revenue ($M)</td><td class="num">$30.8</td><td class="num">$154</td><td class="num">$350</td><td class="num">$470</td><td class="num">$610</td></tr>
+        <tr><td>Gross Margin</td><td class="num">2.05%</td><td class="num">—</td><td class="num">15.0%</td><td class="num">22.0%</td><td class="num">28.0%</td></tr>
+        <tr><td>Op. Margin</td><td class="num">−254%</td><td class="num">—</td><td class="num">−40.0%</td><td class="num">−15.0%</td><td class="num">5.0%</td></tr>
+        <tr><td>EPS</td><td class="num">—</td><td class="num">—</td><td class="num">−$0.85</td><td class="num">−$0.30</td><td class="num">$0.15</td></tr>
+        <tr><td>FCF ($M)</td><td class="num">−$62</td><td class="num">—</td><td class="num">−$180</td><td class="num">−$80</td><td class="num">$40</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Margin Trends Chart -->
+  <div class="chart-container">
+    <div class="card-title">Forward Margin Trends</div>
+    <canvas id="chart-margins"></canvas>
+  </div>
+</div>
+
+<!-- ===================== TAB 4: BALANCE SHEET ===================== -->
+<div class="tab-content" id="tab-3">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Asset quality:</strong> Total assets are currently dominated by the massive injection of goodwill and intangibles from the recent $855M SciTec acquisition. Given the premium paid, future impairment testing of this goodwill will be a major risk factor if defense contract awards stall.</p>
+    <p><strong>Debt structure:</strong> The debt profile is incredibly light. Quarterly Total Debt-to-Equity sits at a negligible <strong>0.035</strong>. The company primarily operates debt-free on the fixed-term side, having recently upsized its undrawn revolving credit facility to <strong>$260M</strong> to aid with working capital.</p>
+    <p><strong>Covenant and credit risk:</strong> Unrated by major agencies due to its recent IPO and negative EBITDA. Because there is virtually no funded term debt, traditional covenant breaches are not a near-term risk.</p>
+    <p><strong>Off-balance-sheet exposure:</strong> The 10-Q footnotes indicate standard operating lease capitalization for their Texas manufacturing facilities and Vandenberg launch pads. No unconsolidated JVs or toxic off-balance-sheet vehicles were noted.</p>
+    <p><strong>Liquidity position:</strong> This is Firefly's strongest asset. Through a mix of IPO proceeds and strategic acquisition structuring (paying SciTec mostly in stock), the company boasts nearly <strong>$1B</strong> in liquidity. The current ratio is an elite <strong>6.2x</strong>, and the quick ratio is <strong>6.1x</strong>. At the Q3 cash burn rate of ~$62M, Firefly has roughly <strong>15 to 16 months</strong> of runway before needing to tap equity markets, assuming burn does not improve.</p>
+    <p><strong>Net-net assessment:</strong> The balance sheet is a definitive source of strength, acting as a vital shock absorber for the company's ongoing hardware engineering failures.</p>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Liquidity</div>
+      <div class="card-value positive">~$1B</div>
+      <div class="card-label">Total Liquidity</div>
+      <div style="margin-top:12px; font-size:0.88rem;">
+        <div>Current Ratio: <strong class="mono positive">6.2x</strong></div>
+        <div>Quick Ratio: <strong class="mono positive">6.1x</strong></div>
+        <div>Revolver: <strong class="mono">$260M</strong> (undrawn)</div>
+        <div>Runway: <strong class="mono neutral">~15–16 months</strong></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Leverage</div>
+      <div class="card-value positive">0.035x</div>
+      <div class="card-label">Debt / Equity</div>
+      <div style="margin-top:12px; font-size:0.88rem;">
+        <div>Term Debt: <strong class="mono">Minimal</strong></div>
+        <div>Credit Rating: <strong class="mono neutral">Unrated</strong></div>
+        <div>Interest Coverage: <strong class="mono">N/A (neg. EBITDA)</strong></div>
+        <div>Covenant Risk: <strong class="mono positive">Low</strong></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Asset Quality</div>
+      <div class="card-value neutral">$855M</div>
+      <div class="card-label">SciTec Goodwill/Intangibles</div>
+      <div style="margin-top:12px; font-size:0.88rem;">
+        <div>Goodwill Risk: <strong class="mono negative">High</strong></div>
+        <div>Impairment Trigger: <strong class="mono">Defense contract stall</strong></div>
+        <div>Off-B/S: <strong class="mono positive">Clean</strong></div>
+        <div>OBS: <strong class="mono">Standard op. leases only</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 5: CASH FLOW ===================== -->
+<div class="tab-content" id="tab-4">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Operating cash flow (OCF) and Free Cash Flow (FCF) are deep in the red and trending in the wrong direction. FCF degraded sequentially from <strong>−$37.3M</strong> in Q2 to <strong>−$62.0M</strong> in Q3. Because the company is valued at ~$3.3B, the FCF yield is heavily negative.</p>
+    <p>Cash flow quality is structurally poor but typical for an early-stage aerospace manufacturer. The massive divergence between Q3 net income (−$133.4M) and operating cash flow suggests heavy non-cash charges, likely stock-based compensation tied to the IPO and launch material capitalization adjustments. Capital expenditure remains high as the company is forced to rebuild destroyed first-stage boosters and invest in Eclipse rocket R&D.</p>
+    <p><strong>Capital Allocation Scorecard:</strong></p>
+    <ul>
+      <li><strong>Buybacks:</strong> None. Shares outstanding are expanding aggressively due to IPO issuance and M&A.</li>
+      <li><strong>Dividends:</strong> None. 0% yield, 0 payout.</li>
+      <li><strong>Debt management:</strong> Excellent. Management has avoided toxic convertible spirals, utilizing equity and cash on hand instead.</li>
+      <li><strong>M&A track record:</strong> The SciTec acquisition ($855M) is their defining move. It is highly accretive to revenue and margins, effectively pivoting the company into SaaS/defense tech. However, the heavy use of $50/share equity caused massive dilution that retail investors are now absorbing at $21/share.</li>
+    </ul>
+    <p><strong>Sustainability verdict:</strong> Firefly absolutely cannot fund its operations or capex from FCF; it is entirely reliant on its post-IPO cash hoard to survive the next 18 months of launch execution testing.</p>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <div class="grid-2">
+    <div class="chart-container">
+      <div class="card-title">FCF Trend (Quarterly)</div>
+      <canvas id="chart-fcf-trend"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="card-title">Capital Allocation (Conceptual)</div>
+      <canvas id="chart-capalloc"></canvas>
+    </div>
+  </div>
+
+  <!-- Waterfall -->
+  <div class="card">
+    <div class="card-title">Q3 2025 Cash Flow Waterfall</div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 0;">
+      <div style="text-align:center;">
+        <div style="background:#e74c3c; color:#fff; padding:10px 18px; border-radius:8px; font-weight:700;" class="mono">−$62.0M</div>
+        <div style="font-size:0.7rem; color:#8a8a7a; margin-top:4px;">OCF</div>
+      </div>
+      <div style="font-size:1.3rem; color:#8a8a7a;">→</div>
+      <div style="text-align:center;">
+        <div style="background:#2a2a2a; color:#e8e0d0; padding:10px 18px; border-radius:8px; font-weight:700;" class="mono">−CapEx</div>
+        <div style="font-size:0.7rem; color:#8a8a7a; margin-top:4px;">High (booster rebuilds)</div>
+      </div>
+      <div style="font-size:1.3rem; color:#8a8a7a;">→</div>
+      <div style="text-align:center;">
+        <div style="background:#e74c3c; color:#fff; padding:10px 18px; border-radius:8px; font-weight:700;" class="mono">−$62.0M</div>
+        <div style="font-size:0.7rem; color:#8a8a7a; margin-top:4px;">FCF</div>
+      </div>
+    </div>
+    <div class="card-label">FCF degraded from −$37.3M (Q2) → −$62.0M (Q3). Net Income was −$133.4M; gap driven by non-cash charges (SBC, capitalization).</div>
+  </div>
+</div>
+
+<!-- ===================== TAB 6: EARNINGS QUALITY ===================== -->
+<div class="tab-content" id="tab-5">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>GAAP vs. Non-GAAP spread:</strong> The most glaring red flag is management's narrative manipulation of revenue. By closing the SciTec acquisition mid-quarter, they folded ~$27M of inorganic revenue into their FY25 guide, allowing them to announce a guidance "raise" to $150–$158M while silently cutting organic launch revenue estimates by roughly <strong>$12M</strong>.</p>
+    <p><strong>"One-time" charge frequency:</strong> Firefly has only reported a few quarters as a public company, but already exhibits high "special" charges related to IPO restructuring and launch anomaly write-offs.</p>
+    <p><strong>Revenue recognition signals:</strong> Firefly capitalizes its launch material expenses as R&D prior to achieving operational reliability. This is standard aerospace accounting, but it creates lumpiness. A successful launch triggers massive deferred revenue recognition; a failed launch (or ground test) results in immediate write-offs.</p>
+    <p><strong>Accrual quality:</strong> Due to extreme cash burn, standard accrual ratios are distorted. However, aggressive capitalization of R&D for the Alpha rocket requires strict monitoring; if Flight 7 fails, expect a massive impairment charge.</p>
+    <p><strong>Audit and disclosure flags:</strong> No going concern or auditor changes yet. However, the earnings call language used to describe a catastrophic rocket explosion ("minute hydrocarbon contamination" resulting in a "combustion event") borders on intentional obfuscation of risk.</p>
+    <p><strong>Insider signals in context:</strong> Following the post-IPO lockup, there was massive insider stock acquisition in September 2025 (Jesung Kim +888k shares, Ferring +216k shares). However, these were predominantly 'A' code (Award/Grant) transactions, not open-market 'P' (Purchases), muting the bullish signal.</p>
+    <p><strong>Overall accounting confidence:</strong> <strong class="neutral">Caution Warranted</strong>. The balance sheet is clean, but management's willingness to hide organic guidance cuts behind M&A math is a significant red flag for future transparency.</p>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <div class="grid-2">
+    <div class="card" style="text-align:center;">
+      <div class="card-title">Management Credibility</div>
+      <div style="width:80px; height:80px; border-radius:50%; border:3px solid #f1c40f; display:flex; align-items:center; justify-content:center; margin:10px auto;">
+        <span style="font-size:1.8rem; font-weight:700; color:#f1c40f;">C</span>
+      </div>
+      <div class="card-label">Caution Warranted — inorganic revenue masking organic guidance cuts</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cash Conversion Quality</div>
+      <div style="display:flex; gap:20px; align-items:center; justify-content:center; margin:10px 0;">
+        <div style="text-align:center;">
+          <div class="mono" style="font-size:1.3rem; color:#e74c3c;">−$62M</div>
+          <div class="card-label">OCF (Q3)</div>
+        </div>
+        <div style="font-size:1.2rem; color:#8a8a7a;">vs.</div>
+        <div style="text-align:center;">
+          <div class="mono" style="font-size:1.3rem; color:#e74c3c;">−$133.4M</div>
+          <div class="card-label">Net Income (Q3)</div>
+        </div>
+      </div>
+      <div class="card-label">$71M gap → heavy non-cash charges (SBC, capitalization)</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" style="color:#4caf50;">Bullish Signals</div>
+      <div style="font-size:0.88rem;">
+        <div style="margin-bottom:6px;">✅ Balance sheet is clean — no toxic off-B/S vehicles</div>
+        <div style="margin-bottom:6px;">✅ No going concern or auditor changes</div>
+        <div style="margin-bottom:6px;">✅ No insider panic selling post-IPO</div>
+        <div>✅ Debt management is excellent (avoided convertible spirals)</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#f1c40f;">Caution / Watch Items</div>
+      <div style="font-size:0.88rem;">
+        <div style="margin-bottom:6px;">⚠️ Inorganic revenue masking ~$12M organic guidance cut</div>
+        <div style="margin-bottom:6px;">⚠️ "Minute hydrocarbon contamination" language = obfuscation</div>
+        <div style="margin-bottom:6px;">⚠️ Insider acquisitions were Awards (A), not Purchases (P)</div>
+        <div>⚠️ Aggressive R&D capitalization — impairment risk if Flight 7 fails</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 7: FORWARD MODEL ===================== -->
+<div class="tab-content" id="tab-6">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><em>All metrics in millions except EPS and ratios.</em></p>
+    <p><em>Notes on Assumptions: Management has only guided FY25 ($154M midpoint). 2026E assumes a full year of SciTec ($180M growing at 10%) plus $170M from legacy launch/lunar backlog conversions. Earnings and FCF are inferred based on the margin profile of defense software offsetting hardware cash burn.</em></p>
+    <p>Because Firefly has no earnings and negative FCF through 2027, traditional P/E and FCF Yield methodologies are useless. We must value the company on a forward Price-to-Sales (P/S) basis, blending the multiples of pure-play launch (typically 3–5x) with defense software (8–12x).</p>
+    <p><strong>Implied Target Price Math:</strong> $470M Rev × 6.9x P/S = $3.243B Market Cap. Divided by assumed 190M fully diluted shares by 2027 = <strong>$17.07</strong>. <span class="source-badge">Calc</span></p>
+    <p><strong>Narrative:</strong> This valuation uses <strong>2027E Revenue</strong>. The downside is driven entirely by <strong>multiple compression</strong>. Currently trading at over 20x TTM sales, the market is pricing FLY like a flawless hyper-growth tech stock. As reality sets in that they are an execution-challenged hardware company tethered to a defense software division, the multiple must compress toward a blended 6.9x. The current ~$21 valuation is <strong>not justified</strong> by the forward model unless Alpha rocket launches become perfectly routine by mid-2026.</p>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <!-- Forward Model Table -->
+  <div class="card">
+    <div class="card-title">Forward Model</div>
+    <table>
+      <thead><tr><th>Metric</th><th class="num">2026E</th><th class="num">2027E</th><th class="num">2028E</th><th>Basis</th></tr></thead>
+      <tbody>
+        <tr><td>Revenue</td><td class="num">$350M</td><td class="num">$470M</td><td class="num">$610M</td><td>Full yr SciTec + gradual launch ramp</td></tr>
+        <tr><td>Gross Margin</td><td class="num">15.0%</td><td class="num">22.0%</td><td class="num">28.0%</td><td>SciTec SaaS flow-through</td></tr>
+        <tr><td>Operating Margin</td><td class="num">−40.0%</td><td class="num">−15.0%</td><td class="num">5.0%</td><td>Declining R&D intensity</td></tr>
+        <tr><td>EPS</td><td class="num">−$0.85</td><td class="num">−$0.30</td><td class="num">$0.15</td><td>Based on 180M diluted shares</td></tr>
+        <tr><td>Free Cash Flow</td><td class="num">−$180M</td><td class="num">−$80M</td><td class="num">$40M</td><td>Heavy capex drops off by '28</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mgmt vs Consensus -->
+  <div class="card">
+    <div class="card-title">Management Guidance vs. Sell-Side Consensus</div>
+    <table>
+      <thead><tr><th>Period</th><th>Metric</th><th class="num">Mgmt Guidance</th><th class="num">Consensus</th><th class="num">Delta</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>FY25</td><td>Revenue</td><td class="num">$154M (mid)</td><td class="num">$155.2M</td><td class="num">−$1.2M</td><td>Inline <span class="source-badge">Earnings Call</span></td></tr>
+      </tbody>
+    </table>
+    <div class="card-label" style="margin-top:8px;">⚠️ Long-term consensus data beyond FY25 is <span class="source-badge unverified">UNVERIFIED</span> — limited sell-side coverage for early-stage space companies.</div>
+  </div>
+
+  <!-- Valuation Bridge -->
+  <div class="card">
+    <div class="card-title">Valuation Bridge (Anchored to 2027E Revenue)</div>
+    <table>
+      <thead><tr><th>Method</th><th>Year</th><th>Metric</th><th class="num">Multiple</th><th class="num">Implied Target</th><th class="num">Current</th><th class="num">Upside/Downside</th></tr></thead>
+      <tbody>
+        <tr><td>Price/Sales</td><td>2027E</td><td>Revenue ($470M)</td><td class="num">6.9x (Blended)</td><td class="num">$17.07 <span class="source-badge">Calc</span></td><td class="num">~$21.00</td><td class="num negative">−18.7%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Valuation Bridge Charts -->
+  <div class="grid-2">
+    <div class="chart-container">
+      <div class="card-title">P/S Valuation Bridge</div>
+      <canvas id="chart-val-bridge"></canvas>
+    </div>
+    <div class="card" style="display:flex; flex-direction:column; justify-content:center; align-items:center;">
+      <div class="card-title">Bridge Math</div>
+      <div class="mono" style="font-size:0.95rem; text-align:center; line-height:2;">
+        <div>$470M × 6.9x = <strong>$3.243B</strong></div>
+        <div>$3.243B ÷ 190M shares</div>
+        <div>= <strong style="color:#e74c3c; font-size:1.3rem;">$17.07</strong></div>
+        <div style="color:#8a8a7a; font-size:0.8rem;">vs. ~$21.00 current → <span class="negative">−18.7%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 8: KEY RATIOS ===================== -->
+<div class="tab-content" id="tab-7">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Synthesis:</strong> Firefly is egregiously expensive on a TTM Price-to-Sales basis (20.38x) compared to established aerospace peers, largely due to the overhang of its $45 IPO valuation. However, its balance sheet is vastly superior to its competitors, boasting a 6.2x current ratio. The single most important ratio to watch going forward is <strong>Gross Margin</strong>; if the SciTec acquisition does not immediately drag consolidated gross margins above 15% in the next two quarters, the software pivot thesis is broken.</p>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <div class="card">
+    <div class="card-title">Peer Comparison — Key Ratios</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><th>Metric</th><th class="num">Current Value</th><th class="num">5-yr Co. Avg</th><th class="num">Peer/Sector Avg <span class="source-badge unverified">UNVERIFIED</span></th><th>Interpretation / Flag</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>P/E (TTM)</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td>Unprofitable.</td></tr>
+        <tr><td>EV/EBITDA</td><td class="num negative">Negative</td><td class="num">Negative</td><td class="num">15.0x (Defense)</td><td class="negative">Extreme cash burn.</td></tr>
+        <tr><td>P/S (TTM)</td><td class="num negative">20.38x</td><td class="num">N/A</td><td class="num">12.4x</td><td class="negative">Highly expensive vs peers.</td></tr>
+        <tr><td>P/B</td><td class="num">3.50x</td><td class="num">N/A</td><td class="num">4.1x</td><td class="positive">Fairly valued on book.</td></tr>
+        <tr><td>Total Debt/Equity</td><td class="num positive">0.035</td><td class="num">N/A</td><td class="num">0.45</td><td class="positive">Extremely healthy balance sheet.</td></tr>
+        <tr><td>Current Ratio</td><td class="num positive">6.20</td><td class="num">N/A</td><td class="num">2.10</td><td class="positive">Massive liquidity buffer.</td></tr>
+        <tr><td>Gross Margin (TTM)</td><td class="num negative">2.05%</td><td class="num">N/A</td><td class="num">25.0%</td><td class="negative">Terrible; hardware failures destroy GM.</td></tr>
+        <tr><td>Operating Margin</td><td class="num negative">−254.6%</td><td class="num">N/A</td><td class="num">−45.0%</td><td class="negative">Severe operational inefficiency.</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="card-label" style="margin-top:8px;">Peers: Rocket Lab (RKLB), AST SpaceMobile (ASTS), Intuitive Machines (LUNR)</div>
+    <div class="card-label">⚠️ Peer/Sector averages are <span class="source-badge unverified">UNVERIFIED</span> — cannot be substantiated from pipeline data.</div>
+  </div>
+</div>
+
+<!-- ===================== TAB 9: OWNERSHIP ===================== -->
+<div class="tab-content" id="tab-8">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Insider & institutional ownership:</strong> Institutions own <strong>37.9%</strong> of the company (48% of the float), heavily concentrated in AE Industrial Partners (22.1%), which limits free float. Insiders own an impressive 21%. There has been no panic selling from insiders post-IPO, which is a mild stabilizing factor.</p>
+    <p><strong>Short interest:</strong> Short interest sits at <strong>5.42M shares</strong> (3.5% of float), with a Days-to-Cover (DTC) ratio of 1.53. This has ticked up slightly over the last month but is not high enough to trigger any structural short-squeeze dynamics.</p>
+    <p><strong>Liquidity:</strong> The stock trades relatively thin with an average daily trading volume of <strong>2.84M shares</strong>. Investors must be wary of lockup expirations (typically 180 days post-August IPO, putting late February/early March 2026 in the crosshairs for potential supply gluts).</p>
+    <p><strong>Beta and macro exposure:</strong> With a beta of <strong>−0.55</strong>, FLY is acting highly idiosyncratically, decoupled from the S&P 500 and heavily tethered to DoD budget cycles and space-sector momentum (RKLB/ASTS sympathy).</p>
+    <p><strong>Earnings surprise history:</strong> Poor. While they beat heavily massaged inorganic revenue estimates, their underlying organic execution has consistently missed expectations, resulting in downward estimate revisions from top-tier banks like JPMorgan over the last 90 days.</p>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <div class="grid-3">
+    <div class="chart-container">
+      <div class="card-title">Institutional Ownership</div>
+      <canvas id="chart-ownership"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Short Interest</div>
+      <div class="card-value">5.42M</div>
+      <div class="card-label">shares short (3.5% of float)</div>
+      <div style="margin-top:14px;">
+        <div style="font-size:0.88rem;">Days to Cover: <strong class="mono">1.53</strong></div>
+        <div style="font-size:0.85rem; color:#8a8a7a; margin-top:4px;">Ticking up but not squeeze-level</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Trading Liquidity</div>
+      <div class="card-value mono">2.84M</div>
+      <div class="card-label">Avg Daily Volume (shares)</div>
+      <div style="margin-top:14px; font-size:0.88rem;">
+        <div>Beta: <strong class="mono">−0.55</strong> (idiosyncratic)</div>
+        <div>Float: <strong class="mono">~79%</strong></div>
+        <div style="color:#8a8a7a; margin-top:6px;">⚠️ Lockup expiry: late Feb / early Mar 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insider Activity Table -->
+  <div class="card">
+    <div class="card-title">Notable Insider Activity (Sep 2025)</div>
+    <table>
+      <thead><tr><th>Name</th><th>Role</th><th>Action</th><th class="num">Shares</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>Jesung Kim</td><td>CEO</td><td><span class="badge badge-blue" style="font-size:0.65rem;">Award (A)</span></td><td class="num">+888,000</td><td>Post-IPO lockup grant, not open-market purchase <span class="source-badge">SEC</span></td></tr>
+        <tr><td>Ferring</td><td>Insider</td><td><span class="badge badge-blue" style="font-size:0.65rem;">Award (A)</span></td><td class="num">+216,000</td><td>Award/Grant, mutes bullish signal <span class="source-badge">SEC</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Sentiment Summary -->
+  <div class="card">
+    <div class="card-title">Sentiment Summary</div>
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+      <div>Wall Street Rating: <span class="badge badge-green" style="font-size:0.7rem;">Moderate Buy</span></div>
+      <div>Target Range: <strong class="mono">$28–$55</strong></div>
+      <div>JPM (90d): <span class="negative mono">$55 → $28</span></div>
+      <div>Earnings Surprise: <span class="badge badge-red" style="font-size:0.7rem;">Poor</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 10: SCENARIOS ===================== -->
+<div class="tab-content" id="tab-9">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Bull case narrative:</strong> Firefly fixes its process errors, and Alpha Flight 7 launches flawlessly in early Q1. The $1.3B backlog begins converting to revenue, and the SciTec division secures prime status on the $175B Golden Dome program. The market prices them as a premier space/defense tech hybrid.</p>
+    <p><strong>Base case narrative:</strong> SciTec revenue flows through as expected, providing a floor, but the hardware division continues to struggle with delays and margin bleed. The stock de-rates to a standard defense contractor multiple as the hyper-growth space narrative fades into a "lumpy government contractor" reality.</p>
+    <p><strong>Bear case narrative:</strong> Alpha Flight 7 suffers an in-flight anomaly. The launch program is grounded by the FAA. The $1B cash pile is rapidly incinerated to fund redesigns, forcing the company to issue heavily dilutive equity at single-digit share prices.</p>
+    <p><strong>Valuation Bridges for Scenarios (Anchored to 2027E Rev & Shares):</strong></p>
+    <ul>
+      <li><strong>Bull:</strong> 2027E Rev $500M. Market awards a hyper-growth 12.5x P/S multiple. Market Cap = $6.25B. Divided by 190M shares = <strong>$33</strong>. <em>Leading Indicator:</em> Gross margin expands above 20% by Q2 2026.</li>
+      <li><strong>Base:</strong> 2027E Rev $470M. Market awards a blended 6.9x P/S multiple. Market Cap = $3.24B. Divided by 190M shares = <strong>$17</strong>. <em>Leading Indicator:</em> Alpha Flight 7 launches but Flight 8 is delayed >6 months.</li>
+      <li><strong>Bear:</strong> 2027E Rev $350M. Market awards a legacy defense 2.7x P/S multiple. Market Cap = $945M. Divided by 190M shares = <strong>$5</strong>. <em>Leading Indicator:</em> Flight 7 fails or scrubs repeatedly into 2H 2026.</li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <div class="grid-3">
+    <div class="scenario-card bull">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span class="badge badge-green">Bull Case</span>
+        <span class="mono" style="font-size:0.85rem; color:#8a8a7a;">20% probability</span>
+      </div>
+      <div class="card-value positive">$33.00</div>
+      <div class="card-label">+57% upside from ~$21</div>
+      <div style="margin-top:12px; font-size:0.85rem; color:#ccc8b8;">
+        <div style="margin-bottom:4px;"><strong>Assumptions:</strong> Flawless SciTec integration; Alpha Flight 7 succeeds; wins Golden Dome</div>
+        <div style="margin-bottom:4px;"><strong>Bridge:</strong> $500M × 12.5x ÷ 190M = $33</div>
+        <div><strong>Leading Indicator:</strong> GM >20% by Q2 2026</div>
+      </div>
+    </div>
+    <div class="scenario-card base">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span class="badge badge-gold">Base Case</span>
+        <span class="mono" style="font-size:0.85rem; color:#8a8a7a;">50% probability</span>
+      </div>
+      <div class="card-value" style="color:#d4a843;">$17.00</div>
+      <div class="card-label"><span class="negative">−19%</span> downside from ~$21</div>
+      <div style="margin-top:12px; font-size:0.85rem; color:#ccc8b8;">
+        <div style="margin-bottom:4px;"><strong>Assumptions:</strong> SciTec performs well, but Alpha launch cadence remains lumpy/delayed</div>
+        <div style="margin-bottom:4px;"><strong>Bridge:</strong> $470M × 6.9x ÷ 190M = $17</div>
+        <div><strong>Leading Indicator:</strong> Flight 7 launches, Flight 8 delayed >6 months</div>
+      </div>
+    </div>
+    <div class="scenario-card bear">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span class="badge badge-red">Bear Case</span>
+        <span class="mono" style="font-size:0.85rem; color:#8a8a7a;">30% probability</span>
+      </div>
+      <div class="card-value negative">$5.00</div>
+      <div class="card-label"><span class="negative">−76%</span> downside from ~$21</div>
+      <div style="margin-top:12px; font-size:0.85rem; color:#ccc8b8;">
+        <div style="margin-bottom:4px;"><strong>Assumptions:</strong> Launch grounded; cash burn forces massive dilution</div>
+        <div style="margin-bottom:4px;"><strong>Bridge:</strong> $350M × 2.7x ÷ 190M = $5</div>
+        <div><strong>Leading Indicator:</strong> Flight 7 fails or scrubs into 2H 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expected Value Card -->
+  <div class="card">
+    <div class="card-title">Probability-Weighted Expected Value <span class="source-badge">Calc</span></div>
+    <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+      <div>
+        <div class="card-value">$16.60</div>
+        <div class="card-label">vs. Current ~$21.00 → <span class="negative">−20.9% downside</span></div>
+      </div>
+      <div style="flex:1; min-width:280px;">
+        <div class="mono" style="font-size:0.88rem; margin-bottom:8px; color:#ccc8b8;">
+          (0.20 × $33) + (0.50 × $17) + (0.30 × $5) = $6.60 + $8.50 + $1.50 = <strong>$16.60</strong>
+        </div>
+        <div class="prob-bar-container">
+          <div style="width:20%; background:#4caf50; color:#0a0a0a;">20%</div>
+          <div style="width:50%; background:#d4a843; color:#0a0a0a;">50%</div>
+          <div style="width:30%; background:#e74c3c; color:#fff;">30%</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.73rem; color:#8a8a7a; margin-top:3px;">
+          <span class="positive">$33 Bull</span>
+          <span style="color:#d4a843;">$17 Base</span>
+          <span class="negative">$5 Bear</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 11: RISKS ===================== -->
+<div class="tab-content" id="tab-10">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Top 3 Risks:</strong></p>
+    <ul>
+      <li><strong>Hardware Execution / Anomaly Risk (High Severity, High Likelihood):</strong> Back-to-back failures (Flight 6 and Flight 7 ground test) suggest systemic quality assurance issues that could ground the fleet.</li>
+      <li><strong>Cash Burn & Dilution (High Severity, Medium Likelihood):</strong> Despite a $1B cushion, burning $60M+ per quarter on hardware rebuilds will eventually force dilutive equity raises if operations don't generate cash by late 2026.</li>
+      <li><strong>Government Concentration (Medium Severity, High Likelihood):</strong> Heavy reliance on NASA/DoD budgets makes revenue highly vulnerable to Artemis program delays or government shutdowns.</li>
+    </ul>
+    <p><strong>Top 3 Opportunities:</strong></p>
+    <ul>
+      <li><strong>Golden Dome Architecture (High Magnitude, Medium Likelihood):</strong> Successfully integrating SciTec software with Elytra vehicles could capture billions in recurring DoD missile defense spending.</li>
+      <li><strong>Lunar Data Monetization (Medium Magnitude, High Likelihood):</strong> The recent $10M addendum to sell Blue Ghost data back to NASA proves a highly scalable, high-margin data-as-a-service model exists in space.</li>
+      <li><strong>Russell Index Passive Flows (Low Magnitude, High Likelihood):</strong> Recent inclusion in the Russell 2000/3000 provides a baseline of mandatory institutional buying.</li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Dashboard</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" style="color:#e74c3c;">Risk Matrix</div>
+      <table>
+        <thead><tr><th>Risk</th><th>Severity</th><th>Likelihood</th></tr></thead>
+        <tbody>
+          <tr><td>Hardware Execution / Anomaly</td><td><span class="badge badge-red" style="font-size:0.65rem;">HIGH</span></td><td><span class="badge badge-red" style="font-size:0.65rem;">HIGH</span></td></tr>
+          <tr><td>Cash Burn & Dilution</td><td><span class="badge badge-red" style="font-size:0.65rem;">HIGH</span></td><td><span class="badge badge-yellow" style="font-size:0.65rem;">MEDIUM</span></td></tr>
+          <tr><td>Government Concentration</td><td><span class="badge badge-yellow" style="font-size:0.65rem;">MEDIUM</span></td><td><span class="badge badge-red" style="font-size:0.65rem;">HIGH</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#4caf50;">Opportunity Matrix</div>
+      <table>
+        <thead><tr><th>Opportunity</th><th>Magnitude</th><th>Likelihood</th></tr></thead>
+        <tbody>
+          <tr><td>Golden Dome Architecture</td><td><span class="badge badge-green" style="font-size:0.65rem;">HIGH</span></td><td><span class="badge badge-yellow" style="font-size:0.65rem;">MEDIUM</span></td></tr>
+          <tr><td>Lunar Data Monetization</td><td><span class="badge badge-yellow" style="font-size:0.65rem;">MEDIUM</span></td><td><span class="badge badge-green" style="font-size:0.65rem;">HIGH</span></td></tr>
+          <tr><td>Russell Index Passive Flows</td><td><span class="badge badge-gold" style="font-size:0.65rem;">LOW</span></td><td><span class="badge badge-green" style="font-size:0.65rem;">HIGH</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 12: CATALYSTS ===================== -->
+<div class="tab-content" id="tab-11">
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Earnings surprise history:</strong> Poor. While they beat heavily massaged inorganic revenue estimates, their underlying organic execution has consistently missed expectations, resulting in downward estimate revisions from top-tier banks like JPMorgan over the last 90 days.</p>
+  </div>
+
+  <hr class="section-divider">
+  <h2 class="section-header">Catalyst Timeline</h2>
+
+  <div class="card">
+    <div class="timeline-item">
+      <div class="timeline-dot neutral-dot"></div>
+      <div>
+        <div style="font-weight:700; color:#e8e0d0;">Late Q4 '25 / Early Q1 '26 — Alpha Flight 7 Launch Window</div>
+        <div style="font-size:0.85rem; color:#8a8a7a;">Impact: <span class="badge badge-red" style="font-size:0.6rem;">MASSIVE</span> &nbsp; <span class="badge badge-gold" style="font-size:0.6rem;">Neutral (Binary pass/fail)</span></div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot bearish"></div>
+      <div>
+        <div style="font-weight:700; color:#e8e0d0;">March 2026 — FY25 Q4 Earnings</div>
+        <div style="font-size:0.85rem; color:#8a8a7a;">Impact: <span class="badge badge-red" style="font-size:0.6rem;">HIGH</span> &nbsp; <span class="badge badge-red" style="font-size:0.6rem;">Bear (Focus on organic cash burn)</span></div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot bearish"></div>
+      <div>
+        <div style="font-weight:700; color:#e8e0d0;">March 2026 — IPO Lockup Expiration (180 Days)</div>
+        <div style="font-size:0.85rem; color:#8a8a7a;">Impact: <span class="badge badge-yellow" style="font-size:0.6rem;">MEDIUM</span> &nbsp; <span class="badge badge-red" style="font-size:0.6rem;">Bear (Potential supply glut)</span></div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot bullish"></div>
+      <div>
+        <div style="font-weight:700; color:#e8e0d0;">Late 2026 — Blue Ghost 2 Lunar Mission</div>
+        <div style="font-size:0.85rem; color:#8a8a7a;">Impact: <span class="badge badge-red" style="font-size:0.6rem;">HIGH</span> &nbsp; <span class="badge badge-green" style="font-size:0.6rem;">Bull (Validates backlog execution)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section-header">Thesis Kill Criteria</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" style="color:#4caf50;">Bullish Thesis Invalidated If...</div>
+      <div class="kill-item"><div class="kill-checkbox"></div><div>Alpha Flight 7 fails to reach orbit or suffers a payload deployment anomaly.</div></div>
+      <div class="kill-item"><div class="kill-checkbox"></div><div>SciTec organic revenue growth drops below 10% YoY, proving it was a mature asset bought at the top.</div></div>
+      <div class="kill-item"><div class="kill-checkbox"></div><div>Cash burn exceeds $80M for two consecutive quarters, signaling the balance sheet fortress is failing.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#e74c3c;">Bearish Thesis Invalidated If...</div>
+      <div class="kill-item"><div class="kill-checkbox"></div><div>Firefly executes three consecutive flawless Alpha launches within a 9-month window.</div></div>
+      <div class="kill-item"><div class="kill-checkbox"></div><div>Q1 or Q2 2026 Free Cash Flow turns positive purely on the back of SciTec and lunar data monetization.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 13: REVISIONS ===================== -->
+<div class="tab-content" id="tab-12">
+  <div class="card" style="border-color:#e74c3c;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+      <span class="badge badge-red" style="font-size:0.85rem; padding:6px 16px;">MAJOR REVISIONS</span>
+      <span class="mono" style="font-size:0.95rem;">5 Corrections</span>
+      <span class="badge badge-yellow" style="font-size:0.75rem;">Confidence: MEDIUM</span>
+    </div>
+    <p style="font-size:0.88rem; color:#ccc8b8;">The report is structurally excellent and correctly synthesizes the complex narrative around the SciTec acquisition masking organic launch failures. However, it requires major revisions because it falsely identifies a 98% positive sequential revenue growth in Q3 (likely hallucinated by the underlying AI sentiment engine), whereas actual SEC filings reveal a 57% sequential decline. Additionally, there are multiple internal inconsistencies in the valuation math and expected value calculations.</p>
+  </div>
+
+  <!-- Revision 1 -->
+  <div class="revision-card">
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+      <strong style="color:#e8e0d0;">Section 2: Current Narrative & Sentiment</strong>
+      <span class="revision-label">Numerical Error</span>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#8a8a7a; text-transform:uppercase; margin-bottom:4px;">Original</div>
+      <div class="old-text">In Q3 2025, Firefly reported $30.8M in revenue (up 98% sequentially) but posted a massive -$133.4M net loss.</div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#4caf50; text-transform:uppercase; margin-bottom:4px;">Revised</div>
+      <div class="new-text">In Q3 2025, Firefly reported $30.8M in revenue (down 56.9% sequentially from Q2's $71.4M) but posted a massive -$133.4M net loss. <span class="source-badge">SEC 10-Q</span></div>
+    </div>
+    <div class="why-text"><strong>Why:</strong> The report incorrectly cited a positive sequential growth figure that contradicted actual SEC filings, which show Q2 revenue was $71.4M, indicating a sharp sequential decline to $30.8M in Q3.</div>
+  </div>
+
+  <!-- Revision 2 -->
+  <div class="revision-card">
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+      <strong style="color:#e8e0d0;">Section 7: Forward Model & Valuation Bridge</strong>
+      <span class="revision-label">Numerical Error</span>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#8a8a7a; text-transform:uppercase; margin-bottom:4px;">Original</div>
+      <div class="old-text">$470M Rev × 6.9x P/S = $3.24B Market Cap. Divided by assumed 190M fully diluted shares by 2027 = $17.06 (rounded to $17.10).</div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#4caf50; text-transform:uppercase; margin-bottom:4px;">Revised</div>
+      <div class="new-text">$470M Rev × 6.9x P/S = $3.243B Market Cap. Divided by assumed 190M fully diluted shares by 2027 = $17.07. <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="why-text"><strong>Why:</strong> $470M × 6.9 equals $3.243B. $3.243B / 190M shares equals $17.068, which rounds to $17.07, not $17.10.</div>
+  </div>
+
+  <!-- Revision 3 -->
+  <div class="revision-card">
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+      <strong style="color:#e8e0d0;">Section 1: Executive Summary</strong>
+      <span class="revision-label">Internal Inconsistency</span>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#8a8a7a; text-transform:uppercase; margin-bottom:4px;">Original</div>
+      <div class="old-text">Quick Rating: Hold | Expected move: -18% (Target: $17.10, 12–18 month timeframe). Note: This downside forecast is derived from a probability-weighted 2027E P/S valuation bridge.</div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#4caf50; text-transform:uppercase; margin-bottom:4px;">Revised</div>
+      <div class="new-text">Quick Rating: Hold | Expected move: -18.7% (Target: $17.07, 12–18 month timeframe). Note: This downside forecast is derived from the Base Case 2027E P/S valuation bridge. <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="why-text"><strong>Why:</strong> The target price of ~$17.07 corresponds directly to the Base Case multiple (6.9x), not a probability-weighted average of the three scenarios (which equals $16.60). Updated to align with corrected Section 7 math.</div>
+  </div>
+
+  <!-- Revision 4 -->
+  <div class="revision-card">
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+      <strong style="color:#e8e0d0;">Section 10: Scenario Analysis</strong>
+      <span class="revision-label">Numerical Error</span>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#8a8a7a; text-transform:uppercase; margin-bottom:4px;">Original</div>
+      <div class="old-text">Probability-weighted expected value: $17.10</div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#4caf50; text-transform:uppercase; margin-bottom:4px;">Revised</div>
+      <div class="new-text">Probability-weighted expected value: $16.60 <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="why-text"><strong>Why:</strong> The correct weighted average is (0.20 × $33) + (0.50 × $17) + (0.30 × $5) = $6.60 + $8.50 + $1.50 = $16.60. The report incorrectly used the Base Case target ($17.10) in this field.</div>
+  </div>
+
+  <!-- Revision 5 -->
+  <div class="revision-card">
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+      <strong style="color:#e8e0d0;">Section 8: Key Ratios & Comparisons</strong>
+      <span class="revision-label">Unsupported Claim / Missing Source</span>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#8a8a7a; text-transform:uppercase; margin-bottom:4px;">Original</div>
+      <div class="old-text">Column header: "Peer/Sector Avg"</div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.78rem; color:#4caf50; text-transform:uppercase; margin-bottom:4px;">Revised</div>
+      <div class="new-text">Column header: "Peer/Sector Avg <span class="source-badge unverified">UNVERIFIED</span>"</div>
+    </div>
+    <div class="why-text"><strong>Why:</strong> The specific peer averages provided in the table (e.g., 15.0x EV/EBITDA, 12.4x P/S) cannot be substantiated using any of the provided reference pipeline data.</div>
+  </div>
+</div>
+
+<script>
+// ===== TAB SWITCHING =====
+const chartInstances = {};
+function switchTab(idx) {
+  document.querySelectorAll('.tab-content').forEach((el, i) => { el.classList.toggle('active', i === idx); });
+  document.querySelectorAll('.tab-btn').forEach((el, i) => { el.classList.toggle('active', i === idx); });
+  // Lazy init charts
+  if (idx === 2) initFundamentalsCharts();
+  if (idx === 4) initCashFlowCharts();
+  if (idx === 6) initValuationCharts();
+  if (idx === 8) initOwnershipCharts();
+}
+
+// Chart defaults
+const chartDefaults = {
+  color: '#8a8a7a',
+  borderColor: '#2a2a2a',
+  font: { family: "'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace" }
+};
+
+function baseOptions(title) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { labels: { color: '#8a8a7a', font: { size: 11 } } },
+      title: { display: false }
+    },
+    scales: {
+      x: { ticks: { color: '#8a8a7a', font: { size: 10 } }, grid: { color: '#1e1e1e' } },
+      y: { ticks: { color: '#8a8a7a', font: { size: 10 } }, grid: { color: '#1e1e1e' } }
+    }
+  };
+}
+
+// ===== TAB 3: FUNDAMENTALS CHARTS =====
+function initFundamentalsCharts() {
+  if (chartInstances['rev-eps']) return;
+  const ctx1 = document.getElementById('chart-rev-eps').getContext('2d');
+  chartInstances['rev-eps'] = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: ['Q3 \'25 (A)', 'FY25E', '2026E', '2027E', '2028E'],
+      datasets: [
+        { label: 'Revenue ($M)', data: [30.8, 154, 350, 470, 610], backgroundColor: ['#d4a843','#d4a843','rgba(212,168,67,0.5)','rgba(212,168,67,0.5)','rgba(212,168,67,0.5)'], borderColor: '#d4a843', borderWidth: 1 },
+        { label: 'EPS ($)', data: [null, null, -0.85, -0.30, 0.15], type: 'line', borderColor: '#5dade2', backgroundColor: 'transparent', pointBackgroundColor: '#5dade2', yAxisID: 'y1', tension: 0.3 }
+      ]
+    },
+    options: {
+      ...baseOptions(),
+      scales: {
+        x: { ticks: { color: '#8a8a7a' }, grid: { color: '#1e1e1e' } },
+        y: { position: 'left', title: { display: true, text: 'Revenue ($M)', color: '#8a8a7a' }, ticks: { color: '#8a8a7a' }, grid: { color: '#1e1e1e' } },
+        y1: { position: 'right', title: { display: true, text: 'EPS ($)', color: '#5dade2' }, ticks: { color: '#5dade2' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+
+  const ctx2 = document.getElementById('chart-margins').getContext('2d');
+  chartInstances['margins'] = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: ['2026E', '2027E', '2028E'],
+      datasets: [
+        { label: 'Gross Margin', data: [15, 22, 28], borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.1)', fill: true, tension: 0.3 },
+        { label: 'Operating Margin', data: [-40, -15, 5], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true, tension: 0.3 },
+      ]
+    },
+    options: {
+      ...baseOptions(),
+      scales: {
+        x: { ticks: { color: '#8a8a7a' }, grid: { color: '#1e1e1e' } },
+        y: { ticks: { color: '#8a8a7a', callback: v => v + '%' }, grid: { color: '#1e1e1e' } }
+      }
+    }
+  });
+}
+
+// ===== TAB 5: CASH FLOW CHARTS =====
+function initCashFlowCharts() {
+  if (chartInstances['fcf-trend']) return;
+  const ctx1 = document.getElementById('chart-fcf-trend').getContext('2d');
+  chartInstances['fcf-trend'] = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: ['Q2 \'25', 'Q3 \'25', '2026E', '2027E', '2028E'],
+      datasets: [{
+        label: 'FCF ($M)',
+        data: [-37.3, -62.0, -180, -80, 40],
+        backgroundColor: [-37.3, -62.0, -180, -80, 40].map(v => v < 0 ? '#e74c3c' : '#4caf50'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...baseOptions(),
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  const ctx2 = document.getElementById('chart-capalloc').getContext('2d');
+  chartInstances['capalloc'] = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: ['CapEx / Hardware Rebuilds', 'M&A (SciTec)', 'R&D Investment', 'Working Capital'],
+      datasets: [{
+        data: [35, 40, 15, 10],
+        backgroundColor: ['#e74c3c', '#d4a843', '#5dade2', '#8a8a7a']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#8a8a7a', font: { size: 11 }, padding: 12 } }
+      }
+    }
+  });
+}
+
+// ===== TAB 7: VALUATION CHARTS =====
+function initValuationCharts() {
+  if (chartInstances['val-bridge']) return;
+  const ctx = document.getElementById('chart-val-bridge').getContext('2d');
+  chartInstances['val-bridge'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Current Price', 'Downside', 'Base Case Target'],
+      datasets: [{
+        data: [21.00, -3.93, 17.07],
+        backgroundColor: ['#5dade2', '#e74c3c', '#d4a843'],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...baseOptions(),
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8a8a7a', callback: v => '$' + v }, grid: { color: '#1e1e1e' } },
+        y: { ticks: { color: '#8a8a7a' }, grid: { color: '#1e1e1e' } }
+      }
+    }
+  });
+}
+
+// ===== TAB 9: OWNERSHIP CHARTS =====
+function initOwnershipCharts() {
+  if (chartInstances['ownership']) return;
+  const ctx = document.getElementById('chart-ownership').getContext('2d');
+  chartInstances['ownership'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['AE Industrial Partners (22.1%)', 'Other Institutions (15.8%)', 'Insiders (21%)', 'Retail / Other (41.1%)'],
+      datasets: [{
+        data: [22.1, 15.8, 21, 41.1],
+        backgroundColor: ['#d4a843', '#5dade2', '#4caf50', '#8a8a7a']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#8a8a7a', font: { size: 11 }, padding: 12 } }
+      }
+    }
+  });
+}
+
+// Initialize first tab charts if visible
+// (Tab 0 has no charts)
+</script>
+</body>
+</html>

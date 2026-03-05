@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equity Research Hub</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0a; --card: #141414; --border: #2a2a2a; --gold: #d4a843;
+  --cream: #e8e0d0; --muted: #8a8a7a; --green: #4caf50; --red: #e74c3c;
+}
+body {
+  background: var(--bg); color: var(--cream);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  line-height: 1.6; min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 24px;
+}
+.mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+
+/* Header */
+.site-header { text-align: center; margin-bottom: 48px; }
+.site-title { font-size: 2.2rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
+.site-subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 8px; }
+
+/* Cards grid */
+.reports-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px; max-width: 900px; width: 100%;
+}
+.report-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+  padding: 32px; text-decoration: none; color: inherit;
+  transition: all 0.25s ease; position: relative; overflow: hidden;
+}
+.report-card:hover {
+  border-color: var(--gold); transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(212,168,67,0.08);
+}
+.report-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--gold), transparent); opacity: 0;
+  transition: opacity 0.25s;
+}
+.report-card:hover::before { opacity: 1; }
+
+.card-ticker { font-size: 1.6rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
+.card-company { font-size: 0.95rem; color: var(--muted); margin-top: 4px; }
+.card-desc { font-size: 0.85rem; color: var(--muted); margin-top: 16px; line-height: 1.6; }
+.card-badge {
+  display: inline-block; margin-top: 16px; padding: 4px 14px; border-radius: 6px;
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.card-badge.speculative-buy {
+  background: rgba(76,175,80,0.15); color: var(--green); border: 1px solid rgba(76,175,80,0.3);
+}
+.card-badge.hold {
+  background: rgba(241,196,15,0.15); color: #f1c40f; border: 1px solid rgba(241,196,15,0.3);
+}
+.card-arrow {
+  position: absolute; top: 32px; right: 32px; font-size: 1.2rem; color: var(--border);
+  transition: all 0.25s;
+}
+.report-card:hover .card-arrow { color: var(--gold); transform: translateX(4px); }
+
+/* Footer */
+.site-footer {
+  margin-top: 60px; text-align: center; color: var(--muted); font-size: 0.78rem;
+}
+
+@media (max-width: 500px) {
+  body { padding: 36px 16px; }
+  .site-title { font-size: 1.6rem; }
+  .reports-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1 class="site-title">Equity Research Hub</h1>
+  <p class="site-subtitle">Independent equity research dashboards</p>
+</header>
+
+<div class="reports-grid">
+
+  <a href="fly.html" class="report-card">
+    <span class="card-arrow">&rarr;</span>
+    <div class="card-ticker mono">$FLY</div>
+    <div class="card-company">Firefly Aerospace Inc.</div>
+    <div class="card-desc">Full equity research dashboard covering financials, valuation, competitive positioning, and risk analysis for the space launch provider.</div>
+    <span class="card-badge speculative-buy">Speculative Buy</span>
+  </a>
+
+  <a href="tel.html" class="report-card">
+    <span class="card-arrow">&rarr;</span>
+    <div class="card-ticker mono">$TEL</div>
+    <div class="card-company">TE Connectivity plc</div>
+    <div class="card-desc">Comprehensive equity research dashboard with financial modeling, scenario analysis, and risk assessment for the connectivity solutions leader.</div>
+    <span class="card-badge hold">Hold</span>
+  </a>
+
+</div>
+
+<footer class="site-footer">
+  <p>For informational purposes only. Not financial advice.</p>
+</footer>
+
+</body>
+</html>

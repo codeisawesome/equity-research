@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$TEL — TE Connectivity plc | Equity Research Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0a; --card: #141414; --border: #2a2a2a; --gold: #d4a843;
+  --cream: #e8e0d0; --muted: #8a8a7a; --green: #4caf50; --red: #e74c3c;
+  --yellow: #f1c40f; --blue: #5dade2; --orange: #e67e22;
+}
+body { background: var(--bg); color: var(--cream); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.7; font-size: 14px; }
+.mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+a { color: var(--gold); text-decoration: none; }
+.header { padding: 24px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.header-left { display: flex; align-items: baseline; gap: 16px; }
+.ticker { font-size: 32px; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
+.company-name { font-size: 16px; color: var(--muted); }
+.header-right { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.price-block { text-align: right; }
+.price { font-size: 28px; font-weight: 700; }
+.price-sub { font-size: 13px; color: var(--muted); }
+.badge { display: inline-block; padding: 4px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+.badge-hold { background: rgba(241,196,15,0.15); color: var(--yellow); border: 1px solid rgba(241,196,15,0.3); }
+.badge-buy { background: rgba(76,175,80,0.15); color: var(--green); border: 1px solid rgba(76,175,80,0.3); }
+.badge-conviction-low { background: rgba(241,196,15,0.1); color: var(--yellow); border: 1px solid rgba(241,196,15,0.25); }
+.badge-conviction-high { background: rgba(76,175,80,0.1); color: var(--green); border: 1px solid rgba(76,175,80,0.25); }
+.date-stamp { font-size: 12px; color: var(--muted); }
+.tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 24px; overflow-x: auto; white-space: nowrap; }
+.tab-btn { padding: 12px 14px; font-size: 12px; font-weight: 500; color: var(--muted); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.tab-btn:hover { color: var(--cream); }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+.tab-content { display: none; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+.tab-content.active { display: block; }
+.grid { display: grid; gap: 20px; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+.card-title { font-size: 14px; color: var(--gold); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+.card-value { font-size: 28px; font-weight: 700; }
+.card-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.metric-strip { display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0; }
+.metric-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; min-width: 140px; flex: 1; }
+.metric-item .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+.metric-item .value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: rgba(212,168,67,0.12); color: var(--gold); font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 10px 14px; border-bottom: 1px solid rgba(42,42,42,0.5); }
+tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+tr:hover td { background: rgba(212,168,67,0.04); }
+.num { text-align: right; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+.positive { color: var(--green); }
+.negative { color: var(--red); }
+.neutral { color: var(--yellow); }
+.source-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px; background: rgba(212,168,67,0.1); color: var(--gold); margin-left: 4px; font-family: monospace; }
+.source-badge.unverified { background: rgba(231,76,60,0.1); color: var(--red); }
+.chart-container { position: relative; width: 100%; height: 320px; }
+canvas { max-width: 100%; }
+.scenario-card { border-left: 3px solid var(--muted); }
+.scenario-card.bull { border-left-color: var(--green); }
+.scenario-card.base { border-left-color: var(--gold); }
+.scenario-card.bear { border-left-color: var(--red); }
+.timeline-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid rgba(42,42,42,0.5); }
+.timeline-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+.timeline-content { flex: 1; }
+.timeline-date { font-size: 12px; color: var(--gold); font-weight: 600; }
+.timeline-event { font-size: 14px; margin-top: 2px; }
+.timeline-impact { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.kill-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; font-size: 14px; }
+.kill-check { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
+.thesis-box { background: rgba(212,168,67,0.05); border: 1px solid rgba(212,168,67,0.15); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.thesis-box p { font-size: 15px; line-height: 1.7; }
+.section-header { font-size: 18px; font-weight: 700; color: var(--gold); margin: 28px 0 16px 0; }
+.section-header:first-child { margin-top: 0; }
+.analysis-prose { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin: 20px 0; line-height: 1.8; }
+.analysis-prose p { margin-bottom: 14px; font-size: 14px; }
+.analysis-prose p:last-child { margin-bottom: 0; }
+.analysis-prose strong { color: var(--cream); }
+.analysis-label { display: inline-block; font-size: 11px; color: var(--gold); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; padding: 4px 10px; background: rgba(212,168,67,0.08); border-radius: 4px; }
+.section-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+.waterfall-bar { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.waterfall-label { width: 120px; font-size: 13px; text-align: right; color: var(--muted); }
+.waterfall-track { flex: 1; height: 28px; background: rgba(255,255,255,0.03); border-radius: 4px; position: relative; }
+.waterfall-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; font-size: 12px; font-weight: 600; }
+.revision-card { background: rgba(231,76,60,0.03); border: 1px solid rgba(231,76,60,0.15); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.revision-card .rev-section { font-size: 12px; color: var(--gold); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.revision-card .rev-type { font-size: 11px; color: var(--red); margin-bottom: 8px; }
+.revision-card .rev-original { font-size: 13px; color: var(--muted); text-decoration: line-through; margin-bottom: 6px; }
+.revision-card .rev-revised { font-size: 13px; color: var(--green); margin-bottom: 6px; }
+.revision-card .rev-why { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.prob-bar-container { display: flex; height: 32px; border-radius: 8px; overflow: hidden; margin: 16px 0; }
+.prob-segment { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+@media (max-width: 768px) {
+  .header { padding: 16px; }
+  .tab-content { padding: 16px; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .tab-btn { padding: 10px 8px; font-size: 11px; }
+  .ticker { font-size: 24px; }
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <span class="ticker">$TEL</span>
+    <span class="company-name">TE Connectivity plc</span>
+  </div>
+  <div class="header-right">
+    <div>
+      <span class="badge badge-hold">HOLD (Swing)</span>
+      <span class="badge badge-buy" style="margin-left:6px;">BUY (Position)</span>
+    </div>
+    <div>
+      <span class="badge badge-conviction-low">Conviction: LOW (Swing)</span>
+      <span class="badge badge-conviction-high" style="margin-left:4px;">HIGH (Position)</span>
+    </div>
+    <div class="price-block">
+      <div class="price mono">$205.15</div>
+      <div class="price-sub">Expected: <span class="positive">+18% &rarr; $242</span></div>
+    </div>
+    <div class="date-stamp">Data as of March 4, 2026</div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+  <button class="tab-btn" onclick="switchTab(1)">2. Narrative</button>
+  <button class="tab-btn" onclick="switchTab(2)">3. Fundamentals</button>
+  <button class="tab-btn" onclick="switchTab(3)">4. Balance Sheet</button>
+  <button class="tab-btn" onclick="switchTab(4)">5. Cash Flow</button>
+  <button class="tab-btn" onclick="switchTab(5)">6. Earnings Quality</button>
+  <button class="tab-btn" onclick="switchTab(6)">7. Forward Model</button>
+  <button class="tab-btn" onclick="switchTab(7)">8. Key Ratios</button>
+  <button class="tab-btn" onclick="switchTab(8)">9. Ownership</button>
+  <button class="tab-btn" onclick="switchTab(9)">10. Scenarios</button>
+  <button class="tab-btn" onclick="switchTab(10)">11. Risks</button>
+  <button class="tab-btn" onclick="switchTab(11)">12. Catalysts</button>
+  <button class="tab-btn" onclick="switchTab(12)">Revisions</button>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 1: EXECUTIVE SUMMARY -->
+<!-- ============================================ -->
+<div class="tab-content active">
+  <div class="section-header" style="margin-top:0;">Section 1. Executive Summary</div>
+
+  <div class="thesis-box">
+    <p><strong style="color:var(--gold);">AI Data Center Pivot:</strong> TEL is successfully masking cyclical auto weakness with hyper-growth in its Digital Data Networks (DDN) segment (up 70% YoY in Q1 FY26) <span class="source-badge">Earnings Call</span>, transitioning from an auto parts supplier to an AI infrastructure proxy.</p>
+    <p style="margin-top:10px;"><strong style="color:var(--gold);">Margin Expansion:</strong> Operating margins have structurally shifted higher (hitting 22.2% in Q1 FY26) <span class="source-badge">Earnings Call</span> driven by a massive 30% incremental flow-through on new AI/hyperscaler volume.</p>
+    <p style="margin-top:10px;"><strong style="color:var(--gold);">Fortress Cash Generation:</strong> FY25 Free Cash Flow of $3.2B (18.6% margin) <span class="source-badge">SEC</span> easily funds aggressive buybacks and the 1.4% dividend yield while supporting increased, success-based CapEx (~6%).</p>
+    <p style="margin-top:10px;"><strong style="color:var(--gold);">Optical Displacement Risk:</strong> The primary bear thesis is that upcoming tech leaps (e.g., at the OFC conference) will accelerate the transition from copper interconnects to optical in data centers, stranding TEL's core competency.</p>
+  </div>
+
+  <div class="analysis-prose" style="background:rgba(212,168,67,0.04);border-color:rgba(212,168,67,0.12);">
+    <p><strong style="color:var(--gold);">Conviction Level:</strong> <span style="color:var(--yellow);">Low</span> for swing | <span class="positive">High</span> for position.</p>
+    <p><strong style="color:var(--gold);">Quick Rating:</strong> <span class="badge badge-hold" style="font-size:12px;">Hold (Swing)</span> / <span class="badge badge-buy" style="font-size:12px;">Buy (Position)</span> &nbsp;|&nbsp; Expected move: <strong class="positive">+18% to $242</strong> (12-month timeframe).</p>
+    <p style="font-size:13px;color:var(--muted);"><em>Note: The +18% move is anchored to the 2027E EPS valuation bridge (21x P/E on $11.50 EPS) detailed in Section 7.</em></p>
+    <p style="margin-top:12px;"><strong style="color:var(--gold);">The Single Most Important Thing:</strong> TEL's near-term price action will be dictated by market fears of optical tech displacing copper, but its $5.1B order backlog and embedded AI hyperscaler relationships provide immense downside cash flow protection.</p>
+  </div>
+
+  <div class="metric-strip">
+    <div class="metric-item"><div class="label">Current Price</div><div class="value mono">$205.15</div></div>
+    <div class="metric-item"><div class="label">Market Cap</div><div class="value mono">~$60.2B</div></div>
+    <div class="metric-item"><div class="label">P/E (TTM)</div><div class="value mono">29.1x</div></div>
+    <div class="metric-item"><div class="label">P/E (Fwd)</div><div class="value mono">18.8x</div></div>
+    <div class="metric-item"><div class="label">EV/EBITDA</div><div class="value mono">14.7x</div></div>
+    <div class="metric-item"><div class="label">FCF Yield</div><div class="value mono positive">5.3%</div></div>
+    <div class="metric-item"><div class="label">Dividend Yield</div><div class="value mono">1.4%</div></div>
+    <div class="metric-item"><div class="label">Target (P/E)</div><div class="value mono positive">$241.50</div></div>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:20px;">
+    <div class="card">
+      <div class="card-title">AI Data Center Pivot</div>
+      <p style="font-size:14px;">DDN segment up <strong class="positive">70% YoY</strong> in Q1 FY26. Management raised FY26 AI revenue outlook by <strong>$200M</strong> mid-stride, confirming deep visibility and backlog stretching into 2027.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Margin Expansion</div>
+      <p style="font-size:14px;">Q1 FY26 adjusted operating margin: <strong class="positive">22.2%</strong>. 30% incremental flow-through on new AI volume. Gross margins marched from 32.8% (FY21) to 35.2% (FY25).</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Fortress Cash Generation</div>
+      <p style="font-size:14px;">FY25 FCF: <strong class="positive">$3.2B</strong> (18.6% margin). OCF $4.1B vs Net Income $1.8B &mdash; pristine cash conversion. Comfortably funds buybacks + dividends.</p>
+    </div>
+  </div>
+
+  <div class="section-header">Probability-Weighted Expected Value</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span style="font-size:24px;font-weight:700;" class="mono positive">$238.95 <span style="font-size:16px;">(+16.4%)</span></span>
+    </div>
+    <div class="prob-bar-container">
+      <div class="prob-segment" style="width:30%;background:rgba(76,175,80,0.3);color:var(--green);">Bull 30%</div>
+      <div class="prob-segment" style="width:50%;background:rgba(212,168,67,0.3);color:var(--gold);">Base 50%</div>
+      <div class="prob-segment" style="width:20%;background:rgba(231,76,60,0.3);color:var(--red);">Bear 20%</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:8px;" class="mono">
+      <span class="positive">$287.50 (+40.1%)</span>
+      <span style="color:var(--gold);">$241.50 (+17.7%)</span>
+      <span class="negative">$161.50 (&minus;21.3%)</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 2: CURRENT NARRATIVE & SENTIMENT -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 2. Current Narrative &amp; Sentiment</div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The overarching narrative driving TE Connectivity (TEL) today is a tug-of-war between profound fundamental outperformance and looming technological displacement fears. TEL recently reported a blowout Q1 FY26, generating $4.7B in sales (up 23.7% YoY) <span class="source-badge">SEC</span> and $2.53 in GAAP diluted EPS <span class="source-badge">SEC</span>, crushing consensus estimates <span class="source-badge unverified">UNVERIFIED</span>. Management raised their FY26 AI revenue outlook by a staggering $200M mid-stride, confirming deep visibility and backlog stretching into 2027.</p>
+    <p>Despite these stellar results, the stock has suffered an 8&ndash;10% haircut in recent weeks, plunging from the $230s down to ~$205. The market sentiment tone is highly divided. Wall Street consensus leans toward a "Moderate Buy" with price targets tightly clustered in the $250&ndash;$275 range. However, short-term momentum has broken down under the weight of geopolitical noise and broader industrial sector de-risking.</p>
+    <p><strong style="color:var(--gold);">Contrarian Signal Check:</strong> The strongest differentiated bear argument currently circulating is the "Copper vs. Optical Cliff" thesis. Bears argue that TEL is predominantly a <em>copper-focused</em> interconnect company, and heading into the upcoming Optical Fiber Communication (OFC) conference, a wave of next-generation optical technology announcements will highlight the obsolescence of copper in AI data centers. If hyperscalers aggressively pivot to optical for server-to-server data transfer, TEL's 30x P/E "AI premium" could violently compress back to a standard 15x cyclical industrial multiple.</p>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:20px;">
+    <div class="card">
+      <div class="card-title">Q1 FY26 Blowout</div>
+      <div class="card-value mono">$4.7B</div>
+      <div class="card-label positive">+23.7% YoY <span class="source-badge">SEC</span></div>
+      <div style="margin-top:8px;font-size:13px;">GAAP EPS: <strong class="mono">$2.53</strong> <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Market Sentiment</div>
+      <div style="font-size:16px;font-weight:600;color:var(--yellow);">Highly Divided</div>
+      <div style="font-size:13px;margin-top:8px;">Wall Street: <span class="positive">Moderate Buy</span><br>Price targets: $250&ndash;$275<br>Recent move: <span class="negative">&minus;8&ndash;10% haircut</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bear Thesis: Copper vs. Optical Cliff</div>
+      <p style="font-size:13px;">If hyperscalers pivot to optical for server-to-server connections, TEL's 30x P/E "AI premium" could violently compress to a standard 15x cyclical industrial multiple.</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px;">Key event: OFC Conference (Late March 2026)</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 3: FUNDAMENTAL ANALYSIS -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 3. Fundamental Analysis</div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>TE Connectivity operates as a global industrial titan, designing and manufacturing connectivity and sensor solutions. Its revenue model is broadly diversified across three main segments: Transportation Solutions (historically its largest, heavily tied to auto production), Industrial Solutions, and Communications Solutions.</p>
+    <p>Historically, TEL's top line has been a slow-growth, cyclical grinder. FY21 to FY25 revenue grew from $14.9B to $17.3B (~3.8% CAGR). However, forward estimates reflect a structural gear shift. Driven by the Communications segment (specifically Digital Data Networks) and the integration of the Richards acquisition (Energy/Grid hardening), TEL is transforming into an infrastructure play.</p>
+    <p>Profitability trends are the absolute star of the fundamental story. Gross margins have marched steadily upward from 32.8% in FY21 to 35.2% in FY25. More impressively, operating margins have expanded to 18.6% (and hit 22.2% on an adjusted basis in Q1 FY26). This is pure operating leverage; management has guided to a 30% incremental margin flow-through on new AI-related volume, proving incredible pricing power. When copper and precious metal inputs soar, TEL seamlessly passes these costs to customers without sacrificing margin.</p>
+    <p>TEL's competitive moat relies on immense switching costs and mission-critical reliability. In automotive and aerospace, recertifying a new connector supplier takes years. In the hyperscaler data center space, TEL is deeply embedded in custom ASIC and TPU architectures.</p>
+    <p>Management, led by CEO Terrence Curtin and CFO Heath Mitts, boasts an elite track record. They consistently sandbag expectations&mdash;under-promising AI revenue ramps and then significantly over-delivering over the last four quarters. Their handling of the Q2 FY25 global tariff scares, where they fully offset impacts via supply chain routing and a 2% price hike, demonstrates masterful operational control.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="section-header">Revenue &amp; Earnings</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Revenue &amp; EPS (Historical + Estimates)</div>
+      <div class="chart-container"><canvas id="revenueEpsChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Margin Trends</div>
+      <div class="chart-container"><canvas id="marginChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-header">Growth Rates</div>
+  <div class="card">
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Metric</th><th class="num">FY21</th><th class="num">FY22</th><th class="num">FY23</th><th class="num">FY24</th><th class="num">FY25</th><th class="num">FY26E</th><th class="num">FY27E</th><th class="num">FY28E</th></tr></thead>
+        <tbody>
+          <tr><td>Revenue ($B)</td><td class="num mono">$14.9</td><td class="num mono">$16.3</td><td class="num mono">$15.8</td><td class="num mono">$15.8</td><td class="num mono">$17.3</td><td class="num mono">$18.6</td><td class="num mono">$19.8</td><td class="num mono">$21.0</td></tr>
+          <tr><td>Rev Growth %</td><td class="num mono">&mdash;</td><td class="num mono positive">+9.4%</td><td class="num mono negative">&minus;3.1%</td><td class="num mono">0.0%</td><td class="num mono positive">+9.5%</td><td class="num mono positive">+7.5%</td><td class="num mono positive">+6.5%</td><td class="num mono positive">+6.1%</td></tr>
+          <tr><td>Gross Margin</td><td class="num mono">32.8%</td><td class="num mono">33.5%</td><td class="num mono">33.8%</td><td class="num mono">34.5%</td><td class="num mono">35.2%</td><td class="num mono">35.5%</td><td class="num mono">36.0%</td><td class="num mono">36.2%</td></tr>
+          <tr><td>Op. Margin</td><td class="num mono">15.5%</td><td class="num mono">16.5%</td><td class="num mono">17.0%</td><td class="num mono">17.8%</td><td class="num mono">18.6%</td><td class="num mono">19.5%</td><td class="num mono">20.5%</td><td class="num mono">21.0%</td></tr>
+          <tr><td>EPS</td><td class="num mono">$5.90</td><td class="num mono">$7.20</td><td class="num mono">$7.00</td><td class="num mono">$7.60</td><td class="num mono">$6.14</td><td class="num mono">$10.20</td><td class="num mono">$11.50</td><td class="num mono">$12.80</td></tr>
+          <tr><td>FCF ($B)</td><td class="num mono">$2.3</td><td class="num mono">$2.5</td><td class="num mono">$2.6</td><td class="num mono">$2.8</td><td class="num mono">$3.2</td><td class="num mono">$3.6</td><td class="num mono">$4.0</td><td class="num mono">$4.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px;">FY21&ndash;FY25 Revenue CAGR ~3.8%. Forward estimates per Section 7 model. E = Estimate.</p>
+  </div>
+
+  <div class="section-header">Q1 FY26 Highlights</div>
+  <div class="grid grid-4">
+    <div class="card" style="text-align:center;"><div class="card-label">Q1 FY26 Revenue</div><div class="card-value mono">$4.7B</div><div class="card-label positive">+23.7% YoY <span class="source-badge">SEC</span></div></div>
+    <div class="card" style="text-align:center;"><div class="card-label">Q1 FY26 GAAP EPS</div><div class="card-value mono">$2.53</div><div class="card-label"><span class="source-badge">SEC</span></div></div>
+    <div class="card" style="text-align:center;"><div class="card-label">Q1 FY26 Op. Margin</div><div class="card-value mono positive">22.2%</div><div class="card-label">Adjusted <span class="source-badge">Earnings Call</span></div></div>
+    <div class="card" style="text-align:center;"><div class="card-label">DDN Growth</div><div class="card-value mono positive">+70%</div><div class="card-label">YoY <span class="source-badge">Earnings Call</span></div></div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 4: BALANCE SHEET DEEP DIVE -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 4. Balance Sheet Deep Dive</div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Asset Quality:</strong> Out of $25.1B in total assets (as of Q4 FY25/Sep 2025) <span class="source-badge">SEC</span>, goodwill sits at $7.1B, representing ~28% of total assets and 56% of total equity ($12.6B). While high, this reflects a history of bolt-on M&amp;A (like the recent Richards acquisition). There have been no material goodwill impairments in the last three years, suggesting acquisitions are performing to plan.</p>
+    <p><strong>Debt Structure:</strong> TEL operates with a highly conservative capital structure. While specific maturity schedules aren't in the provided snapshots, Long-Term Debt to Equity sits at a healthy 0.38x. Total debt is thoroughly manageable against an equity base of $12.6B, providing substantial flexibility.</p>
+    <p><strong>Covenant and Credit Risk:</strong> Credit risk is practically non-existent. The Net Interest Coverage ratio (TTM) is an astounding 114x. TEL generates enough operating income in a single quarter to service years of interest expense. It easily clears any standard leverage covenants.</p>
+    <p><strong>Off-Balance-Sheet Exposure:</strong> Routine capitalized operating leases and standard pension obligations exist, but nothing uniquely alarming flashes in the footnotes. Management has successfully integrated recent M&amp;A without triggering contingent liability bombs.</p>
+    <p><strong>Liquidity Position:</strong> The company holds $1.3B in cash. The current ratio stands at a healthy 1.56, and the quick ratio is 1.03, meaning TEL can meet all short-term obligations without needing to liquidate inventory. Given its massive free cash flow generation, cash burn is a non-issue.</p>
+    <p><strong>Net-Net Assessment:</strong> The balance sheet is a fortress, acting as a profound source of strength that heavily de-risks the equity and guarantees continued capital returns.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="section-header">Balance Sheet Snapshot</div>
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Liquidity</div>
+      <table><tbody>
+        <tr><td>Cash</td><td class="num mono">$1.3B</td></tr>
+        <tr><td>Current Ratio</td><td class="num mono positive">1.56</td></tr>
+        <tr><td>Quick Ratio</td><td class="num mono positive">1.03</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Leverage</div>
+      <table><tbody>
+        <tr><td>Total Assets</td><td class="num mono">$25.1B <span class="source-badge">SEC</span></td></tr>
+        <tr><td>Total Equity</td><td class="num mono">$12.6B</td></tr>
+        <tr><td>LT Debt/Equity</td><td class="num mono positive">0.38x</td></tr>
+        <tr><td>Debt/Equity</td><td class="num mono positive">0.45</td></tr>
+        <tr><td>Interest Coverage</td><td class="num mono positive">114.4x</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Asset Quality</div>
+      <table><tbody>
+        <tr><td>Goodwill</td><td class="num mono">$7.1B</td></tr>
+        <tr><td>Goodwill/Assets</td><td class="num mono">~28%</td></tr>
+        <tr><td>Goodwill/Equity</td><td class="num mono neutral">~56%</td></tr>
+        <tr><td>Impairments</td><td class="num mono positive">None (3yr)</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 5: CASH FLOW ANALYSIS -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 5. Cash Flow Analysis</div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>TEL is a cash-generating machine. Operating Cash Flow (OCF) hit a massive $4.1B in FY25, translating to $3.2B in Free Cash Flow (FCF). FCF margins sit at an elite 18.6%. With a current market cap of ~$60.2B, TEL offers a trailing FCF yield of roughly 5.3%&mdash;highly attractive for a company currently experiencing double-digit top-line acceleration in its growth segments.</p>
+    <p>Cash flow quality is pristine. Net income for FY25 was $1.8B, while OCF was $4.1B. This massive positive divergence implies extremely conservative accounting practices, driven heavily by high depreciation/amortization ($838M) and disciplined working capital management.</p>
+  </div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Capital Allocation Scorecard</span>
+    <p><strong>Buybacks:</strong> Shares outstanding have steadily declined to 293.4M. The buybacks are highly accretive, genuinely shrinking the float rather than just offsetting stock-based compensation (SBC was a modest $149M in FY25).</p>
+    <p><strong>Dividends:</strong> The current indicated annual dividend is $2.84 (yielding ~1.4%). The payout ratio is an incredibly safe ~40% of earnings and an even smaller fraction of FCF. The 5-year dividend CAGR is 7.55%.</p>
+    <p><strong>Debt Management:</strong> Debt levels have remained relatively stable as a percentage of capital, used strategically for M&amp;A rather than funding operations.</p>
+    <p><strong>M&amp;A Track Record:</strong> The recent $2.3B acquisition of Richards (grid hardening) appears to be highly accretive, driving 24% organic growth in the Energy segment in recent quarters.</p>
+    <p><strong>Sustainability Verdict:</strong> TEL can comfortably and indefinitely fund its dividend, aggressive buyback program, and elevated capex requirements strictly from FCF without issuing a single dollar of debt.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="section-header">Free Cash Flow Trend</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">OCF &rarr; CapEx &rarr; FCF</div>
+      <div class="chart-container"><canvas id="fcfChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">FCF Margin Trend</div>
+      <div class="chart-container"><canvas id="fcfMarginChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-header">FY25 Cash Flow Waterfall</div>
+  <div class="card">
+    <div class="waterfall-bar"><div class="waterfall-label">OCF</div><div class="waterfall-track"><div class="waterfall-fill" style="width:100%;background:rgba(76,175,80,0.4);color:var(--green);">$4.1B</div></div></div>
+    <div class="waterfall-bar"><div class="waterfall-label">CapEx</div><div class="waterfall-track"><div class="waterfall-fill" style="width:22%;background:rgba(231,76,60,0.4);color:var(--red);">&minus;$0.9B</div></div></div>
+    <div class="waterfall-bar"><div class="waterfall-label">= FCF</div><div class="waterfall-track"><div class="waterfall-fill" style="width:78%;background:rgba(212,168,67,0.4);color:var(--gold);">$3.2B (18.6% margin)</div></div></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:12px;"><span class="source-badge">SEC</span> Net Income $1.8B | D&amp;A $838M | OCF/NI ratio: 2.3x &mdash; pristine cash quality.</p>
+  </div>
+
+  <div class="section-header">Capital Allocation</div>
+  <div class="card">
+    <div class="card-title">How Cash Is Deployed</div>
+    <div class="chart-container"><canvas id="capAllocChart"></canvas></div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 6: EARNINGS QUALITY & ACCOUNTING RED FLAGS -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 6. Earnings Quality &amp; Accounting Red Flags</div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>GAAP vs. Non-GAAP Spread:</strong> The spread warrants monitoring. In Q1 FY26, GAAP diluted EPS was $2.53. Management recently shifted their non-GAAP reporting to exclude intangible amortization, which adds roughly 100bps to reported margins. While this aligns TEL with peers (like Amphenol) and better reflects cash profitability, it artificially inflates historical YoY margin comparisons if not properly adjusted.</p>
+    <p><strong>"One-time" Charge Frequency:</strong> TEL frequently records restructuring charges related to footprint consolidation (moving manufacturing out of high-cost or tariff-heavy regions). While labeled "special," these are effectively recurring operational expenses for a global industrial manufacturer, though they genuinely result in long-term margin expansion.</p>
+    <p><strong>Revenue Recognition Signals:</strong> No red flags. The $5.1B order backlog aligns perfectly with the massive surge in forward deferred revenue and unbilled contract assets tied to hyperscaler AI builds.</p>
+    <p><strong>Accrual Quality:</strong> Flawless. The fact that OCF ($4.1B) consistently and significantly exceeds Net Income ($1.8B) means the company is turning profits into hard cash faster than the income statement implies. There is zero aggressive accrual maneuvering here.</p>
+    <p><strong>Audit and Disclosure Flags:</strong> Clean. No auditor changes, material weaknesses, or restatements in the trailing periods.</p>
+    <p><strong>Insider Signals in Context:</strong> <span style="color:var(--yellow);">Caution Warranted.</span> In Q1 2026, Shadrak Kroeger (President of Industrial Solutions) executed systematic sales of roughly ~32,000 shares at prices ranging from $219 to $236 <span class="source-badge">SEC</span>. While part of a 10b5-1 plan, executives selling into the AI-hype peak is a classic yellow flag for swing traders.</p>
+    <p><strong>Overall Accounting Confidence:</strong> <span style="color:var(--yellow);">Minor Concerns.</span> The cash generation is bulletproof, but the recent exclusion of intangible amortization from non-GAAP metrics and heavy insider selling warrant a watchful eye.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="section-header">Dashboard View</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Management Credibility</div>
+      <div style="display:flex;align-items:center;gap:20px;margin-bottom:16px;">
+        <div style="width:80px;height:80px;border-radius:50%;border:3px solid var(--green);display:flex;align-items:center;justify-content:center;">
+          <span class="mono" style="font-size:24px;font-weight:700;color:var(--green);">A</span>
+        </div>
+        <div>
+          <p style="font-size:14px;"><strong class="positive">Elite track record.</strong> 8+ consecutive earnings beats.</p>
+          <p style="font-size:13px;color:var(--muted);margin-top:4px;">CEO Terrence Curtin &amp; CFO Heath Mitts consistently sandbag expectations&mdash;under-promising AI revenue ramps and significantly over-delivering.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cash Conversion Quality</div>
+      <div style="display:flex;gap:24px;margin:12px 0;">
+        <div><div class="mono" style="font-size:20px;font-weight:700;">$4.1B</div><div style="font-size:12px;color:var(--muted);">OCF (FY25)</div></div>
+        <div style="font-size:20px;color:var(--muted);display:flex;align-items:center;">vs</div>
+        <div><div class="mono" style="font-size:20px;font-weight:700;">$1.8B</div><div style="font-size:12px;color:var(--muted);">Net Income (FY25)</div></div>
+      </div>
+      <p style="font-size:13px;color:var(--green);">OCF/NI ratio of 2.3x = flawless accrual quality. Zero aggressive accounting.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:20px;">
+    <div class="card">
+      <div class="card-title">Bullish Signals</div>
+      <table><tbody>
+        <tr><td style="color:var(--green);">&#10003;</td><td>Raised FY26 AI revenue outlook +$200M</td></tr>
+        <tr><td style="color:var(--green);">&#10003;</td><td>30% incremental margin flow-through confirmed</td></tr>
+        <tr><td style="color:var(--green);">&#10003;</td><td>Backlog stretching into 2027</td></tr>
+        <tr><td style="color:var(--green);">&#10003;</td><td>$5.1B order backlog aligns with deferred revenue surge</td></tr>
+        <tr><td style="color:var(--green);">&#10003;</td><td>Clean audit: No auditor changes, material weaknesses, or restatements</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Caution / Watch Items</div>
+      <table><tbody>
+        <tr><td style="color:var(--yellow);">&#9888;</td><td>Non-GAAP intangible amortization exclusion &mdash; monitor margin inflation (~100bps)</td></tr>
+        <tr><td style="color:var(--yellow);">&#9888;</td><td>Recurring restructuring charges labeled "special"</td></tr>
+        <tr><td style="color:var(--red);">&#9888;</td><td>Heavy insider selling (Kroeger: ~32K shares at $219&ndash;$236) <span class="source-badge">SEC</span></td></tr>
+        <tr><td style="color:var(--yellow);">&#9888;</td><td>Guided CapEx up to ~6% (success-based) <span class="source-badge">Earnings Call</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 7: FORWARD MODEL & VALUATION BRIDGE -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 7. Forward Model &amp; Valuation Bridge</div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Model Basis</span>
+    <p><em>Note: The model below is anchored to Q1 FY26 actuals, recent management guidance regarding AI revenue acceleration ($200M FY26 raise), and baseline sector assumptions for auto/industrial.</em></p>
+  </div>
+
+  <div class="section-header">Forward Model (3-Year Forecast)</div>
+  <div class="card">
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Metric</th><th class="num">2026E</th><th class="num">2027E</th><th class="num">2028E</th><th>Basis</th></tr></thead>
+        <tbody>
+          <tr><td>Revenue</td><td class="num mono">$18.6B</td><td class="num mono">$19.8B</td><td class="num mono">$21.0B</td><td>Management Q1 run-rate + AI guide</td></tr>
+          <tr><td>Gross Margin</td><td class="num mono">35.5%</td><td class="num mono">36.0%</td><td class="num mono">36.2%</td><td>Assumed &mdash; DDN scale</td></tr>
+          <tr><td>Operating Margin</td><td class="num mono">19.5%</td><td class="num mono">20.5%</td><td class="num mono">21.0%</td><td>Inferred &mdash; 30% incremental flow-through</td></tr>
+          <tr><td>EPS</td><td class="num mono">$10.20</td><td class="num mono">$11.50</td><td class="num mono">$12.80</td><td>Assumed &mdash; adjusted for buybacks</td></tr>
+          <tr><td>Free Cash Flow</td><td class="num mono">$3.6B</td><td class="num mono">$4.0B</td><td class="num mono">$4.4B</td><td>Assumed &mdash; ~19-20% FCF margin</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-header">Management vs. Consensus (FY26)</div>
+  <div class="card">
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Metric</th><th class="num">Mgmt Guidance</th><th class="num">Sell-Side Consensus</th><th class="num">Delta</th><th>Interpretation</th></tr></thead>
+        <tbody>
+          <tr><td>AI Revenue</td><td class="num mono">&gt;$1.1B (implied) <span class="source-badge">Earnings Call</span></td><td class="num mono">~$1.0B <span class="source-badge unverified">UNVERIFIED</span></td><td class="num mono positive">+$100M <span class="source-badge">Calc</span></td><td>Above</td></tr>
+          <tr><td>CapEx</td><td class="num mono">~6% of Sales <span class="source-badge">Earnings Call</span></td><td class="num mono">5.5% <span class="source-badge unverified">UNVERIFIED</span></td><td class="num mono">+0.5% <span class="source-badge">Calc</span></td><td>Above (Success-based)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:11px;color:var(--red);margin-top:10px;">* Sell-side consensus estimates are not available in the provided reference data and could not be independently verified.</p>
+  </div>
+
+  <div class="section-header">Valuation Bridge</div>
+  <div class="card">
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Method</th><th>Forecast Year</th><th class="num">Forecast Metric</th><th class="num">Target Multiple / Yield</th><th class="num">Implied Target</th><th class="num">Current</th><th class="num">Upside</th></tr></thead>
+        <tbody>
+          <tr><td>P/E</td><td>2027E</td><td class="num mono">$11.50 EPS</td><td class="num mono">21.0x</td><td class="num mono positive">$241.50</td><td class="num mono">$205.15</td><td class="num mono positive">+17.7%</td></tr>
+          <tr><td>FCF Yield</td><td>2027E</td><td class="num mono">$4.0B FCF</td><td class="num mono">5.0% (~20x)</td><td class="num mono positive">$272.60</td><td class="num mono">$205.15</td><td class="num mono positive">+32.8%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:20px;">
+    <div class="card">
+      <div class="card-title">P/E Method &rarr; $241.50 (+17.7%)</div>
+      <div class="chart-container" style="height:200px;"><canvas id="valBridgePE"></canvas></div>
+      <p style="font-size:13px;margin-top:12px;color:var(--muted);">2027E EPS $11.50 &times; 21.0x target P/E = <strong style="color:var(--cream);">$241.50</strong></p>
+    </div>
+    <div class="card">
+      <div class="card-title">FCF Yield Method &rarr; $272.60 (+32.8%)</div>
+      <div class="chart-container" style="height:200px;"><canvas id="valBridgeFCF"></canvas></div>
+      <p style="font-size:13px;margin-top:12px;color:var(--muted);">2027E FCF $4.0B &divide; 5.0% yield = Market Cap $80B &rarr; per share <strong style="color:var(--cream);">$272.60</strong></p>
+    </div>
+  </div>
+
+  <div class="analysis-prose" style="margin-top:20px;">
+    <span class="analysis-label">Valuation Narrative</span>
+    <p>I am anchoring the valuation bridge on <strong>2027E EPS</strong> and <strong>2027E FCF</strong> because hyperscaler orders placed today are explicitly building the 2027 backlog. The upside is primarily driven by earnings revision rather than multiple expansion. At $205, TEL trades at roughly 18.8x forward EPS. Expanding that slightly to 21x (a fair premium for an industrial with high-visibility AI infrastructure growth, though below a "pure tech" multiple) yields a $242 price target. On an FCF yield basis, assuming a 5% yield is required by the market, the target pushes past $270.</p>
+    <p>Current valuation is highly justified by the forward model; the recent 10% pullback has significantly de-risked the entry for position investors.</p>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 8: KEY RATIOS & COMPARISONS -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 8. Key Ratios &amp; Comparisons</div>
+
+  <div class="card">
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Metric</th><th class="num">TEL (Current)</th><th class="num">5-yr Avg</th><th class="num">Peer/Sector Avg <span class="source-badge unverified">UNVERIFIED</span></th><th>Interpretation / Flag</th></tr></thead>
+        <tbody>
+          <tr><td>P/E (TTM)</td><td class="num mono">29.1x</td><td class="num mono">~24.0x</td><td class="num mono">28.5x</td><td>Elevated on GAAP, masking cash power</td></tr>
+          <tr><td>P/E (Forward)</td><td class="num mono positive">18.8x</td><td class="num mono">17.5x</td><td class="num mono">22.0x</td><td><span class="positive">Cheap relative to AI-exposed peers</span></td></tr>
+          <tr><td>PEG Ratio</td><td class="num mono negative">2.75</td><td class="num mono">N/A</td><td class="num mono">2.10</td><td><span class="negative">Slightly rich on growth expectations</span></td></tr>
+          <tr><td>EV/EBITDA</td><td class="num mono">14.7x</td><td class="num mono">13.5x</td><td class="num mono">16.0x</td><td>Fairly valued</td></tr>
+          <tr><td>P/S</td><td class="num mono positive">3.3x</td><td class="num mono">2.8x</td><td class="num mono">4.1x</td><td><span class="positive">Sector discount</span></td></tr>
+          <tr><td>P/B</td><td class="num mono">4.6x</td><td class="num mono">3.8x</td><td class="num mono">5.5x</td><td>Premium to own history</td></tr>
+          <tr><td>P/FCF</td><td class="num mono positive">19.1x</td><td class="num mono">16.5x</td><td class="num mono">25.0x</td><td><span class="positive">Cheap for 18%+ FCF margins</span></td></tr>
+          <tr><td>Debt/Equity</td><td class="num mono positive">0.45</td><td class="num mono">0.42</td><td class="num mono">0.60</td><td><span class="positive">Clean</span></td></tr>
+          <tr><td>Current Ratio</td><td class="num mono positive">1.56</td><td class="num mono">1.61</td><td class="num mono">1.40</td><td><span class="positive">Healthy liquidity</span></td></tr>
+          <tr><td>Quick Ratio</td><td class="num mono positive">1.03</td><td class="num mono">1.06</td><td class="num mono">0.95</td><td><span class="positive">Solid</span></td></tr>
+          <tr><td>Interest Coverage</td><td class="num mono positive">114.4x</td><td class="num mono">65.0x</td><td class="num mono">15.0x</td><td><span class="positive">Massive safety net</span></td></tr>
+          <tr><td>Gross Margin</td><td class="num mono positive">35.6%</td><td class="num mono">33.2%</td><td class="num mono">32.0%</td><td><span class="positive">Best in class operations</span></td></tr>
+          <tr><td>Operating Margin</td><td class="num mono positive">19.2%</td><td class="num mono">16.7%</td><td class="num mono">15.5%</td><td><span class="positive">Expanding rapidly</span></td></tr>
+          <tr><td>ROIC</td><td class="num mono negative">11.3%</td><td class="num mono">14.6%</td><td class="num mono">10.0%</td><td><span class="neutral">Depressed by recent M&amp;A, will rebound</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px;">Direct Peers: Amphenol (APH), Corning (GLW), Molex (Private). Peer/sector averages are unverified.</p>
+  </div>
+
+  <div class="analysis-prose" style="margin-top:16px;">
+    <span class="analysis-label">Synthesis</span>
+    <p>TEL is currently cheap relative to its high-flying interconnect peer Amphenol (APH), but slightly expensive relative to its own 5-year cyclical history. The market is struggling to price its transition from a cyclical auto stock to a secular infrastructure stock. The single most important ratio to watch going forward is <strong style="color:var(--gold);">Operating Margin</strong>&mdash;if it sustains &gt;20%, the stock will permanently re-rate to a &gt;22x forward P/E.</p>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 9: ADDITIONAL KEY FACTORS (OWNERSHIP) -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 9. Additional Key Factors</div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Insider &amp; Institutional Ownership:</strong> Ownership is heavily institutionalized at 91.9%, dominated by Vanguard (13.1%) and Blackrock (7.7%). This provides massive price stability but means the stock is fully discovered. Recent insider activity (President Shadrak Kroeger selling heavily in Q1 2026) is a headwind for short-term sentiment.</p>
+    <p><strong>Short Interest:</strong> At 2.7% of the float (Days to Cover: 2.73), short interest is effectively negligible. There is no short-squeeze potential here. The recent price drop is entirely long-liquidation and macro de-risking, not aggressive shorting.</p>
+    <p><strong>Liquidity:</strong> Average daily volume sits around 2.1M to 2.5M shares. The float is massive (292M shares), meaning institutional entry and exit are seamless. There are no lockup expirations.</p>
+    <p><strong>Beta and Macro Exposure:</strong> With a Beta of 1.28, TEL is highly sensitive to the broader market. It has massive macro exposure to global GDP, factory PMIs, and auto production cycles. The "AI narrative" is currently fighting against a very real industrial slowdown in Western auto manufacturing.</p>
+    <p><strong>Earnings Surprise History:</strong> TEL has a phenomenal track record of earnings beats over the last 8 quarters. Management is highly adept at guiding conservatively and crushing estimates, notably via rapid operational adjustments to mitigate external shocks (like tariffs or raw material spikes).</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="section-header">Dashboard View</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Institutional Ownership</div>
+      <div class="chart-container" style="height:260px;"><canvas id="ownershipChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Insider Activity</div>
+      <table>
+        <thead><tr><th>Insider</th><th>Action</th><th class="num">Shares</th><th class="num">Price Range</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Shadrak Kroeger<br><span style="font-size:11px;color:var(--muted);">President, Industrial Solutions</span></td>
+            <td><span class="negative">SELL</span></td>
+            <td class="num mono">~32,000</td>
+            <td class="num mono">$219&ndash;$236</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px;"><span class="source-badge">SEC</span> Q1 2026 (Feb 13 and Mar 2). Part of 10b5-1 plan.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:20px;">
+    <div class="card">
+      <div class="card-title">Short Interest</div>
+      <div class="card-value mono">2.7%</div>
+      <div class="card-label">of float</div>
+      <div style="margin-top:8px;"><span class="mono" style="font-size:14px;">Days to Cover: 2.73</span></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px;">Negligible. No short-squeeze potential.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Trading Liquidity</div>
+      <table><tbody>
+        <tr><td>Avg Daily Volume</td><td class="num mono">2.1&ndash;2.5M</td></tr>
+        <tr><td>Float</td><td class="num mono">292M shares</td></tr>
+        <tr><td>Beta</td><td class="num mono">1.28</td></tr>
+        <tr><td>Lockup Expirations</td><td class="num mono">None</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Sentiment Summary</div>
+      <table><tbody>
+        <tr><td>Wall Street</td><td><span class="positive">Moderate Buy</span></td></tr>
+        <tr><td>Target Range</td><td class="mono">$250&ndash;$275</td></tr>
+        <tr><td>Recent Action</td><td><span class="negative">&minus;8&ndash;10%</span></td></tr>
+        <tr><td>From</td><td class="mono">~$230s &rarr; ~$205</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 10: SCENARIO ANALYSIS -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 10. Scenario Analysis</div>
+
+  <div class="grid grid-3">
+    <div class="card scenario-card bull">
+      <div class="card-title" style="color:var(--green);">Bull Case &mdash; 30%</div>
+      <div class="card-value mono positive" style="margin-bottom:12px;">$287.50 <span style="font-size:16px;">(+40.1%)</span></div>
+      <p style="font-size:13px;margin-bottom:10px;">The OFC conference reveals optical technology is too expensive/power-hungry for short-reach server-to-server connections, cementing TEL's copper interconnect dominance. Western auto production normalizes, and grid hardening continues its 20%+ growth.</p>
+      <p style="font-size:13px;color:var(--muted);"><strong>Bridge:</strong> 2027E EPS $12.50 &times; 23x P/E = $287.50</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px;"><strong>Leading Indicator:</strong> Auto production volume revisions turn positive in Q2.</p>
+    </div>
+    <div class="card scenario-card base">
+      <div class="card-title" style="color:var(--gold);">Base Case &mdash; 50%</div>
+      <div class="card-value mono" style="color:var(--gold);margin-bottom:12px;">$241.50 <span style="font-size:16px;">(+17.7%)</span></div>
+      <p style="font-size:13px;margin-bottom:10px;">TEL executes exactly to its Q1 FY26 guidance. Digital Data Networks absorb the slack from a persistently sluggish North American commercial transportation and Western EV market. Management maintains a &gt;20% operating margin.</p>
+      <p style="font-size:13px;color:var(--muted);"><strong>Bridge:</strong> 2027E EPS $11.50 &times; 21x P/E = $241.50</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px;"><strong>Leading Indicator:</strong> Gross margins hold firmly above 35% despite copper input inflation.</p>
+    </div>
+    <div class="card scenario-card bear">
+      <div class="card-title" style="color:var(--red);">Bear Case &mdash; 20%</div>
+      <div class="card-value mono negative" style="margin-bottom:12px;">$161.50 <span style="font-size:16px;">(&minus;21.3%)</span></div>
+      <p style="font-size:13px;margin-bottom:10px;">Hyperscalers aggressively announce a shift away from copper architectures in favor of early optical solutions, destroying TEL's terminal value narrative in AI. Simultaneously, global auto production contracts further due to tariff wars, compressing margins.</p>
+      <p style="font-size:13px;color:var(--muted);"><strong>Bridge:</strong> 2027E EPS $9.50 &times; 17x P/E = $161.50 <span class="source-badge">Calc</span></p>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px;"><strong>Leading Indicator:</strong> Q2/Q3 AI revenue sequential growth flat + capex guide down.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div class="card-title">Probability-Weighted Expected Value</div>
+        <div class="card-value mono positive">$238.95 <span style="font-size:16px;">(+16.4% from $205.15)</span></div>
+      </div>
+      <div class="mono" style="font-size:13px;color:var(--muted);text-align:right;">
+        0.30 &times; $287.50 = $86.25<br>
+        0.50 &times; $241.50 = $120.75<br>
+        0.20 &times; $161.50 = $32.30<br>
+        <span style="border-top:1px solid var(--border);display:inline-block;padding-top:4px;margin-top:4px;">Total = <strong style="color:var(--gold);">$239.30</strong></span>
+      </div>
+    </div>
+    <div class="prob-bar-container" style="margin-top:16px;">
+      <div class="prob-segment" style="width:30%;background:rgba(76,175,80,0.3);color:var(--green);">Bull 30%</div>
+      <div class="prob-segment" style="width:50%;background:rgba(212,168,67,0.3);color:var(--gold);">Base 50%</div>
+      <div class="prob-segment" style="width:20%;background:rgba(231,76,60,0.3);color:var(--red);">Bear 20%</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 11: RISKS & OPPORTUNITIES -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 11. Risks &amp; Opportunities</div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Top 3 Risks</span>
+    <p><strong>Optical Displacement (Severity: High | Likelihood: Medium):</strong> Faster-than-expected adoption of optical fiber inside data center racks strands TEL's high-speed copper interconnect portfolio.</p>
+    <p><strong>Global Auto Contraction (Severity: Medium | Likelihood: High):</strong> Prolonged weakness in Western EV production and heavy commercial trucking suppresses top-line growth in their largest segment.</p>
+    <p><strong>Geopolitical/Tariff Escalation (Severity: Medium | Likelihood: Medium):</strong> Supply chain disruptions or aggressive tariff implementation compress margins before TEL can fully pass them on via pricing.</p>
+  </div>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Top 3 Opportunities</span>
+    <p><strong>AI Edge/Inference Buildout (Magnitude: High | Likelihood: High):</strong> As AI shifts from training to inference, demand for TEL's custom ASICs and power connectors scales geometrically into enterprise cloud.</p>
+    <p><strong>Grid Hardening Supercycle (Magnitude: Medium | Likelihood: High):</strong> The Richards acquisition positions TEL perfectly for a multi-year US utility infrastructure upgrade cycle.</p>
+    <p><strong>Capital Return Acceleration (Magnitude: Medium | Likelihood: High):</strong> With a pristine balance sheet and depressed stock price, TEL could significantly accelerate share repurchases, engineering EPS growth.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="section-header">Dashboard View</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title" style="color:var(--red);">Risk Matrix</div>
+      <table>
+        <thead><tr><th>Risk</th><th class="num">Severity</th><th class="num">Likelihood</th></tr></thead>
+        <tbody>
+          <tr><td>Optical Displacement</td><td class="num"><span class="negative">High</span></td><td class="num"><span class="neutral">Medium</span></td></tr>
+          <tr><td>Global Auto Contraction</td><td class="num"><span class="neutral">Medium</span></td><td class="num"><span class="negative">High</span></td></tr>
+          <tr><td>Geopolitical / Tariff Escalation</td><td class="num"><span class="neutral">Medium</span></td><td class="num"><span class="neutral">Medium</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--green);">Opportunity Matrix</div>
+      <table>
+        <thead><tr><th>Opportunity</th><th class="num">Magnitude</th><th class="num">Likelihood</th></tr></thead>
+        <tbody>
+          <tr><td>AI Edge / Inference Buildout</td><td class="num"><span class="positive">High</span></td><td class="num"><span class="positive">High</span></td></tr>
+          <tr><td>Grid Hardening Supercycle</td><td class="num"><span class="neutral">Medium</span></td><td class="num"><span class="positive">High</span></td></tr>
+          <tr><td>Capital Return Acceleration</td><td class="num"><span class="neutral">Medium</span></td><td class="num"><span class="positive">High</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 12: THESIS KILL CRITERIA & CATALYSTS -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Section 12. Thesis Kill Criteria &amp; Catalyst Timeline</div>
+
+  <div class="section-header">Upcoming Catalyst Timeline</div>
+  <div class="card">
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:var(--red);"></div>
+      <div class="timeline-content">
+        <div class="timeline-date">Late March 2026</div>
+        <div class="timeline-event"><strong>OFC Conference</strong> &mdash; Major optical vs. copper tech announcements</div>
+        <div class="timeline-impact">Impact: <strong class="negative">HIGH RISK EVENT</strong> | Favors: <span class="neutral">Neutral / Bear</span></div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:var(--green);"></div>
+      <div class="timeline-content">
+        <div class="timeline-date">April 2026</div>
+        <div class="timeline-event"><strong>Q2 FY26 Earnings</strong> &mdash; Update on AI backlog and auto cyclicality</div>
+        <div class="timeline-impact">Impact: <strong>SIGNIFICANT</strong> | Favors: <span class="positive">Bull</span></div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-bottom:none;">
+      <div class="timeline-dot" style="background:var(--muted);"></div>
+      <div class="timeline-content">
+        <div class="timeline-date">May 2026</div>
+        <div class="timeline-event"><strong>Ex-Dividend Date</strong> &mdash; Quarterly distribution ($0.71/sh)</div>
+        <div class="timeline-impact">Impact: Minimal | Favors: <span style="color:var(--muted);">Neutral</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">Thesis Kill Criteria</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title" style="color:var(--red);">Bullish thesis invalidated if:</div>
+      <div class="kill-item"><div class="kill-check"></div><div>Consolidated operating margins fall below 19% for two consecutive quarters, proving the AI volume flow-through was a mirage.</div></div>
+      <div class="kill-item"><div class="kill-check"></div><div>CapEx jumps above 7% of revenue without a corresponding upward revision in near-term backlog/revenue guidance (indicating capital inefficiency).</div></div>
+      <div class="kill-item"><div class="kill-check"></div><div>Management explicitly lowers their FY26 AI revenue target of &gt;$1.1B.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--green);">Bearish thesis invalidated if:</div>
+      <div class="kill-item"><div class="kill-check"></div><div>Major hyperscalers explicitly confirm long-term roadmap commitments to copper architectures for rack-level interconnects at the OFC conference.</div></div>
+      <div class="kill-item"><div class="kill-check"></div><div>Global light vehicle production estimates are revised upward to &gt;90M units for the year.</div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- TAB 13: REVISIONS -->
+<!-- ============================================ -->
+<div class="tab-content">
+  <div class="section-header" style="margin-top:0;">Fact-Check &amp; Revision Summary</div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+      <div><div class="card-label">Verdict</div><div style="font-size:20px;font-weight:700;color:var(--red);">MAJOR REVISIONS</div></div>
+      <div><div class="card-label">Total Corrections</div><div class="card-value mono">7</div></div>
+      <div><div class="card-label">Overall Confidence</div><div style="font-size:20px;font-weight:700;color:var(--green);">High</div></div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-top:12px;"><em>Note: While overall fundamental thesis and financial cash-flow analysis align very well with the provided data, the report fails the strict source attribution test, contains a few chronological/mathematical errors, and cites consensus data that cannot be independently verified. These require material corrections before publication.</em></p>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Section 2. Current Narrative &amp; Sentiment</div>
+    <div class="rev-type">Numerical Error / Missing Source</div>
+    <div class="rev-original"><strong>Original:</strong> ...generating $4.7B in sales (up 22% YoY) and $2.53 in GAAP diluted EPS, crushing consensus estimates.</div>
+    <div class="rev-revised"><strong>Revised:</strong> ...generating $4.7B in sales (up 23.7% YoY) <span class="source-badge">SEC</span> and $2.53 in GAAP diluted EPS <span class="source-badge">SEC</span>, crushing consensus estimates <span class="source-badge unverified">UNVERIFIED</span>.</div>
+    <div class="rev-why"><strong>Why:</strong> Q1 FY26 revenue was $4.7B and Q1 FY25 (Dec 2024) revenue was $3.8B. $4.7B / $3.8B = 1.2368 (+23.7%), not 22%. Consensus estimates not in pipeline data. <span class="source-badge">SEC</span> 10-Q.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Section 4. Balance Sheet Deep Dive</div>
+    <div class="rev-type">Stale Data / Internal Inconsistency</div>
+    <div class="rev-original"><strong>Original:</strong> Out of $25.1B in total assets (as of Q1 FY26/Sep FY25)...</div>
+    <div class="rev-revised"><strong>Revised:</strong> Out of $25.1B in total assets (as of Q4 FY25/Sep 2025) <span class="source-badge">SEC</span>...</div>
+    <div class="rev-why"><strong>Why:</strong> September 2025 marks the end of FY25 (Q4), not Q1 FY26. Q1 FY26 ended in December 2025.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Section 6. Earnings Quality &amp; Accounting Red Flags</div>
+    <div class="rev-type">Numerical Error / Exaggeration</div>
+    <div class="rev-original"><strong>Original:</strong> ...Shadrak Kroeger... executed heavy, systematic sales of roughly ~40,000 shares at prices ranging from $220 to $236.</div>
+    <div class="rev-revised"><strong>Revised:</strong> ...Shadrak Kroeger... executed systematic sales of roughly ~32,000 shares at prices ranging from $219 to $236 <span class="source-badge">SEC</span>.</div>
+    <div class="rev-why"><strong>Why:</strong> Summing "S" (Sell) transactions for Kroeger (Feb 13 and Mar 2) yields 31,930 shares, not 40,000. Lowest sale price was $219.56. <span class="source-badge">SEC</span> Form 4.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Section 7. Forward Model &amp; Valuation Bridge</div>
+    <div class="rev-type">Unsupported Claim / Missing Source</div>
+    <div class="rev-original"><strong>Original:</strong> AI Revenue consensus ~$1.0B; CapEx consensus 5.5% (no source tags).</div>
+    <div class="rev-revised"><strong>Revised:</strong> Added <span class="source-badge">Earnings Call</span> tags to management guidance and flagged consensus as <span class="source-badge unverified">UNVERIFIED</span>.</div>
+    <div class="rev-why"><strong>Why:</strong> Sell-side consensus estimates are not available in the provided reference data and could not be independently verified.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Section 8. Key Ratios &amp; Comparisons</div>
+    <div class="rev-type">Unsupported Claim</div>
+    <div class="rev-original"><strong>Original:</strong> Peer/Sector Avg column (28.5x P/E, 16.0x EV/EBITDA, etc.) presented without source.</div>
+    <div class="rev-revised"><strong>Revised:</strong> Entire Peer/Sector Avg column flagged as <span class="source-badge unverified">UNVERIFIED</span>.</div>
+    <div class="rev-why"><strong>Why:</strong> The provided data only covers TEL. Peer averages for Amphenol (APH) or Corning (GLW) cannot be verified without external data.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Section 10. Scenario Analysis</div>
+    <div class="rev-type">Internal Inconsistency / Math Error</div>
+    <div class="rev-original"><strong>Original:</strong> Bear target $161.00, downside &minus;21.5%.</div>
+    <div class="rev-revised"><strong>Revised:</strong> Bear target $161.50 <span class="source-badge">Calc</span>, downside &minus;21.3% <span class="source-badge">Calc</span>.</div>
+    <div class="rev-why"><strong>Why:</strong> Report's own text states "$9.50 &times; 17 P/E = $161.50". Table showed $161.00. ($161.50 / $205.15) &minus; 1 = &minus;21.28%, not &minus;21.5%.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Global / Executive Summary</div>
+    <div class="rev-type">Missing Source</div>
+    <div class="rev-original"><strong>Original:</strong> Core thesis claims presented without source attribution tags.</div>
+    <div class="rev-revised"><strong>Revised:</strong> Added <span class="source-badge">Earnings Call</span> and <span class="source-badge">SEC</span> tags to DDN 70% YoY, 22.2% operating margin, and $3.2B FCF claims.</div>
+    <div class="rev-why"><strong>Why:</strong> Every factual claim must be traceable to a specific source tag per the verification protocol.</div>
+  </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
+<script>
+var tabContents = document.querySelectorAll('.tab-content');
+var tabBtns = document.querySelectorAll('.tab-btn');
+
+function switchTab(idx) {
+  tabContents.forEach(function(el) { el.classList.remove('active'); });
+  tabBtns.forEach(function(el) { el.classList.remove('active'); });
+  if (tabContents[idx]) tabContents[idx].classList.add('active');
+  if (tabBtns[idx]) tabBtns[idx].classList.add('active');
+  setTimeout(initCharts, 50);
+}
+
+var GOLD = '#d4a843', CREAM = '#e8e0d0', GREEN = '#4caf50', RED = '#e74c3c', BLUE = '#5dade2', MUTED = '#8a8a7a', CARD = '#141414';
+Chart.defaults.color = MUTED;
+Chart.defaults.borderColor = 'rgba(42,42,42,0.5)';
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
+
+var ci = {};
+function initCharts() {
+  if (!ci.re) { var c = document.getElementById('revenueEpsChart'); if (c && c.getContext) { ci.re = new Chart(c, {
+    type:'bar', data:{ labels:['FY21','FY22','FY23','FY24','FY25','FY26E','FY27E','FY28E'],
+    datasets:[{label:'Revenue ($B)',data:[14.9,16.3,15.8,15.8,17.3,18.6,19.8,21.0],backgroundColor:['rgba(212,168,67,0.5)','rgba(212,168,67,0.5)','rgba(212,168,67,0.5)','rgba(212,168,67,0.5)','rgba(212,168,67,0.5)','rgba(212,168,67,0.25)','rgba(212,168,67,0.25)','rgba(212,168,67,0.25)'],borderColor:GOLD,borderWidth:1,yAxisID:'y',order:2},
+    {label:'EPS ($)',data:[5.90,7.20,7.00,7.60,6.14,10.20,11.50,12.80],type:'line',borderColor:GREEN,backgroundColor:'transparent',pointBackgroundColor:GREEN,pointRadius:4,tension:0.3,yAxisID:'y1',order:1}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:16}}},scales:{y:{position:'left',title:{display:true,text:'Revenue ($B)'},grid:{color:'rgba(42,42,42,0.3)'}},y1:{position:'right',title:{display:true,text:'EPS ($)'},grid:{display:false}}}}
+  }); }}
+
+  if (!ci.mg) { var c = document.getElementById('marginChart'); if (c && c.getContext) { ci.mg = new Chart(c, {
+    type:'line', data:{ labels:['FY21','FY22','FY23','FY24','FY25','FY26E','FY27E','FY28E'],
+    datasets:[{label:'Gross Margin',data:[32.8,33.5,33.8,34.5,35.2,35.5,36.0,36.2],borderColor:GOLD,pointRadius:3,tension:0.3},
+    {label:'Operating Margin',data:[15.5,16.5,17.0,17.8,18.6,19.5,20.5,21.0],borderColor:GREEN,pointRadius:3,tension:0.3},
+    {label:'FCF Margin',data:[15.4,15.3,16.5,17.7,18.6,19.4,20.2,21.0],borderColor:BLUE,pointRadius:3,tension:0.3,borderDash:[4,4]}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:16}}},scales:{y:{title:{display:true,text:'Margin (%)'},grid:{color:'rgba(42,42,42,0.3)'},min:12}}}
+  }); }}
+
+  if (!ci.fc) { var c = document.getElementById('fcfChart'); if (c && c.getContext) { ci.fc = new Chart(c, {
+    type:'bar', data:{ labels:['FY22','FY23','FY24','FY25','FY26E','FY27E','FY28E'],
+    datasets:[{label:'OCF ($B)',data:[3.1,3.2,3.5,4.1,4.5,5.0,5.5],backgroundColor:'rgba(76,175,80,0.4)',borderColor:GREEN,borderWidth:1},
+    {label:'CapEx ($B)',data:[-0.6,-0.6,-0.7,-0.9,-0.9,-1.0,-1.1],backgroundColor:'rgba(231,76,60,0.4)',borderColor:RED,borderWidth:1},
+    {label:'FCF ($B)',data:[2.5,2.6,2.8,3.2,3.6,4.0,4.4],type:'line',borderColor:GOLD,pointBackgroundColor:GOLD,pointRadius:4,tension:0.3,order:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:16}}},scales:{x:{stacked:true},y:{title:{display:true,text:'$B'},grid:{color:'rgba(42,42,42,0.3)'}}}}
+  }); }}
+
+  if (!ci.fm) { var c = document.getElementById('fcfMarginChart'); if (c && c.getContext) { ci.fm = new Chart(c, {
+    type:'line', data:{ labels:['FY22','FY23','FY24','FY25','FY26E','FY27E','FY28E'],
+    datasets:[{label:'FCF Margin %',data:[15.3,16.5,17.7,18.6,19.4,20.2,21.0],borderColor:GOLD,pointBackgroundColor:GOLD,pointRadius:5,tension:0.3,fill:true,backgroundColor:'rgba(212,168,67,0.08)'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{title:{display:true,text:'FCF Margin (%)'},grid:{color:'rgba(42,42,42,0.3)'},min:12}}}
+  }); }}
+
+  if (!ci.vp) { var c = document.getElementById('valBridgePE'); if (c && c.getContext) { ci.vp = new Chart(c, {
+    type:'bar', data:{ labels:['Current Price','Upside','Target'], datasets:[{data:[205.15,36.35,241.50],backgroundColor:[MUTED,'rgba(76,175,80,0.5)',GOLD],borderColor:[MUTED,GREEN,GOLD],borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(42,42,42,0.3)'}}}}
+  }); }}
+
+  if (!ci.vf) { var c = document.getElementById('valBridgeFCF'); if (c && c.getContext) { ci.vf = new Chart(c, {
+    type:'bar', data:{ labels:['Current Price','Upside','Target'], datasets:[{data:[205.15,67.45,272.60],backgroundColor:[MUTED,'rgba(93,173,226,0.5)',BLUE],borderColor:[MUTED,BLUE,BLUE],borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(42,42,42,0.3)'}}}}
+  }); }}
+
+  if (!ci.ca) { var c = document.getElementById('capAllocChart'); if (c && c.getContext) { ci.ca = new Chart(c, {
+    type:'doughnut', data:{ labels:['Share Buybacks','Dividends','CapEx','M&A / Debt','Retained'],
+    datasets:[{data:[35,18,22,15,10],backgroundColor:[GREEN,GOLD,BLUE,'#e67e22',MUTED],borderColor:CARD,borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{usePointStyle:true,padding:12,font:{size:12}}}}}
+  }); }}
+
+  if (!ci.ow) { var c = document.getElementById('ownershipChart'); if (c && c.getContext) { ci.ow = new Chart(c, {
+    type:'doughnut', data:{ labels:['Vanguard (13.1%)','BlackRock (7.7%)','Other Institutional (71.1%)','Non-Institutional (8.1%)'],
+    datasets:[{data:[13.1,7.7,71.1,8.1],backgroundColor:[GOLD,GREEN,BLUE,MUTED],borderColor:CARD,borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{usePointStyle:true,padding:10,font:{size:11}}}}}
+  }); }}
+}
+
+window.addEventListener('DOMContentLoaded', function() { setTimeout(initCharts, 100); });
+</script>
+</body>
+</html>
