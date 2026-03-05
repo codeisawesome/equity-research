@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$NVDA — NVIDIA Corp | Equity Research Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0a; --card-bg: #141414; --border: #2a2a2a; --gold: #d4a843;
+  --text: #e8e0d0; --muted: #8a8a7a; --green: #4caf50; --red: #e74c3c;
+  --yellow: #f1c40f; --blue: #5dade2;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.6; padding: 0; }
+a { color: var(--gold); }
+
+/* Header */
+.dashboard-header { padding: 28px 32px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.dashboard-header h1 { font-size: 28px; color: var(--gold); font-weight: 700; letter-spacing: 0.5px; }
+.dashboard-header h1 span { color: var(--muted); font-weight: 400; font-size: 16px; margin-left: 10px; }
+.header-meta { text-align: right; color: var(--muted); font-size: 13px; }
+.header-meta .price { font-size: 22px; color: var(--text); font-family: var(--mono); font-weight: 600; }
+.header-meta .rating { display: inline-block; background: var(--green); color: #fff; padding: 3px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-left: 8px; }
+
+/* Tab Bar */
+.tab-bar { display: flex; overflow-x: auto; border-bottom: 2px solid var(--border); padding: 0 24px; background: #0d0d0d; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.tab-btn { background: none; border: none; color: var(--muted); font-family: var(--font); font-size: 11.5px; padding: 12px 11px; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; flex-shrink: 0; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); font-weight: 600; }
+
+/* Content Area */
+.tab-content { display: none; padding: 28px 32px 48px; max-width: 1400px; margin: 0 auto; }
+.tab-content.active { display: block; }
+
+/* Cards */
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin-bottom: 20px; }
+.card-title { color: var(--gold); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; margin-bottom: 10px; }
+.card-value { font-size: 30px; font-weight: 700; font-family: var(--mono); }
+.card-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* Grids */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 20px; }
+
+/* Metric Strip */
+.metric-strip { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+.metric-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; min-width: 130px; flex: 1; }
+.metric-item .card-title { margin-bottom: 4px; }
+.metric-item .card-value { font-size: 18px; }
+
+/* Prose */
+.analysis-prose { background: #0f0f0f; border: 1px solid var(--border); border-radius: 12px; padding: 26px 28px; margin-bottom: 24px; position: relative; line-height: 1.75; }
+.analysis-label { display: inline-block; background: var(--gold); color: #0a0a0a; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; margin-bottom: 14px; }
+
+/* Section Header & Divider */
+.section-header { color: var(--gold); font-size: 20px; font-weight: 700; margin: 28px 0 16px; }
+.section-divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13.5px; }
+thead th { background: rgba(212,168,67,0.12); color: var(--gold); text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; border-bottom: 2px solid var(--border); }
+tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+tbody td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.num { text-align: right; font-family: var(--mono); }
+.mono { font-family: var(--mono); }
+
+/* Source Badges */
+.source-badge { display: inline-block; background: rgba(212,168,67,0.18); color: var(--gold); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin: 0 2px; vertical-align: middle; letter-spacing: 0.3px; }
+.source-badge.unverified { background: rgba(231,76,60,0.2); color: var(--red); }
+
+/* Thesis Box */
+.thesis-box { background: rgba(212,168,67,0.06); border: 1px solid rgba(212,168,67,0.25); border-radius: 12px; padding: 22px 26px; margin-bottom: 22px; }
+
+/* Semantic Colors */
+.positive { color: var(--green); }
+.negative { color: var(--red); }
+.neutral { color: var(--yellow); }
+
+/* Scenario Cards */
+.scenario-card { border-radius: 12px; background: var(--card-bg); border: 1px solid var(--border); padding: 22px 24px; border-left: 4px solid var(--muted); }
+.scenario-card.bull { border-left-color: var(--green); }
+.scenario-card.base { border-left-color: var(--gold); }
+.scenario-card.bear { border-left-color: var(--red); }
+
+/* Probability Bar */
+.prob-bar-container { display: flex; height: 24px; border-radius: 6px; overflow: hidden; margin: 12px 0; }
+.prob-bar-container div { display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
+
+/* Timeline */
+.timeline-item { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 18px; }
+.timeline-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.timeline-dot.bull { background: var(--green); }
+.timeline-dot.bear { background: var(--red); }
+.timeline-dot.neutral-dot { background: var(--muted); }
+
+/* Kill Items */
+.kill-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 14px; }
+.kill-box { width: 18px; height: 18px; border: 2px solid var(--muted); border-radius: 3px; flex-shrink: 0; margin-top: 2px; }
+
+/* Revision Card */
+.revision-card { background: rgba(231,76,60,0.05); border: 1px solid rgba(231,76,60,0.2); border-radius: 12px; padding: 22px 24px; margin-bottom: 20px; }
+.revision-card .rev-section { color: var(--gold); font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+.revision-card .rev-issue { display: inline-block; background: rgba(231,76,60,0.2); color: var(--red); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-bottom: 10px; }
+.revision-card .rev-original { color: var(--muted); text-decoration: line-through; margin-bottom: 8px; font-size: 13px; }
+.revision-card .rev-revised { color: var(--green); margin-bottom: 8px; font-size: 13px; }
+.revision-card .rev-why { color: var(--muted); font-size: 12px; font-style: italic; }
+
+/* Badge helpers */
+.badge { display: inline-block; padding: 4px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+.badge-green { background: rgba(76,175,80,0.15); color: var(--green); }
+.badge-gold { background: rgba(212,168,67,0.15); color: var(--gold); }
+.badge-red { background: rgba(231,76,60,0.15); color: var(--red); }
+.badge-blue { background: rgba(93,173,226,0.15); color: var(--blue); }
+
+/* Canvas containers */
+.chart-container { position: relative; width: 100%; max-width: 750px; margin: 0 auto 24px; }
+.chart-container-wide { position: relative; width: 100%; margin-bottom: 24px; }
+.chart-container canvas, .chart-container-wide canvas { max-height: 380px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .tab-btn { font-size: 10px; padding: 10px 7px; }
+  .tab-content { padding: 18px 14px 36px; }
+  .dashboard-header { padding: 18px 14px; }
+  .metric-strip { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="dashboard-header">
+  <h1>$NVDA <span>NVIDIA Corporation — Equity Research Dashboard</span></h1>
+  <div class="header-meta">
+    <div class="price">$181.40 <span class="rating">BUY</span></div>
+    <div>Report Date: 2026-03-04 &middot; 12-Month Target: $229.60 (+26.6%)</div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+  <button class="tab-btn" onclick="switchTab(1)">2. Narrative</button>
+  <button class="tab-btn" onclick="switchTab(2)">3. Fundamentals</button>
+  <button class="tab-btn" onclick="switchTab(3)">4. Balance Sheet</button>
+  <button class="tab-btn" onclick="switchTab(4)">5. Cash Flow</button>
+  <button class="tab-btn" onclick="switchTab(5)">6. Earnings Quality</button>
+  <button class="tab-btn" onclick="switchTab(6)">7. Forward Model</button>
+  <button class="tab-btn" onclick="switchTab(7)">8. Key Ratios</button>
+  <button class="tab-btn" onclick="switchTab(8)">9. Ownership</button>
+  <button class="tab-btn" onclick="switchTab(9)">10. Scenarios</button>
+  <button class="tab-btn" onclick="switchTab(10)">11. Risks</button>
+  <button class="tab-btn" onclick="switchTab(11)">12. Catalysts</button>
+  <button class="tab-btn" onclick="switchTab(12)">Revisions</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 1: EXECUTIVE SUMMARY -->
+<!-- ============================================================ -->
+<div class="tab-content active" id="tab-0">
+  <h2 class="section-header">1. Executive Summary</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Investment Thesis:</strong></p>
+    <ul style="margin:8px 0 8px 20px;">
+      <li>NVIDIA is successfully navigating the transition from LLM training to Agentic AI inference, completely overriding the loss of the Chinese market.</li>
+      <li>Compute is directly translating to hyperscaler revenue, locking in high-visibility CapEx cycles well into calendar 2027.</li>
+      <li>Ecosystem weaponization (e.g., Anthropic investments, Groq licensing) is permanently securing NVIDIA's moat and neutralizing specialized ASIC threats.</li>
+      <li>The primary systemic risk is an unprecedented $95B in non-cancellable purchase obligations <span class="source-badge">Grok / Gemini Sentiment</span>; if hyperscaler demand cracks, this inventory leverage will act as a margin-crushing boomerang.</li>
+    </ul>
+    <p><strong>Conviction Level:</strong> <strong>Medium</strong> for swing (digesting Q4 earnings/macro exhaustion) | <strong>High</strong> for position.</p>
+    <p><strong>Rating:</strong> <strong>Buy</strong> | Expected Move: <strong>+24.7%</strong> (12-month horizon).</p>
+    <p><em>Note: Expected move is probability-weighted and backed by the Base Case valuation bridge in Section 7, utilizing FY27E EPS of $8.20 at a 28x target multiple.</em></p>
+    <p><strong>Summary:</strong> NVIDIA remains the undisputed tollbooth for the $3T global AI buildout, successfully defending its mid-70s margin profile while shifting from a momentum-driven hype trade to a fundamental execution and supply-chain leverage story.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- Thesis Box -->
+  <div class="thesis-box">
+    <div class="card-title">Investment Thesis</div>
+    <p style="margin-bottom:8px;">NVIDIA is the undisputed tollbooth for the $3T global AI buildout. The company is navigating the LLM → Agentic AI transition while defending mid-70s margins and weaponizing its ecosystem through strategic investments.</p>
+    <p><span class="source-badge">Earnings Call</span> <span class="source-badge">SEC</span> <span class="source-badge">Grok / Gemini Sentiment</span></p>
+  </div>
+
+  <!-- Conviction + Rating Badges -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;">
+    <span class="badge badge-green">Rating: BUY</span>
+    <span class="badge badge-gold">Conviction: Medium (Swing) / High (Position)</span>
+    <span class="badge badge-green">Expected Move: +24.7%</span>
+  </div>
+
+  <!-- Key Metrics Strip -->
+  <div class="metric-strip">
+    <div class="metric-item"><div class="card-title">Current Price</div><div class="card-value">$181.40</div></div>
+    <div class="metric-item"><div class="card-title">Market Cap</div><div class="card-value">~$4.4T</div></div>
+    <div class="metric-item"><div class="card-title">P/E (TTM)</div><div class="card-value">37.0x</div></div>
+    <div class="metric-item"><div class="card-title">P/E (Fwd)</div><div class="card-value">22.1x</div></div>
+    <div class="metric-item"><div class="card-title">EV/EBITDA</div><div class="card-value">31.8x</div></div>
+    <div class="metric-item"><div class="card-title">FCF Yield</div><div class="card-value">2.2%</div></div>
+    <div class="metric-item"><div class="card-title">Div Yield</div><div class="card-value">0.0%</div></div>
+    <div class="metric-item"><div class="card-title">Target Price</div><div class="card-value">$229.60</div></div>
+  </div>
+
+  <!-- Top 3 Pillars -->
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Pillar 1: AI Inference Pivot</div>
+      <p style="font-size:13px;">Successfully navigating the transition from LLM training to Agentic AI inference, overriding China market loss.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Pillar 2: Hyperscaler Lock-In</div>
+      <p style="font-size:13px;">Compute translating to high-visibility CapEx cycles locked in well into calendar 2027.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Pillar 3: Ecosystem Weaponization</div>
+      <p style="font-size:13px;">Anthropic investments and Groq licensing permanently securing moat and neutralizing ASIC threats.</p>
+    </div>
+  </div>
+
+  <!-- Probability-Weighted Expected Value -->
+  <div class="card">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin:10px 0;">
+      <div><span class="positive mono" style="font-size:14px;">30% × $304.50</span> <span style="color:var(--muted);font-size:12px;">= $91.35</span></div>
+      <div><span style="color:var(--gold);" class="mono" style="font-size:14px;">50% × $229.60</span> <span style="color:var(--muted);font-size:12px;">= $114.80</span></div>
+      <div><span class="negative mono" style="font-size:14px;">20% × $100.00</span> <span style="color:var(--muted);font-size:12px;">= $20.00</span></div>
+      <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--gold);">= $226.15 <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="prob-bar-container">
+      <div style="width:30%;background:var(--green);">Bull 30%</div>
+      <div style="width:50%;background:var(--gold);color:#0a0a0a;">Base 50%</div>
+      <div style="width:20%;background:var(--red);">Bear 20%</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px;">
+      <span>Bull: $304.50 (+67.8%)</span>
+      <span>Base: $229.60 (+26.6%)</span>
+      <span>Bear: $100.00 (−44.8%)</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 2: NARRATIVE & SENTIMENT -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-1">
+  <h2 class="section-header">2. Current Narrative & Sentiment</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The overarching narrative for NVIDIA is a tug-of-war between unparalleled fundamental execution and "priced for perfection" market exhaustion. The company just delivered a massive Q4 FY26 beat with $68.1B in revenue (+73% YoY) and guided Q1 FY27 revenue to a staggering $78B. Crucially, they achieved their "mid-70s" gross margin target, printing 75.2% non-GAAP in Q4, and secured capacity extending into calendar 2027.</p>
+    <p>Despite this, the stock dropped roughly 5% post-earnings, settling near $181.40. The sentiment tone has shifted from blind euphoria to a cautious "sell the news" dynamic. Wall Street consensus remains overwhelmingly bullish, with price targets heavily clustered in the $250–$300 range, supported by robust AI infrastructure forecasts. However, there is growing anxiety surrounding the ROI of the $700B cloud CapEx cycle and recent soft guidance from AI-infra clients like CoreWeave.</p>
+    <p><strong>Contrarian Signal Check:</strong> The most credible bearish argument, articulated by Michael Burry and short-seller-adjacent voices, focuses on NVIDIA's massive $95B in non-cancellable purchase obligations and aggressive stock-based compensation. Burry argues that true operating profitability is overstated by "tragic algebra" (SBC dilution), and the sheer scale of upstream commitments mirrors Cisco's pre-dotcom inventory buildup. If the hyperscaler appetite falters even slightly, this leverage will rapidly compress margins and trigger severe multiple contraction.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Q4 FY26 Headlines</div>
+      <div class="card-value positive">$68.1B</div>
+      <div class="card-label">Revenue (+73% YoY)</div>
+      <div style="margin-top:10px;"><span class="mono" style="font-size:16px;">75.2%</span> <span class="card-label">non-GAAP Gross Margin</span></div>
+      <div style="margin-top:6px;"><span class="mono" style="font-size:16px;">$78.0B</span> <span class="card-label">Q1 FY27 Revenue Guide</span></div>
+      <p style="margin-top:8px;"><span class="source-badge">Earnings Call</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Market Sentiment</div>
+      <div style="font-size:16px;font-weight:600;color:var(--yellow);margin-bottom:6px;">Cautious "Sell the News"</div>
+      <p style="font-size:13px;">Stock dropped ~5% post-earnings despite a massive beat. Targets clustered $250–$300. Growing anxiety over $700B cloud CapEx ROI and CoreWeave soft guidance.</p>
+      <p style="margin-top:8px;"><span class="source-badge">Grok / Gemini Sentiment</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Bear Thesis (Contrarian)</div>
+      <div style="font-size:14px;color:var(--red);font-weight:600;margin-bottom:6px;">Michael Burry's "Cisco Moment"</div>
+      <p style="font-size:13px;">$95B non-cancellable purchase obligations + aggressive SBC = overstated profitability. Mirrors Cisco's pre-dotcom inventory buildup.</p>
+      <p style="margin-top:8px;"><span class="source-badge">Grok / Gemini Sentiment</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 3: FUNDAMENTAL ANALYSIS -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-2">
+  <h2 class="section-header">3. Fundamental Analysis</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>NVIDIA operates an unrivaled full-stack compute platform bridging hardware (GPUs, CPUs, DPUs), software (CUDA), and networking (Spectrum-X, InfiniBand). The revenue model is heavily concentrated in Data Center, representing the vast majority of its $216B implied FY26 revenue. The geographic mix has successfully rotated away from China (now a negligible factor in forward guidance) toward US-based hyperscalers and a surging Sovereign AI segment that tripled YoY to over $30B.</p>
+    <p>Historically, the revenue and EPS CAGRs are staggering, with 5-year revenue growth at 66.9% <span class="source-badge">Finnhub</span> and EPS growth at 95.2% <span class="source-badge">Finnhub</span>. Moving forward, growth rates will naturally decelerate due to the law of large numbers, but absolute dollar generation remains massive. Profitability is generationally elite: operating margins expanded to 60.3% over the trailing twelve months <span class="source-badge">Finnhub</span>, and TTM ROE hit an incredible 104.3% <span class="source-badge">Finnhub</span>. After a Q1 FY26 gross margin dip due to a $4.5B China write-down <span class="source-badge">Earnings Call</span>, gross margins fully recovered to 75.2% by Q4 <span class="source-badge">Earnings Call</span>.</p>
+    <p>NVIDIA's competitive moat is protected by extreme switching costs embedded in the CUDA software ecosystem and network effects from its full-stack deployments. The recent milestone of Spectrum-X Ethernet crossing a $10B annualized run rate proves NVIDIA is capturing the broader data center infrastructure, not just the compute silicon.</p>
+    <p>Management, led by Jensen Huang, has an exceptional track record of execution and capital allocation. Their recent strategic licensing of Groq's low-latency inference technology and $10B investment in Anthropic show a proactive "ecosystem weaponization" strategy—using their immense free cash flow to buy into the foundation layers of their best customers and neutralize asymmetric hardware threats before they scale.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- Q1 Highlight Cards -->
+  <div class="grid-4">
+    <div class="card"><div class="card-title">FY26 Revenue</div><div class="card-value">~$216B</div><div class="card-label">Implied <span class="source-badge">Finnhub</span></div></div>
+    <div class="card"><div class="card-title">5-Yr Rev CAGR</div><div class="card-value positive">66.9%</div><div class="card-label"><span class="source-badge">Finnhub</span></div></div>
+    <div class="card"><div class="card-title">Op. Margin (TTM)</div><div class="card-value">60.3%</div><div class="card-label"><span class="source-badge">Finnhub</span></div></div>
+    <div class="card"><div class="card-title">Q4 Gross Margin</div><div class="card-value positive">75.2%</div><div class="card-label"><span class="source-badge">Earnings Call</span></div></div>
+  </div>
+
+  <!-- Revenue & EPS Chart -->
+  <div class="card">
+    <div class="card-title">Revenue & EPS — Historical + Forward Estimates</div>
+    <div class="chart-container-wide"><canvas id="chart-rev-eps"></canvas></div>
+  </div>
+
+  <!-- Margin Trends Chart -->
+  <div class="card">
+    <div class="card-title">Margin Trends</div>
+    <div class="chart-container-wide"><canvas id="chart-margins"></canvas></div>
+  </div>
+
+  <!-- Growth Rates Table -->
+  <div class="card">
+    <div class="card-title">Growth Rates — Historical & Forward</div>
+    <table>
+      <thead><tr><th>Metric</th><th class="num">FY24</th><th class="num">FY25</th><th class="num">FY26</th><th class="num">FY27E</th><th class="num">FY28E</th><th class="num">FY29E</th></tr></thead>
+      <tbody>
+        <tr><td>Revenue ($B)</td><td class="num">$60.9</td><td class="num">$130.5</td><td class="num">$216.0</td><td class="num">$340.0</td><td class="num">$420.0</td><td class="num">$480.0</td></tr>
+        <tr><td>Rev Growth %</td><td class="num positive">126%</td><td class="num positive">114%</td><td class="num positive">66%</td><td class="num positive">57%</td><td class="num positive">24%</td><td class="num positive">14%</td></tr>
+        <tr><td>Gross Margin</td><td class="num">72.7%</td><td class="num">75.0%</td><td class="num">71.3%</td><td class="num">75.0%</td><td class="num">74.0%</td><td class="num">73.0%</td></tr>
+        <tr><td>Op Margin</td><td class="num">54.1%</td><td class="num">58.0%</td><td class="num">60.3%</td><td class="num">62.0%</td><td class="num">61.0%</td><td class="num">59.0%</td></tr>
+        <tr><td>EPS</td><td class="num">$1.30</td><td class="num">$2.94</td><td class="num">$4.95</td><td class="num">$8.20</td><td class="num">$10.15</td><td class="num">$11.50</td></tr>
+        <tr><td>FCF ($B)</td><td class="num">—</td><td class="num">—</td><td class="num">$96.6</td><td class="num">$150.0</td><td class="num">$185.0</td><td class="num">$210.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 4: BALANCE SHEET DEEP DIVE -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-3">
+  <h2 class="section-header">4. Balance Sheet Deep Dive</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Asset quality:</strong> Total assets stand at $206.8B. Goodwill and intangibles ballooned to $24.1B (up from $6.0B the prior year) <span class="source-badge">SEC</span>. <em>Note: The source of this goodwill increase is unexplained by recent M&A. As noted in Section 5, management has avoided traditional M&A in favor of minority investments and licensing. Under US GAAP, minority equity investments (like Anthropic) and IP licensing (like Groq) do not generate goodwill. This massive $15.6B unexplained goodwill increase represents a major unverified balance sheet anomaly requiring further investigation.</em> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p><strong>Debt structure:</strong> Total long-term debt is exceptionally light at $8.5B against total equity of $157.3B. The Debt/Equity ratio sits at a negligible 0.05x. Debt maturity is highly manageable given current cash generation.</p>
+    <p><strong>Covenant and credit risk:</strong> Credit risk is essentially zero. Net Interest Coverage is 75.6x TTM. The company operates entirely independent of traditional debt covenant restrictions.</p>
+    <p><strong>Off-balance-sheet exposure:</strong> This is the critical pressure point. Off-balance-sheet non-cancellable purchase obligations with TSMC and other suppliers have skyrocketed to over $95B. This is necessary to secure future supply capacity through 2027 but represents massive structural inventory risk if end-market demand evaporates.</p>
+    <p><strong>Liquidity position:</strong> The balance sheet boasts $10.6B in cash and short-term investments alongside $125.6B in current assets (primarily $38.5B in AR and $21.4B in inventory). The current ratio is an elite 3.91, and the quick ratio is 3.24.</p>
+    <p><strong>Net-net assessment:</strong> The balance sheet is an absolute fortress of liquidity, though the sheer scale of off-balance-sheet purchase obligations introduces unprecedented supply-chain leverage.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Liquidity</div>
+      <div style="margin-bottom:8px;"><span class="mono" style="font-size:22px;">$10.6B</span> <span class="card-label">Cash & ST Investments</span></div>
+      <div style="margin-bottom:6px;"><span class="mono">3.91</span> <span class="card-label">Current Ratio</span></div>
+      <div><span class="mono">3.24</span> <span class="card-label">Quick Ratio</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Leverage</div>
+      <div style="margin-bottom:8px;"><span class="mono" style="font-size:22px;">$206.8B</span> <span class="card-label">Total Assets</span></div>
+      <div style="margin-bottom:6px;"><span class="mono">$157.3B</span> <span class="card-label">Total Equity</span></div>
+      <div style="margin-bottom:6px;"><span class="mono positive">0.05x</span> <span class="card-label">D/E Ratio</span></div>
+      <div><span class="mono positive">75.6x</span> <span class="card-label">Interest Coverage</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Asset Quality</div>
+      <div style="margin-bottom:8px;"><span class="mono" style="font-size:22px;">$24.1B</span> <span class="card-label">Goodwill & Intangibles <span class="source-badge">SEC</span></span></div>
+      <div style="margin-bottom:6px;"><span class="mono">11.7%</span> <span class="card-label">Goodwill / Total Assets</span></div>
+      <div style="margin-bottom:6px;"><span class="mono">15.3%</span> <span class="card-label">Goodwill / Equity</span></div>
+      <div><span class="mono neutral">$0</span> <span class="card-label">Recent Impairments</span></div>
+      <div style="margin-top:8px;"><span class="source-badge unverified">UNVERIFIED</span> <span style="font-size:11px;color:var(--red);">$15.6B unexplained increase</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left: 3px solid var(--red);">
+    <div class="card-title" style="color:var(--red);">Critical Off-Balance-Sheet Risk</div>
+    <div class="card-value negative">$95B+</div>
+    <div class="card-label">Non-cancellable purchase obligations (TSMC & suppliers)</div>
+    <p style="font-size:13px;margin-top:8px;color:var(--muted);">Necessary to secure supply through 2027 but represents massive structural inventory risk if end-market demand evaporates. <span class="source-badge">Grok / Gemini Sentiment</span></p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 5: CASH FLOW ANALYSIS -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-4">
+  <h2 class="section-header">5. Cash Flow Analysis</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Operating cash flow (OCF) has exploded, reaching $102.7B in FY26, up aggressively from $64.1B in the trailing period. Implied Free Cash Flow (FCF) sits around $96.6B, demonstrating a highly efficient FCF conversion ratio (~80% of $120.1B Net Income). Capex requirements remain remarkably low relative to revenue, hovering near $6.1B for the year.</p>
+    <p>Cash flow quality is generally pristine, though the divergence between net income and OCF requires monitoring. The cash conversion cycle is heavily influenced by upfront hyperscaler pre-payments, which act as a working capital tailwind.</p>
+    <p><strong>Capital Allocation Scorecard:</strong></p>
+    <p><strong>Buybacks:</strong> Share repurchases have been deployed, but given the heavy reliance on SBC, buybacks are primarily offsetting dilution rather than aggressively shrinking the float. The share count stands at 24.3B.</p>
+    <p><strong>Dividends:</strong> Minimal to nonexistent. Current yield is 0.0% with an indicated annual dividend of $0.04 per share.</p>
+    <p><strong>Debt management:</strong> NVIDIA carries negligible net debt; they are structurally cash-rich and have reduced leverage ratios continuously.</p>
+    <p><strong>M&A track record:</strong> Instead of traditional M&A, management is deploying cash via strategic ecosystem investments ($10B Anthropic) and IP licensing (Groq) to defend the moat without triggering massive antitrust reviews.</p>
+    <p><strong>Sustainability verdict:</strong> NVIDIA generates immense excess FCF to comfortably self-fund all capex, strategic investments, and buybacks without ever needing to tap external debt or equity markets.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- FCF Trend Chart -->
+  <div class="card">
+    <div class="card-title">OCF, CapEx & Free Cash Flow</div>
+    <div class="chart-container-wide"><canvas id="chart-fcf"></canvas></div>
+  </div>
+
+  <!-- FY26 Waterfall -->
+  <div class="card">
+    <div class="card-title">FY26 Cash Flow Waterfall</div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 0;">
+      <div style="text-align:center;"><div class="card-label">OCF</div><div class="mono" style="font-size:22px;color:var(--green);">$102.7B</div></div>
+      <div style="font-size:24px;color:var(--muted);">−</div>
+      <div style="text-align:center;"><div class="card-label">CapEx</div><div class="mono" style="font-size:22px;color:var(--red);">$6.1B</div></div>
+      <div style="font-size:24px;color:var(--muted);">=</div>
+      <div style="text-align:center;"><div class="card-label">FCF</div><div class="mono" style="font-size:22px;color:var(--gold);">$96.6B</div></div>
+    </div>
+  </div>
+
+  <!-- Capital Allocation Doughnut -->
+  <div class="card">
+    <div class="card-title">Capital Allocation (Conceptual)</div>
+    <div class="chart-container"><canvas id="chart-capalloc"></canvas></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 6: EARNINGS QUALITY -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-5">
+  <h2 class="section-header">6. Earnings Quality & Accounting Red Flags</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>GAAP vs. Non-GAAP spread:</strong> The gap between GAAP and non-GAAP EPS is primarily driven by massive Stock-Based Compensation (SBC). SBC expense was $6.4B in FY26 and is guided at $1.9B for Q1 FY27. This "tragic algebra" dilutes true economic profitability and artificially inflates adjusted EPS.</p>
+    <p><strong>"One-time" charge frequency:</strong> The Q1 FY26 $4.5B inventory write-down related to China H20 chips was significant. Aside from this, recurring "special charges" are rare, meaning core operations are generally cleanly reported.</p>
+    <p><strong>Revenue recognition signals:</strong> Revenue recognition is tied heavily to the physical delivery of complex data center systems. Upfront pre-payments from cloud service providers are driving deferred revenue higher, reflecting locked-in demand rather than aggressive pull-forwards.</p>
+    <p><strong>Accrual quality:</strong> Earnings are backed by hard cash. With $120.1B in Net Income translating to $102.7B in OCF, the accrual ratios are manageable. The difference is adequately explained by SBC and rapid inventory scaling.</p>
+    <p><strong>Audit and disclosure flags:</strong> Clean. No auditor changes, material weaknesses, or restatements. The transition to explicitly detailing SBC in forward guidance shows increased transparency.</p>
+    <p><strong>Insider signals in context:</strong> Colette Kress (CFO) has been systematically selling shares throughout Q4 FY26 under 10b5-1 plans, executing sales between $172 and $187. While standard, this continuous selling alongside optimistic 2027 visibility is a minor sentiment drag.</p>
+    <p><strong>Overall accounting confidence:</strong> <strong>Minor Concerns</strong>. The core cash flows are undeniably real, but the aggressive use of SBC and the obfuscation of risk embedded within the $95B off-balance-sheet purchase commitments warrant close attention.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- Management Credibility -->
+  <div class="grid-2">
+    <div class="card" style="text-align:center;">
+      <div class="card-title">Management Credibility</div>
+      <div style="width:70px;height:70px;border-radius:50%;border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:12px auto;font-size:28px;font-weight:700;color:var(--gold);font-family:var(--mono);">B+</div>
+      <p style="font-size:13px;color:var(--muted);">Exceptional execution track record. Minor concerns around SBC opacity and continuous CFO selling.</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="card-title">Cash Conversion Quality</div>
+      <div style="display:flex;justify-content:center;gap:24px;margin:12px 0;">
+        <div><div class="card-label">Net Income</div><div class="mono" style="font-size:20px;">$120.1B</div></div>
+        <div style="font-size:24px;color:var(--muted);align-self:center;">→</div>
+        <div><div class="card-label">OCF</div><div class="mono" style="font-size:20px;color:var(--green);">$102.7B</div></div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);">~85.5% conversion. Difference explained by SBC & inventory scaling.</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" style="color:var(--green);">✓ Bullish Signals</div>
+      <div style="font-size:13px;line-height:1.9;">
+        <div>✅ 14 consecutive revenue beats</div>
+        <div>✅ Clean audit — no restatements or material weaknesses</div>
+        <div>✅ Deferred revenue rising = locked-in demand</div>
+        <div>✅ Pristine cash flow quality backed by hard cash</div>
+        <div>✅ Increased SBC transparency in forward guidance</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--yellow);">⚠ Caution / Watch Items</div>
+      <div style="font-size:13px;line-height:1.9;">
+        <div>⚠️ Massive SBC ($6.4B FY26) inflates adjusted EPS</div>
+        <div>⚠️ CFO systematic selling ($172–$187 range)</div>
+        <div>⚠️ $4.5B China H20 write-down in Q1 FY26</div>
+        <div>🔴 $95B off-balance-sheet purchase obligations</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 7: FORWARD MODEL & VALUATION BRIDGE -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-6">
+  <h2 class="section-header">7. Forward Model & Valuation Bridge</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The forward model anchors heavily on management's explicit Q1 FY27 guidance of $78B in revenue and a 75.0% gross margin. The out-years assume decelerating growth percentages but scaling absolute dollars as Agentic AI inference drives global data center buildouts.</p>
+    <p><strong>Narrative:</strong> This valuation utilizes the FY27E EPS forecast of $8.20. The upside is driven primarily by earnings growth materializing as expected, paired with a multiple re-rating downward from the current 37x TTM to a more mature 28x forward multiple. Even with a contracting multiple, the sheer earnings velocity drives the stock higher. The current valuation of 22x forward P/E is fully justified by the forward model, assuming the 2027 demand visibility holds intact.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- Forward Model Table -->
+  <div class="card">
+    <div class="card-title">3-Year Forward Model</div>
+    <table>
+      <thead><tr><th>Metric</th><th class="num">FY27E (CY26)</th><th class="num">FY28E (CY27)</th><th class="num">FY29E (CY28)</th><th>Basis</th></tr></thead>
+      <tbody>
+        <tr><td>Revenue</td><td class="num">$340.0B</td><td class="num">$420.0B</td><td class="num">$480.0B</td><td style="font-size:11px;">Q1 guided $78B; sequential growth via Blackwell</td></tr>
+        <tr><td>Gross Margin</td><td class="num">75.0%</td><td class="num">74.0%</td><td class="num">73.0%</td><td style="font-size:11px;">Q1 at 75%. Slow compression via Rubin transition</td></tr>
+        <tr><td>Op Margin</td><td class="num">62.0%</td><td class="num">61.0%</td><td class="num">59.0%</td><td style="font-size:11px;">OpEx grows in low-40s (per mgmt)</td></tr>
+        <tr><td>EPS</td><td class="num">$8.20</td><td class="num">$10.15</td><td class="num">$11.50</td><td style="font-size:11px;">Net margins, steady share count</td></tr>
+        <tr><td>FCF</td><td class="num">$150.0B</td><td class="num">$185.0B</td><td class="num">$210.0B</td><td style="font-size:11px;">~80% conversion of net income</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Management vs Consensus -->
+  <div class="card">
+    <div class="card-title">Management vs. Consensus</div>
+    <table>
+      <thead><tr><th>Period</th><th>Metric</th><th class="num">Mgmt Guidance</th><th class="num">Sell-Side Consensus</th><th class="num">Delta</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Q1 FY27</td><td>Revenue</td>
+          <td class="num">$78.0B <span class="source-badge">Earnings Call</span></td>
+          <td class="num">~$75.5B (Implied)* <span class="source-badge unverified">UNVERIFIED</span></td>
+          <td class="num positive">+$2.5B <span class="source-badge">Calc</span></td>
+          <td class="positive">Above</td>
+        </tr>
+        <tr>
+          <td>FY27</td><td>Gross Margin</td>
+          <td class="num">75.0% (Q1 target) <span class="source-badge">Earnings Call</span></td>
+          <td class="num">73.8%* <span class="source-badge unverified">UNVERIFIED</span></td>
+          <td class="num positive">+1.2% <span class="source-badge">Calc</span></td>
+          <td class="positive">Above</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:var(--red);margin-top:4px;">*Note: Sell-side consensus figures for Q1 FY27 revenue and FY27 Gross Margin are not available in the provided pipeline data and cannot be independently verified. <span class="source-badge unverified">UNVERIFIED</span></p>
+  </div>
+
+  <!-- Valuation Bridge Table -->
+  <div class="card">
+    <div class="card-title">Valuation Bridge</div>
+    <table>
+      <thead><tr><th>Method</th><th>Year</th><th class="num">Metric</th><th class="num">Multiple/Yield</th><th class="num">Implied Target</th><th class="num">Current</th><th class="num">Upside</th></tr></thead>
+      <tbody>
+        <tr><td>P/E (Base)</td><td>FY27E</td><td class="num">$8.20 EPS</td><td class="num">28x</td><td class="num positive">$229.60</td><td class="num">$181.40</td><td class="num positive">+26.6%</td></tr>
+        <tr><td>FCF Yield</td><td>FY27E</td><td class="num">$6.17 FCF/sh</td><td class="num">2.5% Yield</td><td class="num positive">$246.80</td><td class="num">$181.40</td><td class="num positive">+36.0%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Valuation Bridge Charts -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">P/E Valuation Bridge</div>
+      <div class="chart-container-wide"><canvas id="chart-pe-bridge"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">FCF Yield Valuation Bridge</div>
+      <div class="chart-container-wide"><canvas id="chart-fcf-bridge"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 8: KEY RATIOS -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-7">
+  <h2 class="section-header">8. Key Ratios & Comparisons</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Synthesis:</strong> NVIDIA is historically cheap on a forward P/E and PEG basis relative to its own 5-year averages, heavily punishing the stock for perceived cyclicality risk. The stock is fairly valued relative to direct peers when adjusting for growth. The single most important ratio to watch going forward is <strong>Gross Margin</strong>; any slippage below 73% signals pricing power erosion and will trigger immediate multiple compression.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="card">
+    <div class="card-title">Full Comparison Table</div>
+    <table>
+      <thead><tr><th>Metric</th><th class="num">Current</th><th class="num">5-yr Avg</th><th class="num">Peer/Sector Avg</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>P/E (TTM)</td><td class="num">37.0x</td><td class="num">~70x</td><td class="num">~35x <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Discount to history, inline w/ mega-cap tech</td></tr>
+        <tr><td>P/E (Forward)</td><td class="num">22.1x</td><td class="num">~45x</td><td class="num">~25x <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Historically cheap assuming guidance holds</td></tr>
+        <tr><td>PEG Ratio</td><td class="num">0.55</td><td class="num">1.2</td><td class="num">1.5 <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Deeply undervalued on growth-adjusted basis</td></tr>
+        <tr><td>EV/EBITDA</td><td class="num">31.8x</td><td class="num">~60x</td><td class="num">~22x <span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Premium to peers, justified by 75% margins</td></tr>
+        <tr><td>P/S</td><td class="num">20.5x</td><td class="num">18x</td><td class="num">8x <span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">High — demands flawless execution</td></tr>
+        <tr><td>P/B</td><td class="num">28.2x</td><td class="num">20x</td><td class="num">7x <span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Asset-light IP heavy structure inflates P/B</td></tr>
+        <tr><td>P/FCF</td><td class="num">45.9x</td><td class="num">~65x</td><td class="num">~30x <span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Premium reflects future cash conversion</td></tr>
+        <tr><td>Debt/Equity</td><td class="num positive">0.05</td><td class="num">0.30</td><td class="num">0.40 <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Flawless balance sheet</td></tr>
+        <tr><td>Net Debt/EBITDA</td><td class="num positive">Negative</td><td class="num">Negative</td><td class="num">0.5x <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Massive net cash position</td></tr>
+        <tr><td>Current Ratio</td><td class="num positive">3.91</td><td class="num">4.3</td><td class="num">2.0 <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Bulletproof liquidity</td></tr>
+        <tr><td>Quick Ratio</td><td class="num positive">3.24</td><td class="num">3.8</td><td class="num">1.5 <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Highly liquid</td></tr>
+        <tr><td>Interest Coverage</td><td class="num positive">75.6x</td><td class="num">40x</td><td class="num">15x <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Zero credit risk</td></tr>
+        <tr style="background:rgba(212,168,67,0.06);"><td><strong>Gross Margin ★</strong></td><td class="num"><strong>71.3% (75.2% Q4)</strong></td><td class="num"><strong>69.4%</strong></td><td class="num"><strong>~55%</strong> <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive"><strong>The single most vital metric to defend</strong></td></tr>
+        <tr><td>Operating Margin</td><td class="num positive">60.3%</td><td class="num">45.9%</td><td class="num">~30% <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Elite operational leverage</td></tr>
+        <tr><td>Asset Turnover</td><td class="num">1.36</td><td class="num">1.04</td><td class="num">0.8 <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Highly efficient capital use</td></tr>
+        <tr><td>ROIC</td><td class="num positive">97.2%</td><td class="num">50.2%</td><td class="num">15% <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Unprecedented return on capital</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:var(--muted);">Direct Peers: AMD, Broadcom (AVGO), Microsoft (MSFT)</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 9: ADDITIONAL KEY FACTORS -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-8">
+  <h2 class="section-header">9. Additional Key Factors</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Insider & institutional ownership:</strong> Institutional ownership dominates at 69.7% (Vanguard 9.3%, BlackRock 8.0%). Q4 13F filings show continued exposure, though some rotational trimming into broader tech/infrastructure occurred. Insider activity is entirely defined by systematic selling (CFO Colette Kress).</p>
+    <p><strong>Short interest:</strong> Effectively zero. Short interest sits at 1.1% of the float with a days-to-cover ratio of 1.45. Short-sellers have been functionally eliminated from the tape.</p>
+    <p><strong>Liquidity:</strong> Liquidity is immense, with a 3-month average daily trading volume of 185M shares. The stock is the primary liquidity vehicle for the entire semiconductor sector.</p>
+    <p><strong>Beta and macro exposure:</strong> Beta is highly elevated at 2.41. The stock trades as a hyper-leveraged proxy for global liquidity, 10-year yields, and broader tech sentiment.</p>
+    <p><strong>Earnings surprise history:</strong> NVIDIA has logged 14 consecutive revenue beats. However, the magnitude of the beats is normalizing, and the market's reaction has inverted (dropping ~5% on the most recent $68.1B print). Estimate revisions for FY27 and FY28 continue to march upward.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- Institutional Ownership Doughnut -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Institutional Ownership (69.7%)</div>
+      <div class="chart-container"><canvas id="chart-ownership"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Insider Activity</div>
+      <table>
+        <thead><tr><th>Name</th><th>Role</th><th>Action</th><th class="num">Price Range</th></tr></thead>
+        <tbody>
+          <tr><td>Colette Kress</td><td>CFO</td><td class="negative">Sell (10b5-1)</td><td class="num">$172–$187</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px;">Systematic selling throughout Q4 FY26 under pre-arranged plans. <span class="source-badge">SEC</span></p>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Short Interest</div>
+      <div class="card-value positive">1.1%</div>
+      <div class="card-label">of float</div>
+      <div style="margin-top:8px;"><span class="mono">1.45</span> <span class="card-label">Days to Cover</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Trading Liquidity</div>
+      <div class="card-value">185M</div>
+      <div class="card-label">Avg Daily Volume (3mo)</div>
+      <div style="margin-top:8px;"><span class="mono">2.41</span> <span class="card-label">Beta</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sentiment Summary</div>
+      <div style="font-size:15px;font-weight:600;color:var(--green);margin-bottom:4px;">Overwhelmingly Bullish</div>
+      <div class="card-label">Targets: $250–$300 range</div>
+      <div class="card-label">14 consecutive revenue beats</div>
+      <div class="card-label" style="color:var(--yellow);">Post-earnings: −5% ("sell the news")</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 10: SCENARIO ANALYSIS -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-9">
+  <h2 class="section-header">10. Scenario Analysis</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Bull case narrative:</strong> Agentic AI and reasoning models require orders of magnitude more compute than text-generation. Sovereign AI deployments accelerate, and hyperscaler CapEx continues compounding without a digestion phase. <em>Bridge: FY28E EPS of $10.15 × 30x target P/E = $304.50.</em></p>
+    <p><em>Leading indicator:</em> GTC announcements regarding Vera Rubin volume ramps mapping directly to booked hyperscaler commitments.</p>
+    <p><strong>Base case narrative:</strong> The data center buildout transitions smoothly from Hopper to Blackwell to Rubin. Revenue growth slows to ~20-30% YoY, but operating leverage drives earnings. The multiple compresses slightly to account for maturity. <em>Bridge: FY27E EPS of $8.20 × 28x target P/E = $229.60.</em></p>
+    <p><em>Leading indicator:</em> Meta and MSFT maintaining YoY CapEx guidance growth in their respective Q1/Q2 earnings prints.</p>
+    <p><strong>Bear case narrative:</strong> The AI "Cisco moment" arrives. End-user monetization (ROI) fails to justify the $700B infrastructure spend. Orders are canceled or delayed, and NVIDIA's $95B in non-cancellable TSMC commitments act as a massive drag, violently compressing gross margins and triggering a catastrophic multiple re-rating. <em>Bridge: FY27E EPS compressed to $5.00 × 20x target P/E = $100.00.</em></p>
+    <p><em>Leading indicator:</em> Cloud Service Provider (CSP) revenue from AI services missing internal targets, leading to deferred capacity buildouts.</p>
+    <p><strong>Probability-weighted expected value:</strong> $226.15 <span class="source-badge">Calc</span> (+24.7% upside <span class="source-badge">Calc</span>).</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-3">
+    <div class="scenario-card bull">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="card-title" style="color:var(--green);margin-bottom:0;">Bull Case</div>
+        <span class="badge badge-green">30%</span>
+      </div>
+      <div class="card-value positive">$304.50</div>
+      <div class="card-label">+67.8% upside</div>
+      <div style="margin-top:12px;font-size:13px;">
+        <p><strong>Assumptions:</strong> Agentic inference drives hyperscaler CapEx >$800B. Gross margins hold >75%.</p>
+        <p style="margin-top:6px;"><strong>Bridge:</strong> FY28E EPS $10.15 × 30x P/E</p>
+        <p style="margin-top:6px;color:var(--muted);font-size:12px;"><strong>Leading Indicator:</strong> GTC Vera Rubin volume ramp → booked hyperscaler commitments</p>
+      </div>
+    </div>
+    <div class="scenario-card base">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="card-title" style="color:var(--gold);margin-bottom:0;">Base Case</div>
+        <span class="badge badge-gold">50%</span>
+      </div>
+      <div class="card-value" style="color:var(--gold);">$229.60</div>
+      <div class="card-label">+26.6% upside</div>
+      <div style="margin-top:12px;font-size:13px;">
+        <p><strong>Assumptions:</strong> Orderly Hopper → Blackwell → Rubin transition. CapEx plateaus but stays elevated. GM ~73–75%.</p>
+        <p style="margin-top:6px;"><strong>Bridge:</strong> FY27E EPS $8.20 × 28x P/E</p>
+        <p style="margin-top:6px;color:var(--muted);font-size:12px;"><strong>Leading Indicator:</strong> Meta & MSFT maintaining YoY CapEx guidance growth</p>
+      </div>
+    </div>
+    <div class="scenario-card bear">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="card-title" style="color:var(--red);margin-bottom:0;">Bear Case</div>
+        <span class="badge badge-red">20%</span>
+      </div>
+      <div class="card-value negative">$100.00</div>
+      <div class="card-label">−44.8% downside</div>
+      <div style="margin-top:12px;font-size:13px;">
+        <p><strong>Assumptions:</strong> CapEx ROI falters. $95B purchase obligations crush margins to ~60%.</p>
+        <p style="margin-top:6px;"><strong>Bridge:</strong> FY27E EPS $5.00 × 20x P/E</p>
+        <p style="margin-top:6px;color:var(--muted);font-size:12px;"><strong>Leading Indicator:</strong> CSP AI revenue missing internal targets → deferred buildouts</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expected Value Card -->
+  <div class="card">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin:10px 0;">
+      <div><span class="positive mono">30% × $304.50 = $91.35</span></div>
+      <div style="color:var(--muted);">+</div>
+      <div><span style="color:var(--gold);" class="mono">50% × $229.60 = $114.80</span></div>
+      <div style="color:var(--muted);">+</div>
+      <div><span class="negative mono">20% × $100.00 = $20.00</span></div>
+      <div style="color:var(--muted);">=</div>
+      <div class="card-value" style="color:var(--gold);font-size:24px;">$226.15 <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="prob-bar-container">
+      <div style="width:30%;background:var(--green);">Bull 30%</div>
+      <div style="width:50%;background:var(--gold);color:#0a0a0a;">Base 50%</div>
+      <div style="width:20%;background:var(--red);">Bear 20%</div>
+    </div>
+    <div style="text-align:center;margin-top:8px;font-size:13px;color:var(--muted);">+24.7% upside from current price of $181.40 <span class="source-badge">Calc</span></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 11: RISKS & OPPORTUNITIES -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-10">
+  <h2 class="section-header">11. Risks & Opportunities</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Top 3 Risks:</strong></p>
+    <p><strong>Hyperscaler CapEx Digestion (High Severity / Medium Likelihood):</strong> If MSFT, META, GOOGL, and AMZN pause infrastructure spending to digest capacity, revenue falls off a cliff.</p>
+    <p><strong>Purchase Obligation Boomerang (High Severity / Low Likelihood):</strong> The $95B in non-cancellable supplier commitments will eviscerate margins if downstream demand evaporates.</p>
+    <p><strong>Grid Power Bottlenecks (Medium Severity / High Likelihood):</strong> Compute growth outpaces the physical gigawatt generation capacity of local power grids, forcibly gating unit deployments.</p>
+    <p><strong>Top 3 Opportunities:</strong></p>
+    <p><strong>Agentic AI Token Explosion (High Magnitude / High Likelihood):</strong> Reasoning models drastically expand inference compute TAM far beyond simple chatbots.</p>
+    <p><strong>Sovereign AI Scaling (High Magnitude / High Likelihood):</strong> Nation-states treating compute as critical national security infrastructure creates a massive, price-insensitive buyer base.</p>
+    <p><strong>Spectrum-X Networking Monopoly (Medium Magnitude / High Likelihood):</strong> Ethernet solutions replace InfiniBand bottlenecks, allowing NVIDIA to capture the entire interconnect layer.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" style="color:var(--red);">Risk Matrix</div>
+      <table>
+        <thead><tr><th>Risk</th><th>Severity</th><th>Likelihood</th></tr></thead>
+        <tbody>
+          <tr><td>Hyperscaler CapEx Digestion</td><td class="negative">High</td><td class="neutral">Medium</td></tr>
+          <tr><td>Purchase Obligation Boomerang ($95B)</td><td class="negative">High</td><td class="positive">Low</td></tr>
+          <tr><td>Grid Power Bottlenecks</td><td class="neutral">Medium</td><td class="negative">High</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--green);">Opportunity Matrix</div>
+      <table>
+        <thead><tr><th>Opportunity</th><th>Magnitude</th><th>Likelihood</th></tr></thead>
+        <tbody>
+          <tr><td>Agentic AI Token Explosion</td><td class="positive">High</td><td class="positive">High</td></tr>
+          <tr><td>Sovereign AI Scaling</td><td class="positive">High</td><td class="positive">High</td></tr>
+          <tr><td>Spectrum-X Networking Monopoly</td><td class="neutral">Medium</td><td class="positive">High</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 12: CATALYSTS & KILL CRITERIA -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-11">
+  <h2 class="section-header">12. Thesis Kill Criteria & Catalyst Timeline</h2>
+
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Earnings surprise history:</strong> NVIDIA has logged 14 consecutive revenue beats. However, the magnitude of the beats is normalizing, and the market's reaction has inverted (dropping ~5% on the most recent $68.1B print). Estimate revisions for FY27 and FY28 continue to march upward.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- Catalyst Timeline -->
+  <div class="card">
+    <div class="card-title">Upcoming Catalyst Timeline</div>
+    <div style="padding:12px 0;">
+      <div class="timeline-item">
+        <div class="timeline-dot bull"></div>
+        <div>
+          <div style="font-weight:600;">Mar 16–19, 2026 — GTC Conference</div>
+          <div style="font-size:13px;color:var(--muted);">Hardware roadmap validation (Rubin/GB300)</div>
+          <div><span class="badge badge-green" style="font-size:10px;margin-top:4px;">Bull</span></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot neutral-dot"></div>
+        <div>
+          <div style="font-weight:600;">Late Apr 2026 — MSFT/META Earnings</div>
+          <div style="font-size:13px;color:var(--muted);">Updates on AI infrastructure CapEx</div>
+          <div><span class="badge badge-gold" style="font-size:10px;margin-top:4px;">Neutral</span></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot neutral-dot"></div>
+        <div>
+          <div style="font-weight:600;">Mid-May 2026 — Q1 FY27 Earnings</div>
+          <div style="font-size:13px;color:var(--muted);">Print against the massive $78B guide</div>
+          <div><span class="badge badge-gold" style="font-size:10px;margin-top:4px;">Neutral (High Bar)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kill Criteria -->
+  <div class="grid-2">
+    <div class="card" style="border-left:3px solid var(--red);">
+      <div class="card-title" style="color:var(--red);">Bullish Thesis Invalidated If...</div>
+      <div class="kill-item"><div class="kill-box"></div><div>Non-GAAP Gross margin falls below 72% for two consecutive quarters, signaling loss of pricing power or inventory write-downs.</div></div>
+      <div class="kill-item"><div class="kill-box"></div><div>Forward CapEx guidance from two or more of the top 4 CSPs declines YoY.</div></div>
+      <div class="kill-item"><div class="kill-box"></div><div>TSMC monthly sales data shows sequential deceleration in HPC wafer volumes.</div></div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--green);">
+      <div class="card-title" style="color:var(--green);">Bearish Thesis Invalidated If...</div>
+      <div class="kill-item"><div class="kill-box"></div><div>Sovereign AI revenue definitively crosses the $50B annualized run-rate, proving demand is fully uncoupled from hyperscaler concentration risk.</div></div>
+      <div class="kill-item"><div class="kill-box"></div><div>Agentic AI deployments demonstrably increase hyperscaler ad-click/subscription ROI by >5% internally, permanently justifying the hardware spend.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 13: REVISIONS -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-12">
+  <h2 class="section-header">Revision Summary</h2>
+
+  <!-- Summary Card -->
+  <div class="card" style="text-align:center;">
+    <span class="badge badge-red" style="font-size:14px;padding:6px 20px;">MAJOR REVISIONS</span>
+    <div style="display:flex;justify-content:center;gap:36px;margin-top:16px;">
+      <div><div class="card-value">5</div><div class="card-label">Total Corrections</div></div>
+      <div><div class="card-value" style="color:var(--yellow);">Medium</div><div class="card-label">Overall Confidence</div></div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-top:14px;max-width:700px;margin-left:auto;margin-right:auto;">The report captures the qualitative narrative, sentiment split, and broad financial trends excellently. However, it suffers from a massive accounting logic error regarding Goodwill, a minor arithmetic error in the expected value calculation, and lacks the mandatory disclaimers for unverified sell-side consensus figures.</p>
+  </div>
+
+  <!-- Revision 1 -->
+  <div class="revision-card">
+    <div class="rev-section">Section 4: Balance Sheet Deep Dive</div>
+    <span class="rev-issue">Internal Inconsistency / Unsupported Claim</span>
+    <div class="rev-original" style="margin-top:8px;">
+      <strong>Original:</strong> Goodwill and intangibles ballooned to $24.1B (up from $6.0B the prior year), likely reflecting the Groq IP licensing and Anthropic-related strategic investments.
+    </div>
+    <div class="rev-revised">
+      <strong>Revised:</strong> Goodwill and intangibles ballooned to $24.1B (up from $6.0B the prior year) <span class="source-badge">SEC</span>. <em>Note: The source of this goodwill increase is unexplained by recent M&A. Under US GAAP, minority equity investments (like Anthropic) and IP licensing (like Groq) do not generate goodwill. This massive $15.6B unexplained goodwill increase represents a major unverified balance sheet anomaly requiring further investigation.</em> <span class="source-badge unverified">UNVERIFIED</span>
+    </div>
+    <div class="rev-why"><strong>Why:</strong> Under GAAP, Goodwill is only generated through business combinations (M&A). Section 5 explicitly states NVIDIA has avoided traditional M&A, making the original claim internally inconsistent and financially inaccurate.</div>
+  </div>
+
+  <!-- Revision 2 -->
+  <div class="revision-card">
+    <div class="rev-section">Section 7: Forward Model & Valuation Bridge</div>
+    <span class="rev-issue">Missing Source / Unsupported Claim</span>
+    <div class="rev-original" style="margin-top:8px;">
+      <strong>Original:</strong> Consensus figures cited without source tags or verification disclaimers.
+    </div>
+    <div class="rev-revised">
+      <strong>Revised:</strong> Added <span class="source-badge">Earnings Call</span> and <span class="source-badge">Calc</span> tags for management guidance and derived calculations. Appended footnote: Sell-side consensus figures are not available in the provided pipeline data and cannot be independently verified. <span class="source-badge unverified">UNVERIFIED</span>
+    </div>
+    <div class="rev-why"><strong>Why:</strong> The revision checklist requires that if consensus estimates are cited but not available in the provided data, the report must state this limitation.</div>
+  </div>
+
+  <!-- Revision 3 -->
+  <div class="revision-card">
+    <div class="rev-section">Section 10: Scenario Analysis</div>
+    <span class="rev-issue">Numerical Error</span>
+    <div class="rev-original" style="margin-top:8px;">
+      <strong>Original:</strong> Probability-weighted expected value: <span style="text-decoration:line-through;color:var(--muted);">$226.20</span> (+24.7% upside).
+    </div>
+    <div class="rev-revised">
+      <strong>Revised:</strong> Probability-weighted expected value: $226.15 <span class="source-badge">Calc</span> (+24.7% upside <span class="source-badge">Calc</span>).
+    </div>
+    <div class="rev-why"><strong>Why:</strong> The correct math: (0.3 × $304.50) + (0.5 × $229.60) + (0.2 × $100.00) = $91.35 + $114.80 + $20.00 = $226.15.</div>
+  </div>
+
+  <!-- Revision 4 -->
+  <div class="revision-card">
+    <div class="rev-section">Section 1: Executive Summary</div>
+    <span class="rev-issue">Missing Source</span>
+    <div class="rev-original" style="margin-top:8px;">
+      <strong>Original:</strong> ...an unprecedented $95B in non-cancellable purchase obligations... (no source tag)
+    </div>
+    <div class="rev-revised">
+      <strong>Revised:</strong> ...an unprecedented $95B in non-cancellable purchase obligations <span class="source-badge">Grok / Gemini Sentiment</span>...
+    </div>
+    <div class="rev-why"><strong>Why:</strong> The $95B figure does not appear directly in SEC or Finnhub tables but is derived from sentiment analysis and alternative data. Every factual claim must be traceable.</div>
+  </div>
+
+  <!-- Revision 5 -->
+  <div class="revision-card">
+    <div class="rev-section">Section 3: Fundamental Analysis</div>
+    <span class="rev-issue">Missing Source</span>
+    <div class="rev-original" style="margin-top:8px;">
+      <strong>Original:</strong> Key metrics cited without source attribution (66.9% revenue CAGR, 95.2% EPS growth, 60.3% op margin, 104.3% ROE, $4.5B write-down, 75.2% recovery).
+    </div>
+    <div class="rev-revised">
+      <strong>Revised:</strong> Inserted <span class="source-badge">Finnhub</span> tags for all specific numerical facts sourced from financial data, and <span class="source-badge">Earnings Call</span> tags for margin dip/recovery figures from the Q4 2025 transcript.
+    </div>
+    <div class="rev-why"><strong>Why:</strong> Fulfills the strict requirement that every factual claim must be explicitly traceable to a specific source within the text.</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+const chartsInitialized = {};
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('.tab-content').forEach((tc, i) => {
+    tc.classList.toggle('active', i === idx);
+  });
+  initChartsForTab(idx);
+}
+
+function initChartsForTab(idx) {
+  if (chartsInitialized[idx]) return;
+  chartsInitialized[idx] = true;
+
+  if (idx === 0) initTab0Charts();
+  if (idx === 2) initTab2Charts();
+  if (idx === 4) initTab4Charts();
+  if (idx === 6) initTab6Charts();
+  if (idx === 8) initTab8Charts();
+}
+
+// ============================================================
+// CHART DEFAULTS
+// ============================================================
+Chart.defaults.color = '#8a8a7a';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
+
+// ============================================================
+// TAB 0 CHARTS (none needed — all HTML)
+// ============================================================
+function initTab0Charts() {}
+
+// ============================================================
+// TAB 2 CHARTS: Revenue & EPS, Margin Trends
+// ============================================================
+function initTab2Charts() {
+  // Revenue & EPS
+  const ctxRE = document.getElementById('chart-rev-eps').getContext('2d');
+  new Chart(ctxRE, {
+    type: 'bar',
+    data: {
+      labels: ['FY24', 'FY25', 'FY26', 'FY27E', 'FY28E', 'FY29E'],
+      datasets: [
+        {
+          label: 'Revenue ($B)',
+          data: [60.9, 130.5, 216, 340, 420, 480],
+          backgroundColor: ['rgba(212,168,67,0.6)','rgba(212,168,67,0.6)','rgba(212,168,67,0.6)','rgba(212,168,67,0.3)','rgba(212,168,67,0.3)','rgba(212,168,67,0.3)'],
+          borderColor: 'rgba(212,168,67,0.8)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          borderDash: [0,0],
+          order: 2
+        },
+        {
+          label: 'EPS ($)',
+          data: [1.30, 2.94, 4.95, 8.20, 10.15, 11.50],
+          type: 'line',
+          borderColor: '#5dade2',
+          backgroundColor: 'rgba(93,173,226,0.1)',
+          pointBackgroundColor: '#5dade2',
+          pointRadius: 5,
+          tension: 0.3,
+          yAxisID: 'y1',
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        y: { title: { display: true, text: 'Revenue ($B)' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y1: { position: 'right', title: { display: true, text: 'EPS ($)' }, grid: { drawOnChartArea: false } }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+
+  // Margin Trends
+  const ctxM = document.getElementById('chart-margins').getContext('2d');
+  new Chart(ctxM, {
+    type: 'line',
+    data: {
+      labels: ['FY24', 'FY25', 'FY26', 'FY27E', 'FY28E', 'FY29E'],
+      datasets: [
+        { label: 'Gross Margin', data: [72.7, 75.0, 71.3, 75.0, 74.0, 73.0], borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.08)', fill: true, tension: 0.3, pointRadius: 4 },
+        { label: 'Operating Margin', data: [54.1, 58.0, 60.3, 62.0, 61.0, 59.0], borderColor: '#d4a843', backgroundColor: 'rgba(212,168,67,0.08)', fill: true, tension: 0.3, pointRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { title: { display: true, text: 'Margin (%)' }, min: 40, max: 85, grid: { color: 'rgba(255,255,255,0.04)' } }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+}
+
+// ============================================================
+// TAB 4 CHARTS: FCF, Capital Allocation
+// ============================================================
+function initTab4Charts() {
+  // FCF Chart
+  const ctxFCF = document.getElementById('chart-fcf').getContext('2d');
+  new Chart(ctxFCF, {
+    type: 'bar',
+    data: {
+      labels: ['FY26', 'FY27E', 'FY28E', 'FY29E'],
+      datasets: [
+        { label: 'OCF ($B)', data: [102.7, 156.0, 191.0, 216.0], backgroundColor: 'rgba(76,175,80,0.5)', borderColor: 'rgba(76,175,80,0.8)', borderWidth: 1 },
+        { label: 'CapEx ($B)', data: [6.1, 6.0, 6.0, 6.0], backgroundColor: 'rgba(231,76,60,0.5)', borderColor: 'rgba(231,76,60,0.8)', borderWidth: 1 },
+        { label: 'FCF ($B)', data: [96.6, 150.0, 185.0, 210.0], type: 'line', borderColor: '#d4a843', pointBackgroundColor: '#d4a843', pointRadius: 5, tension: 0.3, borderWidth: 2 }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { title: { display: true, text: '$ Billions' }, grid: { color: 'rgba(255,255,255,0.04)' } } },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+
+  // Capital Allocation Doughnut
+  const ctxCA = document.getElementById('chart-capalloc').getContext('2d');
+  new Chart(ctxCA, {
+    type: 'doughnut',
+    data: {
+      labels: ['Buybacks (Dilution Offset)', 'Dividends (~0%)', 'CapEx ($6.1B)', 'Strategic Investments', 'Retained / Cash Build'],
+      datasets: [{
+        data: [20, 1, 6, 12, 61],
+        backgroundColor: ['#5dade2', '#8a8a7a', '#e74c3c', '#d4a843', '#4caf50'],
+        borderColor: '#141414',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'right', labels: { padding: 14, font: { size: 12 } } } }
+    }
+  });
+}
+
+// ============================================================
+// TAB 6 CHARTS: Valuation Bridges
+// ============================================================
+function initTab6Charts() {
+  // P/E Bridge
+  const ctxPE = document.getElementById('chart-pe-bridge').getContext('2d');
+  new Chart(ctxPE, {
+    type: 'bar',
+    data: {
+      labels: ['Current Price', 'Upside', 'Target Price'],
+      datasets: [{
+        data: [181.40, 48.20, 229.60],
+        backgroundColor: ['rgba(138,138,122,0.5)', 'rgba(76,175,80,0.5)', 'rgba(212,168,67,0.6)'],
+        borderColor: ['#8a8a7a', '#4caf50', '#d4a843'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { title: { display: true, text: 'Price ($)' }, grid: { color: 'rgba(255,255,255,0.04)' } } }
+    }
+  });
+
+  // FCF Yield Bridge
+  const ctxFY = document.getElementById('chart-fcf-bridge').getContext('2d');
+  new Chart(ctxFY, {
+    type: 'bar',
+    data: {
+      labels: ['Current Price', 'Upside', 'Target Price'],
+      datasets: [{
+        data: [181.40, 65.40, 246.80],
+        backgroundColor: ['rgba(138,138,122,0.5)', 'rgba(76,175,80,0.5)', 'rgba(212,168,67,0.6)'],
+        borderColor: ['#8a8a7a', '#4caf50', '#d4a843'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { title: { display: true, text: 'Price ($)' }, grid: { color: 'rgba(255,255,255,0.04)' } } }
+    }
+  });
+}
+
+// ============================================================
+// TAB 8 CHARTS: Ownership Doughnut
+// ============================================================
+function initTab8Charts() {
+  const ctxOwn = document.getElementById('chart-ownership').getContext('2d');
+  new Chart(ctxOwn, {
+    type: 'doughnut',
+    data: {
+      labels: ['Vanguard (9.3%)', 'BlackRock (8.0%)', 'Other Institutional (52.4%)', 'Retail & Other (30.3%)'],
+      datasets: [{
+        data: [9.3, 8.0, 52.4, 30.3],
+        backgroundColor: ['#d4a843', '#5dade2', '#4caf50', '#8a8a7a'],
+        borderColor: '#141414',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'right', labels: { padding: 14, font: { size: 12 } } } }
+    }
+  });
+}
+
+// Initialize Tab 0 charts on page load
+initChartsForTab(0);
+</script>
+</body>
+</html>
