@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$MCD — McDonald's | Equity Research Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a0a;color:#e8e0d0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.6;font-size:14px}
+        .card{background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:24px;margin-bottom:16px}
+        .card-title{color:#d4a843;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+        .card-value{font-size:28px;font-weight:700;color:#e8e0d0;font-family:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace;margin-bottom:4px}
+        .card-label{font-size:12px;color:#8a8a7a}
+        .metric-strip{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+        .metric-item{background:#1a1a1a;border:1px solid #2a2a2a;padding:12px 16px;border-radius:8px;flex:1;min-width:120px}
+        .metric-item .card-title{margin-bottom:4px}
+        .metric-item .card-value{font-size:18px}
+        .analysis-prose{background:#111;border-left:3px solid #d4a843;padding:28px 24px 24px;border-radius:8px;position:relative;margin-bottom:24px;margin-top:16px;line-height:1.75}
+        .analysis-prose p{margin-bottom:12px}
+        .analysis-label{color:#d4a843;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;position:absolute;top:-12px;left:24px;background:#0a0a0a;padding:2px 12px}
+        .section-header{color:#d4a843;font-size:22px;font-weight:700;margin-top:32px;margin-bottom:16px;letter-spacing:1px}
+        .section-divider{border:none;border-top:1px solid #2a2a2a;margin:32px 0}
+        .thesis-box{background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.3);border-radius:12px;padding:24px;line-height:1.75;margin-bottom:16px}
+        .thesis-box p{margin-bottom:10px}
+        .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px}
+        .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+        .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+        .scenario-card{background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:24px;border-left:4px solid #2a2a2a}
+        .scenario-card.bull{border-left-color:#4caf50}
+        .scenario-card.base{border-left-color:#d4a843}
+        .scenario-card.bear{border-left-color:#e74c3c}
+        .scenario-card p{margin-bottom:8px}
+        .timeline-item{display:flex;gap:16px;margin-bottom:20px;align-items:flex-start}
+        .timeline-dot{width:14px;height:14px;border-radius:50%;margin-top:4px;flex-shrink:0}
+        .timeline-dot.bull-dot{background:#4caf50}
+        .timeline-dot.bear-dot{background:#e74c3c}
+        .timeline-dot.neutral-dot{background:#8a8a7a}
+        .kill-item{display:flex;align-items:flex-start;gap:12px;padding:8px 0;line-height:1.6}
+        .kill-item .cb{width:18px;height:18px;border:2px solid #2a2a2a;border-radius:4px;flex-shrink:0;margin-top:2px}
+        .revision-card{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.3);border-radius:12px;padding:20px;margin-bottom:16px}
+        .revision-card .orig{text-decoration:line-through;color:#8a8a7a;font-style:italic}
+        .revision-card .revised{color:#4caf50}
+        .revision-card .why{color:#8a8a7a;font-size:13px;margin-top:8px}
+        .source-badge{display:inline-block;background:#d4a843;color:#0a0a0a;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:.5px;vertical-align:middle}
+        .source-badge.unverified{background:#e74c3c;color:#fff}
+        .positive{color:#4caf50}.negative{color:#e74c3c}.neutral{color:#f1c40f}.blue{color:#5dade2}
+        .mono{font-family:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace}
+        .num{text-align:right;font-family:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace}
+        .prob-bar-container{height:28px;border-radius:14px;overflow:hidden;display:flex;background:#1a1a1a;margin:12px 0}
+        .prob-seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#0a0a0a}
+        .badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;margin-right:8px}
+        .badge-green{background:rgba(76,175,80,.2);color:#4caf50;border:1px solid rgba(76,175,80,.4)}
+        .badge-yellow{background:rgba(241,196,15,.15);color:#f1c40f;border:1px solid rgba(241,196,15,.3)}
+        .badge-red{background:rgba(231,76,60,.15);color:#e74c3c;border:1px solid rgba(231,76,60,.3)}
+        .badge-gold{background:rgba(212,168,67,.15);color:#d4a843;border:1px solid rgba(212,168,67,.3)}
+        .grade-circle{width:64px;height:64px;border-radius:50%;border:3px solid #4caf50;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#4caf50;margin:0 auto 8px}
+        .tab-bar{display:flex;overflow-x:auto;background:#111;border-bottom:1px solid #2a2a2a;padding:0 16px;gap:2px;position:sticky;top:0;z-index:100}
+        .tab-bar::-webkit-scrollbar{height:4px}
+        .tab-bar::-webkit-scrollbar-track{background:#0a0a0a}
+        .tab-bar::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:2px}
+        .tab-btn{padding:12px 14px;background:transparent;border:none;color:#8a8a7a;cursor:pointer;font-size:12px;white-space:nowrap;border-bottom:2px solid transparent;transition:.2s;font-weight:500;font-family:inherit}
+        .tab-btn:hover{color:#e8e0d0}
+        .tab-btn.active{color:#d4a843;border-bottom-color:#d4a843}
+        .tab-content{display:none;padding:24px;max-width:1200px;margin:0 auto}
+        .tab-content.active{display:block}
+        table{width:100%;border-collapse:collapse;margin:16px 0}
+        th{background:#1a1a1a;color:#d4a843;text-align:left;padding:12px;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+        td{padding:10px 12px;border-bottom:1px solid #1a1a1a;font-size:13px}
+        tr:nth-child(even) td{background:#111}
+        canvas{max-width:100%;margin:16px 0}
+        .chart-wrap{background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin-bottom:16px}
+        .issue-label{display:inline-block;background:#e74c3c;color:#fff;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:8px}
+        .header-bar{background:#111;padding:16px 24px;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+        .header-bar h1{font-size:20px;font-weight:700;color:#d4a843}
+        .header-bar .sub{color:#8a8a7a;font-size:13px}
+        @media(max-width:768px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}.tab-btn{font-size:10px;padding:10px 8px}.card{padding:16px}th,td{padding:8px;font-size:11px}}
+    </style>
+</head>
+<body>
+<div class="header-bar">
+    <h1>$MCD &mdash; McDonald's Corporation</h1>
+    <span class="sub">Equity Research Dashboard &bull; Data as of March 5, 2026</span>
+</div>
+<div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+    <button class="tab-btn" onclick="switchTab(1)">2. Narrative</button>
+    <button class="tab-btn" onclick="switchTab(2)">3. Fundamentals</button>
+    <button class="tab-btn" onclick="switchTab(3)">4. Balance Sheet</button>
+    <button class="tab-btn" onclick="switchTab(4)">5. Cash Flow</button>
+    <button class="tab-btn" onclick="switchTab(5)">6. Earnings Quality</button>
+    <button class="tab-btn" onclick="switchTab(6)">7. Forward Model</button>
+    <button class="tab-btn" onclick="switchTab(7)">8. Key Ratios</button>
+    <button class="tab-btn" onclick="switchTab(8)">9. Ownership</button>
+    <button class="tab-btn" onclick="switchTab(9)">10. Scenarios</button>
+    <button class="tab-btn" onclick="switchTab(10)">11. Risks</button>
+    <button class="tab-btn" onclick="switchTab(11)">12. Catalysts</button>
+    <button class="tab-btn" onclick="switchTab(12)">Revisions</button>
+</div>
+
+<!-- ========== TAB 0: EXECUTIVE SUMMARY ========== -->
+<div class="tab-content active">
+<h2 class="section-header">1. Executive Summary</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p><strong>Value Strategy Validation:</strong> MCD successfully reversed its Q1-Q3 low-income traffic bleed by brute-forcing a $5 and $8 Extra Value Meal (EVM) strategy, driving U.S. comparable sales up 6.8% in Q4 2025. <span class="source-badge">Earnings Call</span></p>
+<p><strong>CapEx Ramp for Unit Growth:</strong> Management is shifting to aggressive offense, guiding $3.7B&ndash;$3.9B in 2026 CapEx to open 2,600 gross new locations, directly targeting a 50,000 unit global footprint by 2027. <span class="source-badge">Earnings Call</span></p>
+<p><strong>The Subsidy Cliff:</strong> Corporate EVM subsidies end in Q1 2026. Passing this cost burden back to franchisees will be the ultimate test of the system's pricing power and unit-level economics.</p>
+<p><strong>Fortress Balance Sheet:</strong> Operating margins sit near a best-in-class 46.1%, fueled by their 84%-margin real estate and franchise royalty model. <span class="source-badge">SEC</span></p>
+<p><strong>Conviction Level:</strong> Medium for swing | High for position</p>
+<p><strong>Quick Rating:</strong> <span class="badge badge-yellow">Hold</span> (Swing) / <span class="badge badge-green">Buy</span> (Position) | Expected Move: <strong>+4.5% (Base Case, 12-Month)</strong>. <em>Note: This +4.5% expected move is directly anchored to the 2026 Base Case valuation bridge in Section 7, utilizing a 27.1x P/E multiple on 2026E EPS of $12.75.</em></p>
+<p><strong>Single most important thing an investor needs to know right now:</strong> McDonald's has successfully leveraged its massive balance sheet to win a defensive price war, but its premium valuation means future stock returns rely entirely on franchisees absorbing lower margins to sustain this newly won volume.</p>
+</div>
+
+<hr class="section-divider">
+
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    <span class="badge badge-yellow">Conviction: Medium (Swing)</span>
+    <span class="badge badge-green">Conviction: High (Position)</span>
+    <span class="badge badge-yellow">Rating: Hold (Swing)</span>
+    <span class="badge badge-green">Rating: Buy (Position)</span>
+</div>
+
+<div class="metric-strip">
+    <div class="metric-item"><div class="card-title">Price</div><div class="card-value">$331.00</div></div>
+    <div class="metric-item"><div class="card-title">Market Cap</div><div class="card-value">~$236B</div></div>
+    <div class="metric-item"><div class="card-title">P/E (TTM)</div><div class="card-value">27.4x</div></div>
+    <div class="metric-item"><div class="card-title">P/E (Fwd)</div><div class="card-value">25.1x</div></div>
+    <div class="metric-item"><div class="card-title">EV/EBITDA</div><div class="card-value">21.5x</div></div>
+    <div class="metric-item"><div class="card-title">FCF Yield</div><div class="card-value">3.0%</div></div>
+    <div class="metric-item"><div class="card-title">Div Yield</div><div class="card-value">2.2%</div></div>
+    <div class="metric-item"><div class="card-title">Target</div><div class="card-value">$345.52</div></div>
+</div>
+
+<div class="thesis-box">
+    <div class="card-title" style="margin-bottom:12px">Investment Thesis</div>
+    <p><strong>1. Value Strategy Victory:</strong> $5/$8 EVM drove U.S. comps +6.8% in Q4 2025 <span class="source-badge">Earnings Call</span></p>
+    <p><strong>2. Aggressive Unit Growth:</strong> $3.7B&ndash;$3.9B CapEx for 2,600 new units targeting 50K by 2027 <span class="source-badge">Earnings Call</span></p>
+    <p><strong>3. Fortress Margins:</strong> 46.1% operating margin on 84%-margin franchise royalty model <span class="source-badge">SEC</span></p>
+    <p><strong>4. Key Risk &mdash; Subsidy Cliff:</strong> EVM subsidies end Q1 2026; franchisee margin absorption is the test</p>
+</div>
+
+<div class="grid-3">
+    <div class="card"><div class="card-title">Value Strategy</div><div class="card-value positive">+6.8%</div><div class="card-label">U.S. Comparable Sales Q4 2025</div></div>
+    <div class="card"><div class="card-title">Unit Growth</div><div class="card-value" style="color:#5dade2">2,600</div><div class="card-label">Gross New Locations 2026</div></div>
+    <div class="card"><div class="card-title">Op. Margin</div><div class="card-value positive">46.1%</div><div class="card-label">Best-in-class QSR</div></div>
+</div>
+
+<div class="card">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div style="display:flex;justify-content:space-between;margin:12px 0;flex-wrap:wrap;gap:8px">
+        <span><span class="positive mono">Bull 25%</span> &rarr; $370.00</span>
+        <span><span style="color:#d4a843" class="mono">Base 55%</span> &rarr; $346.00</span>
+        <span><span class="negative mono">Bear 20%</span> &rarr; $280.00</span>
+    </div>
+    <div class="prob-bar-container">
+        <div class="prob-seg" style="width:25%;background:#4caf50">25%</div>
+        <div class="prob-seg" style="width:55%;background:#d4a843">55%</div>
+        <div class="prob-seg" style="width:20%;background:#e74c3c;color:#fff">20%</div>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+        <span class="mono" style="font-size:20px;font-weight:700">$338.80</span>
+        <span class="positive" style="margin-left:8px">+2.4% expected upside</span>
+        <span class="source-badge" style="margin-left:8px">Calc</span>
+    </div>
+</div>
+</div>
+
+<!-- ========== TAB 1: NARRATIVE ========== -->
+<div class="tab-content">
+<h2 class="section-header">2. Current Narrative &amp; Sentiment</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p>The overarching narrative for McDonald's entering March 2026 is one of <strong>defensive triumph transitioning into operational tension</strong>. Following a difficult early 2025 where low-income consumer traffic contracted "nearly double digits," management forcefully centralized value offerings. This culminated in a massive Q4 earnings beat (Adjusted EPS $3.12 vs. $3.05 consensus; Revenue $7.01B, +9.7% YoY), proving the company can still weaponize its scale to dictate market share when necessary. <span class="source-badge">Earnings Call</span></p>
+<p>Forward guidance remains structurally bullish on the top line but requires heavy investment. Management expects to maintain mid-to-high 40% operating margins while ramping CapEx to roughly $3.8 billion to fund 2,600 gross unit openings in 2026. Wall Street has reacted favorably to the traffic stabilization; KeyBanc recently raised its price target to $354 (Overweight), and the broader analyst consensus sits in the $338&ndash;$347 range, reflecting cautious optimism as the stock consolidates near all-time highs. <span class="source-badge">Earnings Call</span></p>
+<p><strong>Contrarian Signal Check:</strong> While consensus celebrates the asset-light, high-margin franchise model, a growing contrarian bear thesis focuses on a brewing <strong>franchisee revolt</strong>. Data from the National Franchisee Leadership Alliance indicates a 95% vote for a communication freeze, as corporate's celebrated 84% margin extraction rate coincides with a reported 10% drop in operator cash flow due to forced value-pricing. Bears argue this "perfect toll bridge" model is currently misaligned and threatens execution if store-level profitability collapses when corporate EVM subsidies are pulled in Q1 2026.</p>
+</div>
+
+<hr class="section-divider">
+
+<div class="grid-3">
+    <div class="card">
+        <div class="card-title">Q4 2025 Beat</div>
+        <div class="card-value positive">$3.12</div>
+        <div class="card-label">Adj. EPS vs. $3.05 consensus <span class="source-badge">Earnings Call</span></div>
+        <div style="margin-top:8px"><span class="mono" style="font-size:16px">$7.01B</span> <span class="card-label">Revenue (+9.7% YoY)</span></div>
+    </div>
+    <div class="card">
+        <div class="card-title">Market Sentiment</div>
+        <div class="card-value" style="color:#5dade2">Cautious Optimism</div>
+        <div class="card-label">KeyBanc target: $354 (Overweight)</div>
+        <div class="card-label">Consensus range: $338&ndash;$347</div>
+    </div>
+    <div class="card">
+        <div class="card-title">Bear Thesis</div>
+        <div class="card-value negative">Franchisee Revolt</div>
+        <div class="card-label">95% voted communication freeze</div>
+        <div class="card-label">10% drop in operator cash flow</div>
+    </div>
+</div>
+</div>
+
+<!-- ========== TAB 2: FUNDAMENTALS ========== -->
+<div class="tab-content">
+<h2 class="section-header">3. Fundamental Analysis</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p>McDonald's operates fundamentally as a global real estate and brand licensing firm disguised as a restaurant chain. Roughly 95% of its 40,000+ locations are franchised. The company generates revenue through two primary streams: company-operated restaurant sales and, more importantly, franchise revenues (rent, royalties based on a percentage of sales, and initial fees). This model is highly defensive, insulating corporate from direct food and labor inflation while yielding exceptional profitability. <span class="source-badge">SEC</span></p>
+<p>Historically, MCD has delivered a 5-year revenue CAGR of 6.96% and a 5-year EPS CAGR of 13.64%. Looking forward, management's commitment to open 2,600 gross locations in 2026 is expected to add approximately 2.5% to system-wide sales growth. <span class="source-badge">Earnings Call</span></p>
+<p>Profitability trends are best-in-class for the Quick Service Restaurant (QSR) space. Trailing 12-month operating margins sit at a staggering 46.1%, up from 38.1% in 2020. Net margins are similarly robust at 31.85%. Because MCD aggressively repurchases shares, total equity is technically negative (-$1.8B), making traditional ROE metrics (95.1%) artificially high; however, a Return on Invested Capital (ROIC) of 17.0% clearly demonstrates efficient capital deployment. <span class="source-badge">SEC</span></p>
+<p>The company's competitive moat is nearly impenetrable. It benefits from massive scale advantages in procurement, a $120B+ real estate portfolio that acts as a high-margin toll bridge, and growing network effects via its digital loyalty app (now at 210 million users). Management noted that app users visit 26 times per year compared to 10.5 times for non-users. Under CEO Chris Kempczinski, management has proven highly adaptable, rapidly pivoting from a defensive posture in early 2025 to an aggressive, volume-driven market share grab by Q4. Their capital allocation remains shareholder-friendly, firmly supporting MCD's status as a Dividend King. <span class="source-badge">Earnings Call</span></p>
+</div>
+
+<hr class="section-divider">
+
+<div class="grid-4">
+    <div class="card"><div class="card-title">Revenue (TTM)</div><div class="card-value">$26.9B</div><div class="card-label">5-yr CAGR: 6.96% <span class="source-badge">SEC</span></div></div>
+    <div class="card"><div class="card-title">GAAP EPS (TTM)</div><div class="card-value">$11.95</div><div class="card-label">5-yr CAGR: 13.64% <span class="source-badge">SEC</span></div></div>
+    <div class="card"><div class="card-title">Op. Margin</div><div class="card-value positive">46.1%</div><div class="card-label">Up from 38.1% in 2020</div></div>
+    <div class="card"><div class="card-title">ROIC</div><div class="card-value" style="color:#5dade2">17.0%</div><div class="card-label">Efficient capital deployment <span class="source-badge">SEC</span></div></div>
+</div>
+
+<div class="grid-2">
+    <div class="chart-wrap"><div class="card-title">Revenue &amp; EPS Trend</div><canvas id="chart-rev-eps"></canvas></div>
+    <div class="chart-wrap"><div class="card-title">Margin Trends</div><canvas id="chart-margins"></canvas></div>
+</div>
+
+<h3 class="section-header" style="font-size:16px">Growth Rates Table</h3>
+<div style="overflow-x:auto">
+<table>
+<tr><th>Metric</th><th>2020</th><th>2021</th><th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>2026E</th><th>2027E</th><th>2028E</th></tr>
+<tr><td>Revenue ($B)</td><td class="num">19.2</td><td class="num">23.2</td><td class="num">23.2</td><td class="num">25.5</td><td class="num">25.9</td><td class="num">26.9</td><td class="num">28.4</td><td class="num">29.9</td><td class="num">31.6</td></tr>
+<tr><td>Rev Growth %</td><td class="num">&mdash;</td><td class="num positive">+20.8%</td><td class="num">0%</td><td class="num positive">+9.9%</td><td class="num positive">+1.6%</td><td class="num positive">+3.9%</td><td class="num positive">+5.5%</td><td class="num positive">+5.5%</td><td class="num positive">+5.5%</td></tr>
+<tr><td>Op. Margin</td><td class="num">38.1%</td><td class="num">42.6%</td><td class="num">42.9%</td><td class="num">45.2%</td><td class="num">45.5%</td><td class="num">46.1%</td><td class="num">46.5%</td><td class="num">46.8%</td><td class="num">47.0%</td></tr>
+<tr><td>EPS ($)</td><td class="num">6.31</td><td class="num">9.28</td><td class="num">9.33</td><td class="num">11.26</td><td class="num">11.44</td><td class="num">11.95</td><td class="num">12.75</td><td class="num">13.60</td><td class="num">14.50</td></tr>
+</table>
+</div>
+</div>
+
+<!-- ========== TAB 3: BALANCE SHEET ========== -->
+<div class="tab-content">
+<h2 class="section-header">4. Balance Sheet Deep Dive</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p><strong>Asset Quality:</strong> Out of $59.5B in total assets, goodwill and intangibles account for just $3.4B (5.7%). Asset quality is exceptionally high, dominated by physical real estate and property. There have been no material goodwill impairments or write-downs in the last three years. <span class="source-badge">SEC</span></p>
+<p><strong>Debt Structure:</strong> McDonald's carries $40.0B in long-term debt. While this appears elevated, the company is highly leveraged by design. The weighted average cost of debt is low, and maturities are well-laddered. The negative equity position (-$1.8B) is entirely a byproduct of aggressive, long-term treasury stock repurchases, not accumulated operating deficits. <span class="source-badge">SEC</span></p>
+<p><strong>Covenant and Credit Risk:</strong> MCD maintains strong investment-grade credit ratings (typically BBB+ / Baa1). The debt load is easily serviced by the company's toll-bridge cash flows. Net interest coverage sits at a very comfortable 9.07x, indicating zero near-term solvency risk despite the optical "deficit" in shareholder equity. <span class="source-badge">SEC</span></p>
+<p><strong>Off-Balance-Sheet Exposure:</strong> Operating leases are appropriately capitalized post-ASC 842. The most notable contingent risk remains international developmental licensee execution (e.g., in China, where macroeconomic overcapacity is a noted headwind), though direct balance sheet liability is ring-fenced.</p>
+<p><strong>Liquidity Position:</strong> Liquidity is tight but manageable. Cash and short-term investments total $774M against $4.4B in current liabilities. The current ratio (0.95) and quick ratio (0.94) run slightly below 1.0x. However, for a highly cash-generative franchise model where receivables (royalties) turn over rapidly (11x annually) and inventory is minimal ($61M), operating with negative working capital is a feature of efficiency, not a bug. <span class="source-badge">SEC</span></p>
+<p><strong>Net-net assessment:</strong> The balance sheet is a highly optimized source of strength; the heavy leverage is perfectly calibrated against predictable, utility-like royalty cash flows.</p>
+</div>
+
+<hr class="section-divider">
+
+<div class="grid-3">
+    <div class="card">
+        <div class="card-title">Liquidity</div>
+        <div class="card-value">$774M</div>
+        <div class="card-label">Cash &amp; Short-Term Investments</div>
+        <div style="margin-top:12px;display:flex;gap:16px">
+            <div><span class="card-label">Current Ratio</span><br><span class="mono" style="font-size:16px">0.95</span></div>
+            <div><span class="card-label">Quick Ratio</span><br><span class="mono" style="font-size:16px">0.94</span></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">Leverage</div>
+        <div class="card-value">$59.5B</div>
+        <div class="card-label">Total Assets <span class="source-badge">SEC</span></div>
+        <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap">
+            <div><span class="card-label">LT Debt</span><br><span class="mono" style="font-size:16px">$40.0B</span></div>
+            <div><span class="card-label">Equity</span><br><span class="mono negative" style="font-size:16px">-$1.8B</span></div>
+            <div><span class="card-label">Int. Coverage</span><br><span class="mono positive" style="font-size:16px">9.07x</span></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">Asset Quality</div>
+        <div class="card-value positive">$3.4B</div>
+        <div class="card-label">Goodwill &amp; Intangibles</div>
+        <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap">
+            <div><span class="card-label">GW / Assets</span><br><span class="mono" style="font-size:16px">5.7%</span></div>
+            <div><span class="card-label">Impairments</span><br><span class="mono positive" style="font-size:16px">None</span></div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ========== TAB 4: CASH FLOW ========== -->
+<div class="tab-content">
+<h2 class="section-header">5. Cash Flow Analysis</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p>McDonald's is a cash-generating behemoth. In 2025, Operating Cash Flow (OCF) hit $10.6B, while Free Cash Flow (FCF) reached $7.2B. The FCF margin is a remarkable 26.7%, indicating that over a quarter of every dollar in revenue converts directly to discretionary cash. <span class="source-badge">SEC</span></p>
+<p>Cash flow quality is pristine. OCF ($10.6B) comfortably exceeds reported Net Income ($8.6B), an excellent indicator that earnings are backed by hard cash rather than aggressive accruals. The cash conversion cycle is highly efficient, minimizing working capital drag. The primary capital outflow is Capex, which is ramping up from 8.5% of revenue in 2020 to an estimated 13.5% in 2026 ($3.7B&ndash;$3.9B) to fund the 2027 50,000-unit expansion target. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+<p><strong>Capital Allocation Scorecard:</strong></p>
+<p><strong>Buybacks:</strong> Management continues to shrink the float (currently 712M shares outstanding). However, with an EV/FCF of 38x, buybacks at current levels are less accretive than historical repurchases, acting more to offset equity dilution and provide a price floor than to generate explosive value. <span class="source-badge">SEC</span></p>
+<p><strong>Dividends:</strong> The current yield is 2.2% with a payout ratio of ~60%. The 5-year dividend growth CAGR is 7.33%, backed by nearly 50 consecutive years of increases. <span class="source-badge">SEC</span></p>
+<p><strong>Debt management:</strong> Net debt has increased over the last 3 years to fund the gap between (Dividends + Buybacks + CapEx) and FCF.</p>
+<p><strong>M&amp;A track record:</strong> M&amp;A is immaterial; growth is entirely organic unit expansion and digital integration.</p>
+<p><strong>Sustainability verdict:</strong> The company can comfortably fund its core dividend and elevated CapEx from FCF alone, though maintaining the historical pace of stock buybacks alongside the unit expansion will likely require rolling over existing debt.</p>
+</div>
+
+<hr class="section-divider">
+
+<div class="grid-2">
+    <div class="chart-wrap"><div class="card-title">OCF, CapEx &amp; FCF</div><canvas id="chart-fcf"></canvas></div>
+    <div class="chart-wrap"><div class="card-title">FCF Margin Trend</div><canvas id="chart-fcf-margin"></canvas></div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+    <div class="card-title">FY2025 Cash Flow Waterfall</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <div style="background:#4caf50;color:#0a0a0a;padding:10px 20px;border-radius:8px;font-weight:700" class="mono">OCF $10.6B</div>
+        <span style="font-size:20px">&rarr;</span>
+        <div style="background:#e74c3c;color:#fff;padding:10px 20px;border-radius:8px;font-weight:700" class="mono">CapEx -$3.4B</div>
+        <span style="font-size:20px">&rarr;</span>
+        <div style="background:#d4a843;color:#0a0a0a;padding:10px 20px;border-radius:8px;font-weight:700" class="mono">FCF $7.2B</div>
+    </div>
+</div>
+
+<div class="chart-wrap"><div class="card-title">Capital Allocation (FY2025 Estimated)</div><canvas id="chart-capalloc"></canvas></div>
+</div>
+
+<!-- ========== TAB 5: EARNINGS QUALITY ========== -->
+<div class="tab-content">
+<h2 class="section-header">6. Earnings Quality &amp; Accounting Red Flags</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p><strong>GAAP vs. Non-GAAP Spread:</strong> The gap between reported GAAP EPS ($11.95) and adjusted normalized EPS ($11.95) is virtually non-existent for the trailing year. Adjustments are standard and minimal, primarily consisting of minor restructuring costs and stock-based compensation (SBC). SBC was just $165M in 2025&mdash;an immaterial 0.6% of total revenue. <span class="source-badge">SEC</span></p>
+<p><strong>"One-time" Charge Frequency:</strong> McDonald's does not exhibit a pattern of abusing "one-time" charges to engineer earnings. Occasional charges related to international market exits (e.g., Russia in 2022) have been genuinely anomalous rather than recurring-in-disguise.</p>
+<p><strong>Revenue Recognition Signals:</strong> Revenue recognition methodologies are standard and have not changed. Franchise fees and royalties are recognized as earned. There are no concerning patterns in deferred revenue or contract asset growth outpacing underlying sales. <span class="source-badge">SEC</span></p>
+<p><strong>Accrual Quality:</strong> Accrual quality is exceptionally high. As noted, OCF consistently outpaces Net Income on a trailing 3-year basis. The Sloan Accrual Ratio is negative (favorable), confirming conservative accounting practices. <span class="source-badge">Calc</span></p>
+<p><strong>Audit and Disclosure Flags:</strong> There have been no auditor changes, qualified opinions, or material weaknesses in internal controls reported. Filings are clean and timely. <span class="source-badge">SEC</span></p>
+<p><strong>Insider Signals in Context:</strong> Insider transaction data from February 2026 shows minor, routine selling (e.g., Jonathan Banner selling ~6,200 shares, Joseph Erlinger selling 333 shares). These are standard liquidity events and do not suggest a lack of executive confidence, especially given the aggressive forward guidance provided on the Q4 call. <span class="source-badge">SEC</span></p>
+<p><strong>Overall Accounting Confidence:</strong> <strong>Clean.</strong> The financials are transparent, cash-backed, and devoid of engineered complexity.</p>
+</div>
+
+<hr class="section-divider">
+
+<div class="grid-3">
+    <div class="card" style="text-align:center">
+        <div class="card-title">Management Credibility</div>
+        <div class="grade-circle">A</div>
+        <div class="card-label">Clean &mdash; Transparent, cash-backed financials</div>
+    </div>
+    <div class="card" style="text-align:center">
+        <div class="card-title">Cash Conversion Quality</div>
+        <div style="display:flex;justify-content:center;gap:24px;margin-top:8px">
+            <div><div class="card-value positive">$10.6B</div><div class="card-label">OCF</div></div>
+            <div style="font-size:24px;color:#8a8a7a;align-self:center">vs</div>
+            <div><div class="card-value" style="color:#5dade2">$8.6B</div><div class="card-label">Net Income</div></div>
+        </div>
+        <div class="card-label" style="margin-top:8px">OCF exceeds NI &mdash; earnings are cash-backed <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="card">
+        <div class="card-title">SBC as % Revenue</div>
+        <div class="card-value positive">0.6%</div>
+        <div class="card-label">$165M in 2025 &mdash; Immaterial <span class="source-badge">SEC</span></div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-title" style="color:#4caf50">Bullish Signals</div>
+        <p style="margin:8px 0"><span class="positive">&#10003;</span> GAAP = Non-GAAP EPS (zero spread)</p>
+        <p style="margin:8px 0"><span class="positive">&#10003;</span> OCF consistently exceeds Net Income</p>
+        <p style="margin:8px 0"><span class="positive">&#10003;</span> Negative Sloan Accrual Ratio (conservative)</p>
+        <p style="margin:8px 0"><span class="positive">&#10003;</span> No auditor changes or qualified opinions</p>
+        <p style="margin:8px 0"><span class="positive">&#10003;</span> Clean, timely filings</p>
+    </div>
+    <div class="card">
+        <div class="card-title" style="color:#f1c40f">Watch Items</div>
+        <p style="margin:8px 0"><span class="neutral">&#9888;</span> Minor insider selling (routine liquidity events)</p>
+        <p style="margin:8px 0"><span class="neutral">&#9888;</span> Russia exit charge in 2022 (genuinely one-time)</p>
+    </div>
+</div>
+</div>
+
+<!-- ========== TAB 6: FORWARD MODEL ========== -->
+<div class="tab-content">
+<h2 class="section-header">7. Forward Model &amp; Valuation Bridge</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p>The following 3-year operating forecast is anchored on management's Q4 2025 earnings call guidance, assuming the rollout of 2,600 gross units in 2026 and sustained value-meal traffic. <span class="source-badge">Earnings Call</span></p>
+<p><em>Note: Revenue and EPS are inferred based on management's guidance of unit expansion and operating margins. Consensus estimates align closely with these assumptions.</em></p>
+<p><strong>Bridge Narrative:</strong> The +4.4% to +6.0% upside is driven entirely by base-case earnings and cash flow growth, assuming the market is willing to maintain the current premium multiple (27.1x forward P/E). There is virtually no room for multiple expansion at these levels. The current valuation is <strong>justified but fully priced</strong>, meaning MCD is a safe compounder but unlikely to generate alpha without an unexpected upside shock in franchisee profitability. <span class="source-badge">Calc</span></p>
+</div>
+
+<hr class="section-divider">
+
+<h3 class="section-header" style="font-size:16px">3-Year Forward Model (REVISED)</h3>
+<div style="overflow-x:auto">
+<table>
+<tr><th>Metric</th><th class="num">2026E</th><th class="num">2027E</th><th class="num">2028E</th><th>Basis</th></tr>
+<tr><td>Revenue</td><td class="num">$28.4B</td><td class="num">$29.9B</td><td class="num">$31.6B</td><td>5.5% YoY (2.5% unit + 3% comp) <span class="source-badge">Calc</span></td></tr>
+<tr><td>Gross Margin</td><td class="num">57.5%</td><td class="num">57.5%</td><td class="num">57.6%</td><td>Flat, historical average</td></tr>
+<tr><td>Operating Margin</td><td class="num">46.5%</td><td class="num">46.8%</td><td class="num">47.0%</td><td>Guided "Mid-to-high 40s" <span class="source-badge">Earnings Call</span></td></tr>
+<tr><td>EPS</td><td class="num">$12.75</td><td class="num">$13.60</td><td class="num">$14.50</td><td>6.5% YoY growth + buybacks</td></tr>
+<tr><td>Free Cash Flow</td><td class="num">$7.5B</td><td class="num">$8.0B</td><td class="num">$8.6B</td><td>OCF growth offset by ~$3.8B CapEx <span class="source-badge">Earnings Call</span></td></tr>
+</table>
+</div>
+
+<h3 class="section-header" style="font-size:16px">Guidance vs. Consensus</h3>
+<div style="overflow-x:auto">
+<table>
+<tr><th>Period</th><th>Metric</th><th>Management Guidance</th><th>Sell-Side Consensus</th><th>Delta</th><th>Interpretation</th></tr>
+<tr><td>FY 2026</td><td>Op Margin</td><td>Mid-to-high 40%</td><td class="num">46.5%</td><td>None</td><td class="positive">Inline</td></tr>
+<tr><td>FY 2026</td><td>CapEx</td><td>$3.7B &ndash; $3.9B</td><td class="num">$3.8B</td><td>None</td><td class="positive">Inline</td></tr>
+</table>
+</div>
+
+<h3 class="section-header" style="font-size:16px">Valuation Bridge</h3>
+<div style="overflow-x:auto">
+<table>
+<tr><th>Method</th><th>Year</th><th>Metric</th><th>Multiple / Yield</th><th class="num">Target</th><th class="num">Current</th><th class="num">Upside</th></tr>
+<tr><td>P/E</td><td>2026E</td><td>EPS $12.75</td><td>27.1x</td><td class="num positive">$345.52</td><td class="num">$331.00</td><td class="num positive">+4.4%</td></tr>
+<tr><td>FCF Yield</td><td>2026E</td><td>FCF $7.5B</td><td>3.0% yield</td><td class="num positive">$351.12</td><td class="num">$331.00</td><td class="num positive">+6.0%</td></tr>
+</table>
+</div>
+
+<div class="grid-2" style="margin-top:16px">
+    <div class="chart-wrap"><div class="card-title">P/E Valuation Bridge</div><canvas id="chart-pe-bridge"></canvas></div>
+    <div class="chart-wrap"><div class="card-title">FCF Yield Valuation Bridge</div><canvas id="chart-fcf-bridge"></canvas></div>
+</div>
+</div>
+
+<!-- ========== TAB 7: KEY RATIOS ========== -->
+<div class="tab-content">
+<h2 class="section-header">8. Key Ratios &amp; Comparisons</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p><strong>Synthesis:</strong> MCD is currently <strong>fairly valued to slightly expensive</strong> relative to its own 5-year history, and trades at a massive premium to QSR peers. The single most important ratio to watch going forward is <strong>Operating Margin</strong>; if the withdrawal of corporate EVM subsidies in Q1 2026 causes franchisees to raise prices (hurting traffic) or forces corporate to step back in (hurting margins), the 27x P/E multiple will contract sharply.</p>
+</div>
+
+<hr class="section-divider">
+
+<div style="overflow-x:auto">
+<table>
+<tr><th>Metric</th><th class="num">Current</th><th class="num">5-yr Avg</th><th class="num">Peer Avg <span class="source-badge unverified">Unverified</span></th><th>Interpretation</th></tr>
+<tr><td>P/E (TTM)</td><td class="num">27.4x</td><td class="num">27.5x</td><td class="num">~24.0x</td><td>Fairly valued historically; premium to sector</td></tr>
+<tr><td>P/E (Forward)</td><td class="num">25.1x</td><td class="num">25.5x</td><td class="num">~22.5x</td><td>Still commands a fortress premium</td></tr>
+<tr><td>PEG Ratio</td><td class="num negative">5.65</td><td class="num">~3.5</td><td class="num">~2.5</td><td class="negative"><strong>Flag:</strong> Extremely high. Growth is expensive</td></tr>
+<tr><td>EV/EBITDA</td><td class="num">21.5x</td><td class="num">20.0x</td><td class="num">~18.0x</td><td class="neutral">Elevated relative to own history</td></tr>
+<tr><td>P/S</td><td class="num">8.7x</td><td class="num">8.0x</td><td class="num">~5.0x</td><td>Premium real-estate model distorts standard P/S</td></tr>
+<tr><td>P/B</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td>Meaningless (negative equity from buybacks)</td></tr>
+<tr><td>P/FCF</td><td class="num negative">32.6x</td><td class="num">~28.0x</td><td class="num">~25.0x</td><td class="negative"><strong>Flag:</strong> Elevated FCF multiple</td></tr>
+<tr><td>Debt/Equity</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td>Meaningless metric for MCD</td></tr>
+<tr><td>Net Interest Coverage</td><td class="num positive">9.07x</td><td class="num">8.5x</td><td class="num">~6.0x</td><td class="positive">Highly secure debt service</td></tr>
+<tr><td>Current Ratio</td><td class="num">0.95</td><td class="num">1.30</td><td class="num">1.10</td><td>Tight, but standard for MCD's cash cycle</td></tr>
+<tr><td>Quick Ratio</td><td class="num">0.94</td><td class="num">1.25</td><td class="num">1.00</td><td>Inventory is a non-issue</td></tr>
+<tr><td>Gross Margin</td><td class="num positive">57.4%</td><td class="num">56.4%</td><td class="num">~45.0%</td><td class="positive">Best-in-class (franchise royalties)</td></tr>
+<tr><td>Operating Margin</td><td class="num positive">46.1%</td><td class="num">43.9%</td><td class="num">~30.0%</td><td class="positive">Exceptional scale efficiency</td></tr>
+<tr><td>ROIC</td><td class="num positive">17.0%</td><td class="num">17.9%</td><td class="num">~14.0%</td><td class="positive">Strong, consistent capital deployment</td></tr>
+</table>
+</div>
+<div class="card-label" style="margin-top:8px"><em>Peers: Yum! Brands (YUM), Starbucks (SBUX), Restaurant Brands International (QSR)</em></div>
+</div>
+
+<!-- ========== TAB 8: OWNERSHIP ========== -->
+<div class="tab-content">
+<h2 class="section-header">9. Additional Key Factors</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p><strong>Insider &amp; Institutional Ownership:</strong> Institutions hold a massive 75.6% of the float, led by Vanguard (10.2%) and BlackRock (7.5%). The top mutual funds are all passive index and dividend-growth vehicles. Insider ownership is virtually nonexistent (0.3%), which is standard for a legacy mega-cap. <span class="source-badge">SEC</span></p>
+<p><strong>Short Interest:</strong> Short interest is virtually non-existent at 1.2% of the float (8.7M shares) with 2.58 days-to-cover. No one is willing to heavily short this defensive fortress, especially given the dividend yield. <span class="source-badge">SEC</span></p>
+<p><strong>Liquidity:</strong> Average daily trading volume is extremely healthy. There are no lockup expirations or illiquidity risks.</p>
+<p><strong>Beta and Macro Exposure:</strong> With a Beta of 0.49, MCD is a classic "risk-off" defensive asset. It thrives on the "trade-down" effect when macro conditions squeeze discretionary income. It is inversely correlated to rapid economic expansions where consumers trade up to fast-casual.</p>
+<p><strong>Earnings Surprise History:</strong> MCD has a strong track record of steady beats. The Q4 2025 beat ($3.12 vs $3.05) was particularly notable because it silenced concerns about the low-income consumer abandoning the brand. Estimate revisions over the last 30 days have been decidedly upward following the Q4 call. <span class="source-badge">Earnings Call</span></p>
+</div>
+
+<hr class="section-divider">
+
+<div class="grid-2">
+    <div class="chart-wrap"><div class="card-title">Institutional Ownership Breakdown</div><canvas id="chart-ownership"></canvas></div>
+    <div class="card">
+        <div class="card-title">Insider Activity (Feb 2026)</div>
+        <table>
+        <tr><th>Name</th><th>Role</th><th>Action</th><th class="num">Shares</th></tr>
+        <tr><td>Jonathan Banner</td><td>Executive</td><td class="neutral">Sell</td><td class="num">~6,200</td></tr>
+        <tr><td>Joseph Erlinger</td><td>Executive</td><td class="neutral">Sell</td><td class="num">333</td></tr>
+        </table>
+        <div class="card-label" style="margin-top:8px">Routine liquidity events <span class="source-badge">SEC</span></div>
+    </div>
+</div>
+
+<div class="grid-3">
+    <div class="card">
+        <div class="card-title">Short Interest</div>
+        <div class="card-value">1.2%</div>
+        <div class="card-label">of float (8.7M shares)</div>
+        <div style="margin-top:8px"><span class="card-label">Days to Cover:</span> <span class="mono">2.58</span></div>
+    </div>
+    <div class="card">
+        <div class="card-title">Trading &amp; Beta</div>
+        <div class="card-value">0.49</div>
+        <div class="card-label">Beta &mdash; Classic defensive asset</div>
+        <div class="card-label" style="margin-top:4px">Healthy ADV, no illiquidity risk</div>
+    </div>
+    <div class="card">
+        <div class="card-title">Wall Street Sentiment</div>
+        <div class="card-value" style="color:#5dade2">Bullish</div>
+        <div class="card-label">Consensus: $338&ndash;$347</div>
+        <div class="card-label">Revisions: Upward (30-day) <span class="source-badge">Earnings Call</span></div>
+    </div>
+</div>
+</div>
+
+<!-- ========== TAB 9: SCENARIOS ========== -->
+<div class="tab-content">
+<h2 class="section-header">10. Scenario Analysis</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p><strong>Bull case narrative:</strong> McDonald's successfully transitions the cost of the $5/$8 EVM deals to franchisees without losing compliance. The aggressive 2,600 new unit rollout scales perfectly alongside the new McCafe national rollout, driving volume that effortlessly offsets any unit-level margin compression.</p>
+<p><em>Valuation bridge:</em> 2026E EPS of $13.00 &times; 28.5x target P/E = $370.50.</p>
+<p><em>Leading indicator:</em> Q2 2026 U.S. comparable sales accelerate past 7%.</p>
+<p><strong>Base case narrative:</strong> Status quo holds. MCD maintains its traffic stabilization but must occasionally inject regional subsidies to keep franchisees happy. Earnings grow purely on unit expansion, share repurchases, and loyalty app efficiencies, while the multiple stays pinned to historical averages.</p>
+<p><em>Valuation bridge:</em> 2026E EPS of $12.75 &times; 27.1x target P/E = $345.52.</p>
+<p><em>Leading indicator:</em> Operating margin stabilizes exactly at 46.5%.</p>
+<p><strong>Bear case narrative:</strong> The "toll bridge" breaks. Franchisees, unable to absorb high labor costs and forced 15% minimum discounts without corporate help, revolt and raise menu prices in Q2. The low-income consumer immediately rotates out, crushing comparable sales, while the massive CapEx spend becomes a drag on FCF.</p>
+<p><em>Valuation bridge:</em> 2026E EPS of $11.75 &times; 23.8x target P/E (multiple compression) = $279.65.</p>
+<p><em>Leading indicator:</em> A public breakdown in National Franchisee Leadership Alliance communications or Q2 guest counts turning negative.</p>
+<p><strong>Probability-weighted expected value:</strong> $338.80 (+2.4% expected value). <span class="source-badge">Calc</span></p>
+</div>
+
+<hr class="section-divider">
+
+<div class="grid-3">
+    <div class="scenario-card bull">
+        <div class="card-title" style="color:#4caf50">Bull Case</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin:8px 0">
+            <span class="badge badge-green">25%</span>
+            <span class="mono" style="font-size:22px;font-weight:700;color:#4caf50">$370.00</span>
+        </div>
+        <div class="card-label positive">+11.8% upside</div>
+        <p style="margin-top:12px;font-size:13px">Subsidy roll-off succeeds; traffic volume soars; McCafe scales.</p>
+        <p style="font-size:12px;color:#8a8a7a;margin-top:8px"><em>Bridge:</em> $13.00 EPS &times; 28.5x = $370.50</p>
+        <p style="font-size:12px;color:#8a8a7a"><em>Indicator:</em> Q2 comps &gt; 7%</p>
+    </div>
+    <div class="scenario-card base">
+        <div class="card-title" style="color:#d4a843">Base Case</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin:8px 0">
+            <span class="badge badge-gold">55%</span>
+            <span class="mono" style="font-size:22px;font-weight:700;color:#d4a843">$346.00</span>
+        </div>
+        <div class="card-label" style="color:#d4a843">+4.5% upside</div>
+        <p style="margin-top:12px;font-size:13px">Mid-single-digit EPS growth; margins hold; P/E remains flat.</p>
+        <p style="font-size:12px;color:#8a8a7a;margin-top:8px"><em>Bridge:</em> $12.75 EPS &times; 27.1x = $345.52</p>
+        <p style="font-size:12px;color:#8a8a7a"><em>Indicator:</em> Op margin at 46.5%</p>
+    </div>
+    <div class="scenario-card bear">
+        <div class="card-title" style="color:#e74c3c">Bear Case</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin:8px 0">
+            <span class="badge badge-red">20%</span>
+            <span class="mono" style="font-size:22px;font-weight:700;color:#e74c3c">$280.00</span>
+        </div>
+        <div class="card-label negative">-15.4% downside</div>
+        <p style="margin-top:12px;font-size:13px">Franchisee revolt forces price hikes; lower-income traffic drops.</p>
+        <p style="font-size:12px;color:#8a8a7a;margin-top:8px"><em>Bridge:</em> $11.75 EPS &times; 23.8x = $279.65</p>
+        <p style="font-size:12px;color:#8a8a7a"><em>Indicator:</em> NFLA breakdown or negative Q2 guests</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div style="font-size:13px;margin:12px 0;color:#8a8a7a" class="mono">
+        (0.25 &times; $370.00) + (0.55 &times; $346.00) + (0.20 &times; $280.00) = $92.50 + $190.30 + $56.00 = <strong style="color:#e8e0d0">$338.80</strong>
+    </div>
+    <div class="prob-bar-container">
+        <div class="prob-seg" style="width:25%;background:#4caf50">Bull 25%</div>
+        <div class="prob-seg" style="width:55%;background:#d4a843">Base 55%</div>
+        <div class="prob-seg" style="width:20%;background:#e74c3c;color:#fff">Bear 20%</div>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+        <span class="mono" style="font-size:24px;font-weight:700">$338.80</span>
+        <span class="positive" style="margin-left:8px;font-size:16px">+2.4% expected upside</span>
+        <span class="source-badge" style="margin-left:8px">Calc</span>
+    </div>
+</div>
+</div>
+
+<!-- ========== TAB 10: RISKS ========== -->
+<div class="tab-content">
+<h2 class="section-header">11. Risks &amp; Opportunities</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p><strong>Top 3 Risks</strong></p>
+<p><strong>Franchisee Margin Revolt (Severity: High | Likelihood: Medium):</strong> Corporate EVM subsidies end in Q1 2026. If franchisees abandon the value pricing structure to protect their cash flow, MCD loses its primary traffic driver.</p>
+<p><strong>European Beef Inflation (Severity: Medium | Likelihood: High):</strong> Input costs in Internationally Operated Markets (IOM) remain pressured, creating localized margin compression outside the U.S.</p>
+<p><strong>GLP-1 Drug Headwinds (Severity: Medium | Likelihood: Low):</strong> While long-term, widespread adoption of appetite suppressants could structurally lower caloric demand, requiring a costly menu pivot.</p>
+<p><strong>Top 3 Opportunities</strong></p>
+<p><strong>App/Loyalty Multiplier (Magnitude: High | Likelihood: High):</strong> Scaling from 210M to 250M users will radically reduce customer acquisition costs and increase lifetime value (2.5x visit frequency). <span class="source-badge">Earnings Call</span></p>
+<p><strong>McCafe Platform Expansion (Magnitude: Medium | Likelihood: High):</strong> Taking the "CosMc's" beverage learnings and integrating them nationally taps into a $100B, high-margin TAM.</p>
+<p><strong>Global Unit Expansion (Magnitude: High | Likelihood: High):</strong> Adding 50,000 locations by 2027 physically captures market share before competitors can secure prime real estate. <span class="source-badge">Earnings Call</span></p>
+</div>
+
+<hr class="section-divider">
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-title" style="color:#e74c3c">Risk Matrix</div>
+        <table>
+        <tr><th>Risk</th><th>Severity</th><th>Likelihood</th></tr>
+        <tr><td>Franchisee Margin Revolt</td><td class="negative"><strong>High</strong></td><td class="neutral"><strong>Medium</strong></td></tr>
+        <tr><td>European Beef Inflation</td><td class="neutral"><strong>Medium</strong></td><td class="negative"><strong>High</strong></td></tr>
+        <tr><td>GLP-1 Drug Headwinds</td><td class="neutral"><strong>Medium</strong></td><td style="color:#8a8a7a"><strong>Low</strong></td></tr>
+        </table>
+    </div>
+    <div class="card">
+        <div class="card-title" style="color:#4caf50">Opportunity Matrix</div>
+        <table>
+        <tr><th>Opportunity</th><th>Magnitude</th><th>Likelihood</th></tr>
+        <tr><td>App/Loyalty Multiplier</td><td class="positive"><strong>High</strong></td><td class="positive"><strong>High</strong></td></tr>
+        <tr><td>McCafe Platform Expansion</td><td class="neutral"><strong>Medium</strong></td><td class="positive"><strong>High</strong></td></tr>
+        <tr><td>Global Unit Expansion</td><td class="positive"><strong>High</strong></td><td class="positive"><strong>High</strong></td></tr>
+        </table>
+    </div>
+</div>
+</div>
+
+<!-- ========== TAB 11: CATALYSTS ========== -->
+<div class="tab-content">
+<h2 class="section-header">12. Thesis Kill Criteria &amp; Catalyst Timeline</h2>
+
+<div class="analysis-prose">
+<span class="analysis-label">Full Analysis</span>
+<p>MCD has a strong track record of steady beats. The Q4 2025 beat ($3.12 vs $3.05) was particularly notable because it silenced concerns about the low-income consumer abandoning the brand. Estimate revisions over the last 30 days have been decidedly upward following the Q4 call. <span class="source-badge">Earnings Call</span></p>
+</div>
+
+<hr class="section-divider">
+
+<h3 class="section-header" style="font-size:16px">Upcoming Catalyst Timeline</h3>
+
+<div class="card" style="margin-bottom:24px">
+    <div class="timeline-item">
+        <div class="timeline-dot neutral-dot"></div>
+        <div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                <strong>Late April 2026</strong>
+                <span class="badge badge-yellow">Neutral (High Vol)</span>
+            </div>
+            <div style="margin-top:4px">Q1 2026 Earnings &mdash; Will reveal the immediate fallout (or success) of corporate subsidy roll-offs.</div>
+        </div>
+    </div>
+    <div class="timeline-item">
+        <div class="timeline-dot bull-dot"></div>
+        <div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                <strong>May/June 2026</strong>
+                <span class="badge badge-green">Bull</span>
+            </div>
+            <div style="margin-top:4px">Ex-Dividend Date &mdash; Institutional rotation to capture yield; sets a short-term price floor.</div>
+        </div>
+    </div>
+    <div class="timeline-item">
+        <div class="timeline-dot neutral-dot"></div>
+        <div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                <strong>Mid-July 2026</strong>
+                <span class="badge badge-yellow">Neutral</span>
+            </div>
+            <div style="margin-top:4px">Q2 2026 Earnings &mdash; First full quarter of un-subsidized EVM performance and summer traffic data.</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-title" style="color:#4caf50">Bullish Thesis Invalidated If</div>
+        <div class="kill-item"><div class="cb"></div><div>U.S. comparable guest counts go negative for two consecutive quarters following the removal of corporate value subsidies in Q1 2026.</div></div>
+        <div class="kill-item"><div class="cb"></div><div>Operating margins compress below 44% as corporate is forced to permanently subsidize franchisee discounting.</div></div>
+        <div class="kill-item"><div class="cb"></div><div>CapEx overruns on the 2,600 new unit build-out begin to cannibalize the FCF required to maintain the dividend growth rate.</div></div>
+    </div>
+    <div class="card">
+        <div class="card-title" style="color:#e74c3c">Bearish Thesis Invalidated If</div>
+        <div class="kill-item"><div class="cb"></div><div>Franchisee unit-level cash flow actually <em>increases</em> in Q2/Q3 2026, proving the volume elasticity from value meals completely offsets the lower gross margins.</div></div>
+        <div class="kill-item"><div class="cb"></div><div>The McCafe rollout immediately accretive to margins, proving significant pricing power in the beverage category.</div></div>
+    </div>
+</div>
+</div>
+
+<!-- ========== TAB 12: REVISIONS ========== -->
+<div class="tab-content">
+<h2 class="section-header">Revision Summary</h2>
+
+<div class="card" style="margin-bottom:24px">
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <span class="badge badge-yellow" style="font-size:14px">MINOR REVISIONS</span>
+        <span class="mono" style="font-size:16px"><strong>3</strong> corrections</span>
+        <span class="badge badge-green">High Confidence</span>
+    </div>
+    <p style="color:#8a8a7a">The original research report is exceptionally well-written, cleanly synthesized, and correctly interprets the provided data across SEC filings, earnings transcripts, and sentiment outputs. Management guidance, insider activity, and key ratios are all accurately represented. The only required changes are three minor mathematical discrepancies regarding CapEx margins, revenue compounding, and expected-value arithmetic.</p>
+</div>
+
+<div class="revision-card">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <strong>Section 5: Cash Flow Analysis</strong>
+        <span class="issue-label">Numerical Error</span>
+    </div>
+    <p class="orig">"...ramping up from 8.5% of revenue in 2020 to an estimated 12.5% in 2026 ($3.7B&ndash;$3.9B)..."</p>
+    <p class="revised" style="margin-top:8px">"...ramping up from 8.5% of revenue in 2020 to an estimated <strong>13.5%</strong> in 2026 ($3.7B&ndash;$3.9B)..."</p>
+    <p class="why"><strong>Why:</strong> FY2025 CapEx was already at 12.5% ($3.4B / $26.9B). Projecting $3.8B midpoint against ~$28.2B&ndash;$28.4B 2026 revenue yields ~13.4%&ndash;13.5%. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+</div>
+
+<div class="revision-card">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <strong>Section 7: Forward Model &amp; Valuation Bridge</strong>
+        <span class="issue-label">Numerical Error</span>
+    </div>
+    <p class="orig">Revenue: $28.2B (2026E) | $29.6B (2027E) | $31.0B (2028E)</p>
+    <p class="revised" style="margin-top:8px">Revenue: <strong>$28.4B</strong> (2026E) | <strong>$29.9B</strong> (2027E) | <strong>$31.6B</strong> (2028E)</p>
+    <p class="why"><strong>Why:</strong> FY2025 actual revenue was $26.9B. Applying the stated 5.5% YoY growth yields $28.38B (rounded $28.4B) for 2026, compounding forward to $29.9B and $31.6B. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+</div>
+
+<div class="revision-card">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <strong>Section 10: Scenario Analysis</strong>
+        <span class="issue-label">Numerical Error</span>
+    </div>
+    <p class="orig">Probability-weighted expected value: $339.40 (+2.5% expected value)</p>
+    <p class="revised" style="margin-top:8px">Probability-weighted expected value: <strong>$338.80</strong> (<strong>+2.4%</strong> expected value)</p>
+    <p class="why"><strong>Why:</strong> (0.25 &times; $370) + (0.55 &times; $346) + (0.20 &times; $280) = $92.50 + $190.30 + $56.00 = $338.80. Against $331.00 current price: +2.36% (rounded 2.4%). <span class="source-badge">Calc</span></p>
+</div>
+</div>
+
+<!-- ========== JAVASCRIPT ========== -->
+<script>
+const chartInstances = {};
+const chartsInitialized = {};
+
+function switchTab(idx) {
+    document.querySelectorAll('.tab-content').forEach((el, i) => {
+        el.classList.toggle('active', i === idx);
+    });
+    document.querySelectorAll('.tab-btn').forEach((el, i) => {
+        el.classList.toggle('active', i === idx);
+    });
+    initChartsForTab(idx);
+}
+
+function initChartsForTab(idx) {
+    if (chartsInitialized[idx]) return;
+    chartsInitialized[idx] = true;
+
+    const gold = '#d4a843', green = '#4caf50', red = '#e74c3c', blue = '#5dade2', cream = '#e8e0d0', muted = '#8a8a7a';
+    const defaults = {
+        color: cream,
+        borderColor: '#2a2a2a',
+        font: { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" }
+    };
+    const scaleDefaults = { ticks: { color: muted }, grid: { color: '#1a1a1a' } };
+
+    if (idx === 0) {
+        // Executive — no charts needed, all static
+    }
+
+    if (idx === 2) {
+        // Fundamentals: Revenue & EPS
+        const ctxRE = document.getElementById('chart-rev-eps');
+        if (ctxRE) {
+            chartInstances['rev-eps'] = new Chart(ctxRE, {
+                type: 'bar',
+                data: {
+                    labels: ['2020','2021','2022','2023','2024','2025','2026E','2027E','2028E'],
+                    datasets: [
+                        {
+                            label: 'Revenue ($B)',
+                            data: [19.2, 23.2, 23.2, 25.5, 25.9, 26.9, 28.4, 29.9, 31.6],
+                            backgroundColor: ['#d4a843','#d4a843','#d4a843','#d4a843','#d4a843','#d4a843','rgba(212,168,67,0.5)','rgba(212,168,67,0.5)','rgba(212,168,67,0.5)'],
+                            borderColor: gold,
+                            borderWidth: 1,
+                            yAxisID: 'y',
+                            order: 2
+                        },
+                        {
+                            label: 'EPS ($)',
+                            data: [6.31, 9.28, 9.33, 11.26, 11.44, 11.95, 12.75, 13.60, 14.50],
+                            type: 'line',
+                            borderColor: green,
+                            backgroundColor: 'transparent',
+                            pointBackgroundColor: green,
+                            pointRadius: 4,
+                            tension: 0.3,
+                            yAxisID: 'y1',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: cream } } },
+                    scales: {
+                        y: { ...scaleDefaults, title: { display: true, text: 'Revenue ($B)', color: muted }, beginAtZero: false },
+                        y1: { ...scaleDefaults, position: 'right', title: { display: true, text: 'EPS ($)', color: muted }, beginAtZero: false, grid: { drawOnChartArea: false } },
+                        x: { ...scaleDefaults }
+                    }
+                }
+            });
+        }
+
+        // Margin trends
+        const ctxM = document.getElementById('chart-margins');
+        if (ctxM) {
+            chartInstances['margins'] = new Chart(ctxM, {
+                type: 'line',
+                data: {
+                    labels: ['2020','2021','2022','2023','2024','2025','2026E','2027E','2028E'],
+                    datasets: [
+                        { label: 'Gross Margin', data: [50.5, 54.2, 55.0, 56.0, 56.8, 57.4, 57.5, 57.5, 57.6], borderColor: blue, backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 },
+                        { label: 'Operating Margin', data: [38.1, 42.6, 42.9, 45.2, 45.5, 46.1, 46.5, 46.8, 47.0], borderColor: gold, backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 },
+                        { label: 'FCF Margin', data: [19.8, 22.4, 23.5, 25.0, 25.5, 26.7, 26.4, 26.8, 27.2], borderColor: green, backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: cream } } },
+                    scales: {
+                        y: { ...scaleDefaults, title: { display: true, text: '%', color: muted } },
+                        x: { ...scaleDefaults }
+                    }
+                }
+            });
+        }
+    }
+
+    if (idx === 4) {
+        // Cash Flow: OCF/CapEx/FCF
+        const ctxFCF = document.getElementById('chart-fcf');
+        if (ctxFCF) {
+            chartInstances['fcf'] = new Chart(ctxFCF, {
+                type: 'bar',
+                data: {
+                    labels: ['2020','2021','2022','2023','2024','2025','2026E'],
+                    datasets: [
+                        { label: 'OCF ($B)', data: [6.2, 9.1, 8.7, 9.6, 9.9, 10.6, 11.3], backgroundColor: green, borderRadius: 4 },
+                        { label: 'CapEx ($B)', data: [-1.6, -2.0, -2.0, -2.4, -2.8, -3.4, -3.8], backgroundColor: red, borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: cream } } },
+                    scales: {
+                        y: { ...scaleDefaults, stacked: true, title: { display: true, text: '$B', color: muted } },
+                        x: { ...scaleDefaults, stacked: true }
+                    }
+                }
+            });
+        }
+
+        // FCF Margin
+        const ctxFM = document.getElementById('chart-fcf-margin');
+        if (ctxFM) {
+            chartInstances['fcf-margin'] = new Chart(ctxFM, {
+                type: 'line',
+                data: {
+                    labels: ['2020','2021','2022','2023','2024','2025'],
+                    datasets: [{
+                        label: 'FCF Margin %',
+                        data: [19.8, 22.4, 23.5, 25.0, 25.5, 26.7],
+                        borderColor: gold,
+                        backgroundColor: 'rgba(212,168,67,0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointBackgroundColor: gold
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: cream } } },
+                    scales: {
+                        y: { ...scaleDefaults, title: { display: true, text: '%', color: muted } },
+                        x: { ...scaleDefaults }
+                    }
+                }
+            });
+        }
+
+        // Capital Allocation Doughnut
+        const ctxCA = document.getElementById('chart-capalloc');
+        if (ctxCA) {
+            chartInstances['capalloc'] = new Chart(ctxCA, {
+                type: 'doughnut',
+                data: {
+                    labels: ['CapEx', 'Dividends', 'Buybacks', 'Debt Service', 'Retained'],
+                    datasets: [{
+                        data: [3.4, 4.8, 2.5, 1.5, 0.6],
+                        backgroundColor: [red, green, blue, '#f1c40f', muted],
+                        borderColor: '#141414',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: cream, padding: 12 } }
+                    }
+                }
+            });
+        }
+    }
+
+    if (idx === 6) {
+        // Valuation bridges
+        const ctxPE = document.getElementById('chart-pe-bridge');
+        if (ctxPE) {
+            chartInstances['pe-bridge'] = new Chart(ctxPE, {
+                type: 'bar',
+                data: {
+                    labels: ['Current Price', 'Upside', 'Target Price'],
+                    datasets: [{
+                        data: [331.00, 14.52, 345.52],
+                        backgroundColor: [muted, green, gold],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ...scaleDefaults, title: { display: true, text: '$', color: muted } },
+                        y: { ...scaleDefaults }
+                    }
+                }
+            });
+        }
+        const ctxFCFB = document.getElementById('chart-fcf-bridge');
+        if (ctxFCFB) {
+            chartInstances['fcf-bridge'] = new Chart(ctxFCFB, {
+                type: 'bar',
+                data: {
+                    labels: ['Current Price', 'Upside', 'Target Price'],
+                    datasets: [{
+                        data: [331.00, 20.12, 351.12],
+                        backgroundColor: [muted, green, gold],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ...scaleDefaults, title: { display: true, text: '$', color: muted } },
+                        y: { ...scaleDefaults }
+                    }
+                }
+            });
+        }
+    }
+
+    if (idx === 8) {
+        // Ownership doughnut
+        const ctxOwn = document.getElementById('chart-ownership');
+        if (ctxOwn) {
+            chartInstances['ownership'] = new Chart(ctxOwn, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Vanguard (10.2%)', 'BlackRock (7.5%)', 'Other Institutional (57.9%)', 'Insiders (0.3%)', 'Other (24.1%)'],
+                    datasets: [{
+                        data: [10.2, 7.5, 57.9, 0.3, 24.1],
+                        backgroundColor: [gold, blue, green, red, muted],
+                        borderColor: '#141414',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: cream, padding: 10, font: { size: 12 } } }
+                    }
+                }
+            });
+        }
+    }
+}
+
+// Initialize first tab charts
+initChartsForTab(0);
+</script>
+</body>
+</html>
