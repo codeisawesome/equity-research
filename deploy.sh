@@ -170,10 +170,10 @@ for file in $ORDERED_FILES; do
     # -- Determine badge color class --------------------------
     RATING_LOWER=$(echo "$RATING" | tr '[:upper:]' '[:lower:]')
     BADGE_CLASS="hold"
-    if echo "$RATING_LOWER" | grep -q "buy"; then
-        BADGE_CLASS="speculative-buy"
-    elif echo "$RATING_LOWER" | grep -q "sell\|avoid"; then
-        BADGE_CLASS="sell"
+    if echo "$RATING_LOWER" | grep -q "buy" && echo "$RATING_LOWER" | grep -q "hold"; then
+        BADGE_CLASS="mix"
+    elif echo "$RATING_LOWER" | grep -q "buy"; then
+        BADGE_CLASS="buy"
     elif echo "$RATING_LOWER" | grep -q "hold"; then
         BADGE_CLASS="hold"
     fi
@@ -214,31 +214,183 @@ if os.path.exists('/tmp/equity_cards.txt'):
                     'rating': parts[5],
                 })
 
-# Build HTML for cards
-cards_html = ""
+# Helpers for rebuilding the current lineup rows
+def strip_tags(value):
+    value = re.sub(r'<[^>]+>', ' ', value)
+    value = value.replace('&nbsp;', ' ').replace('&#160;', ' ')
+    value = value.replace('&bull;', ' ').replace('•', ' ')
+    value = value.replace('&amp;', '&')
+    value = re.sub(r'\s+', ' ', value)
+    return value.strip()
+
+def parse_badge_pairs(content):
+    pairs = []
+    for val, lbl in re.findall(r'<div class="val"[^>]*>(.*?)</div>\s*<div class="lbl"[^>]*>(.*?)</div>', content, re.S):
+        pairs.append((strip_tags(lbl).lower(), strip_tags(val)))
+    return pairs
+
+def first_match(patterns, content, default=""):
+    for pattern in patterns:
+        match = re.search(pattern, content, re.S | re.I)
+        if match:
+            value = strip_tags(match.group(1))
+            if value:
+                return value
+    return default
+
+def parse_currency(value):
+    if not value:
+        return None
+    cleaned = value.replace(',', '').replace('~', '').replace('$', '').strip()
+    match = re.search(r'-?\d+(?:\.\d+)?', cleaned)
+    return float(match.group(0)) if match else None
+
+def infer_move(current_price, target_price):
+    current = parse_currency(current_price)
+    target = parse_currency(target_price)
+    if current in (None, 0) or target is None:
+        return ""
+    change = ((target / current) - 1) * 100
+    sign = '+' if change > 0 else ''
+    return f"{sign}{change:.1f}%"
+
+def normalize_badge_class(rating):
+    rating_lower = rating.lower()
+    if 'buy' in rating_lower and 'hold' in rating_lower:
+        return 'mix'
+    if 'buy' in rating_lower:
+        return 'buy'
+    return 'hold'
+
+def move_class(move_text):
+    if not move_text:
+        return 'neutral'
+    if move_text.startswith('+'):
+        return 'positive'
+    if move_text.startswith('-') or move_text.startswith('−'):
+        return 'negative'
+    return 'neutral'
+
+def escape_attr(value):
+    return (
+        value.replace('&', '&amp;')
+        .replace('"', '&quot;')
+        .replace('<', '&lt;')
+        .replace('>', '&gt;')
+    )
+
+def escape_html_text(value):
+    return (
+        value.replace('&', '&amp;')
+        .replace('<', '&lt;')
+        .replace('>', '&gt;')
+    )
+
+rows_html = ""
 for card in cards_data:
-    cards_html += f"""
-  <a href="{card['file']}" class="report-card">
-    <span class="card-arrow">&rarr;</span>
-    <div class="card-ticker mono">{card['ticker']}</div>
-    <div class="card-company">{card['company']}</div>
-    <div class="card-desc">{card['desc']}</div>
-    <span class="card-badge {card['badge_class']}">{card['rating']}</span>
-  </a>
+    with open(card['file'], 'r') as dashboard_file:
+        dashboard_html = dashboard_file.read()
+
+    badge_pairs = parse_badge_pairs(dashboard_html)
+    badge_map = {label: value for label, value in badge_pairs}
+
+    current_price = (
+        badge_map.get('current price')
+        or first_match([r'data-symbol="[^"]+">([^<]+)</div>'], dashboard_html)
+        or "N/A"
+    )
+
+    target_label = ""
+    target_value = ""
+    for label, value in badge_pairs:
+        if 'target' in label:
+            target_label = label
+            target_value = value
+            break
+    if not target_value:
+        target_value = "N/A"
+        target_label = "target"
+
+    expected_move = badge_map.get('expected move') or infer_move(current_price, target_value) or "N/A"
+
+    update_date = first_match(
+        [
+            r'Data as of\s*([^<|]+)',
+            r'Last updated:\s*([^<]+)',
+        ],
+        dashboard_html,
+        default="Unknown",
+    )
+
+    thesis_text = first_match(
+        [
+            r'<div class="thesis-box"[^>]*>\s*(?:<div[^>]*>.*?</div>\s*)?<p[^>]*>(.*?)</p>',
+            r'<div class="analysis-prose"[^>]*>.*?<p[^>]*>(.*?)</p>',
+            r'<div class="analysis-prose"[^>]*>.*?<li[^>]*>(.*?)</li>',
+        ],
+        dashboard_html,
+        default=card['desc'],
+    )
+
+    thesis_text = re.sub(r'\s*<span class="source-badge[^"]*"[^>]*>.*?</span>', '', thesis_text, flags=re.S)
+    thesis_text = strip_tags(thesis_text)
+    thesis_text = re.sub(r'^\s*(Investment Thesis|Summary|Quick Rating(?: \(Swing\))?|Quick Rating(?: \(Position\))?|Value Strategy Validation|Execution vs\. Aspiration|Capital-light inflection)\s*:\s*', '', thesis_text, flags=re.I)
+    if len(thesis_text) > 220:
+        thesis_text = thesis_text[:217].rsplit(' ', 1)[0] + '...'
+
+    symbol = card['ticker'].replace('$', '')
+    rating = card['rating']
+    badge_class = normalize_badge_class(rating)
+    move_value_class = move_class(expected_move)
+    target_subvalue = {
+        'position target': 'Position target',
+        'expected move target': 'Target',
+        '12m target': '12M target',
+        'target': 'Target',
+    }.get(target_label, target_label.title() if target_label else 'Target')
+    if target_subvalue == 'Target':
+        target_subvalue = 'Base target'
+
+    rows_html += f"""
+      <a class="row" href="{escape_attr(card['file'])}" data-symbol="{escape_attr(symbol)}">
+        <div class="ticker-block">
+          <div class="ticker-line">
+            <span class="ticker mono">{escape_html_text(card['ticker'])}</span>
+            <span class="company">{escape_html_text(card['company'])}</span>
+          </div>
+          <div class="meta">Last updated: {escape_html_text(update_date)}</div>
+        </div>
+        <div><span class="pill {badge_class}">{escape_html_text(rating.title() if rating.isupper() else rating)}</span></div>
+        <div class="metric-group">
+          <div>
+            <div class="value price-value" data-symbol="{escape_attr(symbol)}">{escape_html_text(current_price)}</div>
+            <div class="subvalue live">Current via Yahoo</div>
+          </div>
+        </div>
+        <div>
+          <div class="value {move_class(infer_move(current_price, target_value) or expected_move)}">{escape_html_text(target_value)}</div>
+          <div class="subvalue">{escape_html_text(target_subvalue)}</div>
+        </div>
+        <div>
+          <div class="value {move_value_class}">{escape_html_text(expected_move)}</div>
+          <div class="subvalue">Auto-generated</div>
+        </div>
+        <div class="thesis">{escape_html_text(thesis_text)}</div>
+      </a>
 """
 
-# Read index.html and insert before the closing </div> of reports-grid
+# Read index.html and replace the current dashboard rows inside the list
 with open('index.html', 'r') as f:
     content = f.read()
 
-pattern = re.compile(r'(<div class="reports-grid">\s*)(.*?)(\s*</div>\s*<footer class="site-footer">)', re.S)
+pattern = re.compile(r'(<div class="list">\s*<div class="list-head">.*?</div>)(.*?)(\s*</div>\s*</section>)', re.S)
 match = pattern.search(content)
 if not match:
-    print("  Error: Could not find reports grid in index.html")
+    print("  Error: Could not find dashboard list in index.html")
     exit(1)
 
 new_content = pattern.sub(
-    lambda m: f"{m.group(1)}{cards_html}{m.group(3)}",
+    lambda m: f"{m.group(1)}{rows_html}{m.group(3)}",
     content,
     count=1,
 )
