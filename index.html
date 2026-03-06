@@ -3,141 +3,436 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Equity Research Hub</title>
+<title>take risks faster</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #0a0a0a; --card: #141414; --border: #2a2a2a; --gold: #d4a843;
-  --cream: #e8e0d0; --muted: #8a8a7a; --green: #4caf50; --red: #e74c3c;
+  --bg: #0a0a0a;
+  --panel: #121212;
+  --panel-2: #171717;
+  --border: #2a2a2a;
+  --gold: #d4a843;
+  --cream: #e8e0d0;
+  --muted: #938b7b;
+  --green: #4caf50;
+  --red: #e74c3c;
+  --yellow: #f1c40f;
+  --blue: #5dade2;
 }
 body {
-  background: var(--bg); color: var(--cream);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-  line-height: 1.6; min-height: 100vh;
-  display: flex; flex-direction: column; align-items: center;
-  padding: 60px 24px;
+  background:
+    radial-gradient(circle at top left, rgba(212,168,67,0.09), transparent 28%),
+    linear-gradient(180deg, #090909 0%, #0a0a0a 100%);
+  color: var(--cream);
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 40px 20px 56px;
 }
-.mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
-
-/* Header */
-.site-header { text-align: center; margin-bottom: 48px; }
-.site-title { font-size: 2.2rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
-.site-subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 8px; }
-
-/* Cards grid */
-.reports-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px; max-width: 900px; width: 100%;
+.mono {
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 }
-.report-card {
-  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-  padding: 32px; text-decoration: none; color: inherit;
-  transition: all 0.25s ease; position: relative; overflow: hidden;
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
 }
-.report-card:hover {
-  border-color: var(--gold); transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(212,168,67,0.08);
+.hero {
+  margin-bottom: 22px;
 }
-.report-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, var(--gold), transparent); opacity: 0;
-  transition: opacity 0.25s;
+.eyebrow {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  font-size: 0.72rem;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 }
-.report-card:hover::before { opacity: 1; }
-
-.card-ticker { font-size: 1.6rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
-.card-company { font-size: 0.95rem; color: var(--muted); margin-top: 4px; }
-.card-desc { font-size: 0.85rem; color: var(--muted); margin-top: 16px; line-height: 1.6; }
-.card-badge {
-  display: inline-block; margin-top: 16px; padding: 4px 14px; border-radius: 6px;
-  font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+.hero-title {
+  font-size: clamp(2.8rem, 8vw, 5.4rem);
+  line-height: 0.95;
+  letter-spacing: -2px;
+  margin-top: 10px;
 }
-.card-badge.speculative-buy {
-  background: rgba(76,175,80,0.15); color: var(--green); border: 1px solid rgba(76,175,80,0.3);
+.hero-subtitle {
+  color: var(--muted);
+  max-width: 760px;
+  margin-top: 14px;
+  font-size: 1rem;
 }
-.card-badge.hold {
-  background: rgba(241,196,15,0.15); color: #f1c40f; border: 1px solid rgba(241,196,15,0.3);
+.about-box {
+  margin: 26px 0 34px;
+  padding: 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(212,168,67,0.1), rgba(255,255,255,0.015));
 }
-.card-arrow {
-  position: absolute; top: 32px; right: 32px; font-size: 1.2rem; color: var(--border);
-  transition: all 0.25s;
+.about-title {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  font-size: 0.78rem;
+  margin-bottom: 10px;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 }
-.report-card:hover .card-arrow { color: var(--gold); transform: translateX(4px); }
-
-/* Footer */
-.site-footer {
-  margin-top: 60px; text-align: center; color: var(--muted); font-size: 0.78rem;
+.about-copy {
+  color: #d3ccbe;
+  max-width: 980px;
 }
-
-@media (max-width: 500px) {
-  body { padding: 36px 16px; }
-  .site-title { font-size: 1.6rem; }
-  .reports-grid { grid-template-columns: 1fr; }
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 1.35rem;
+}
+.section-note {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.list {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(18,18,18,0.92);
+  backdrop-filter: blur(8px);
+}
+.list-head,
+.row {
+  display: grid;
+  grid-template-columns: 1.8fr 0.8fr 0.9fr 0.9fr 0.9fr 1.9fr;
+  gap: 14px;
+  align-items: start;
+}
+.list-head {
+  padding: 14px 18px;
+  background: #101010;
+  border-bottom: 1px solid var(--border);
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.7rem;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+}
+.row {
+  display: grid;
+  padding: 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.row:last-child {
+  border-bottom: 0;
+}
+.row:hover {
+  background: rgba(212,168,67,0.05);
+}
+.ticker-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ticker-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.ticker {
+  color: var(--gold);
+  font-size: 1.18rem;
+  font-weight: 700;
+}
+.company {
+  color: var(--cream);
+  font-size: 1rem;
+}
+.meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.value {
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+}
+.value.positive { color: var(--green); }
+.value.negative { color: var(--red); }
+.value.neutral { color: var(--yellow); }
+.subvalue {
+  color: var(--muted);
+  font-size: 0.76rem;
+  margin-top: 4px;
+}
+.subvalue.live {
+  color: var(--blue);
+}
+.pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+}
+.pill.buy { background: rgba(76,175,80,0.15); color: var(--green); border: 1px solid rgba(76,175,80,0.3); }
+.pill.hold { background: rgba(241,196,15,0.14); color: var(--yellow); border: 1px solid rgba(241,196,15,0.28); }
+.pill.mix { background: rgba(93,173,226,0.12); color: var(--blue); border: 1px solid rgba(93,173,226,0.25); }
+.thesis {
+  color: #d9d2c4;
+  font-size: 0.9rem;
+}
+.thesis strong {
+  color: var(--gold);
+  font-weight: 700;
+}
+.footer {
+  margin-top: 26px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+@media (max-width: 980px) {
+  .list-head {
+    display: none;
+  }
+  .row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .metric-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+  }
+}
+@media (max-width: 560px) {
+  body { padding: 26px 14px 40px; }
+  .about-box, .row { padding: 16px; }
+  .metric-group { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Research Hub</div>
+    <h1 class="hero-title">take risks faster</h1>
+    <p class="hero-subtitle">A small library of equity dashboards for anyone who wants the filings, the narrative, the internet brain damage, and the conclusion in one place.</p>
+  </header>
 
-<header class="site-header">
-  <h1 class="site-title">Equity Research Hub</h1>
-  <p class="site-subtitle">Independent equity research dashboards</p>
-</header>
+  <section class="about-box">
+    <div class="about-title">About This Research</div>
+    <p class="about-copy">Each report starts with the respectable stuff: SEC filings, market statistics from sources like Yahoo Finance, and earnings call transcripts from a paid service. Then I add the less respectable but still useful stuff: structured X sentiment through Grok and YouTube sentiment through Gemini, both using custom prompts that ask for actual signal instead of the usual "vibes are bullish." That gets layered into a first-pass report, checked again against model knowledge and live web verification for discrepancies, and then turned into lightweight HTML so I can share the work with friends without emailing them a PDF the size of a misdemeanor.</p>
+  </section>
 
-<div class="reports-grid">
+  <section>
+    <div class="section-head">
+      <h2 class="section-title">Current Lineup</h2>
+      <div class="section-note">Click any name to open the full dashboard.</div>
+    </div>
 
-  <a href="fly.html" class="report-card">
-    <span class="card-arrow">&rarr;</span>
-    <div class="card-ticker mono">$FLY</div>
-    <div class="card-company">Firefly Aerospace Inc.</div>
-    <div class="card-desc">Full equity research dashboard covering financials, valuation, competitive positioning, and risk analysis for the space launch provider.</div>
-    <span class="card-badge speculative-buy">Speculative Buy</span>
-  </a>
+    <div class="list">
+      <div class="list-head">
+        <div>Name</div>
+        <div>Rating</div>
+        <div>Price</div>
+        <div>Target</div>
+        <div>Move</div>
+        <div>Why It Exists</div>
+      </div>
 
-  <a href="tel.html" class="report-card">
-    <span class="card-arrow">&rarr;</span>
-    <div class="card-ticker mono">$TEL</div>
-    <div class="card-company">TE Connectivity plc</div>
-    <div class="card-desc">Comprehensive equity research dashboard with financial modeling, scenario analysis, and risk assessment for the connectivity solutions leader.</div>
-    <span class="card-badge hold">Hold</span>
-  </a>
+      <a class="row" href="fly.html" data-symbol="FLY">
+        <div class="ticker-block">
+          <div class="ticker-line">
+            <span class="ticker mono">$FLY</span>
+            <span class="company">Firefly Aerospace</span>
+          </div>
+          <div class="meta">Last updated: 2026-03-04</div>
+        </div>
+        <div><span class="pill hold">Hold</span></div>
+        <div class="metric-group">
+          <div>
+            <div class="value price-value" data-symbol="FLY">~$21.00</div>
+            <div class="subvalue live">Current via Yahoo</div>
+          </div>
+        </div>
+        <div>
+          <div class="value negative">$17.07</div>
+          <div class="subvalue">Base target</div>
+        </div>
+        <div>
+          <div class="value negative">−18.7%</div>
+          <div class="subvalue">12–18 months</div>
+        </div>
+        <div class="thesis"><strong>Broken rockets, real backlog.</strong> The bull case is the SciTec software pivot and defense exposure; the bear case is that the core launch hardware keeps trying to explode on schedule.</div>
+      </a>
 
-  <a href="ampx.html" class="report-card">
-    <span class="card-arrow">&rarr;</span>
-    <div class="card-ticker mono">$AMPX</div>
-    <div class="card-company">Amprius Technologies</div>
-    <div class="card-desc">Equity research dashboard with financial analysis, valuation modeling, and risk assessment for Amprius Technologies.</div>
-    <span class="card-badge hold">NEW</span>
-  </a>
+      <a class="row" href="tel.html" data-symbol="TEL">
+        <div class="ticker-block">
+          <div class="ticker-line">
+            <span class="ticker mono">$TEL</span>
+            <span class="company">TE Connectivity</span>
+          </div>
+          <div class="meta">Last updated: March 4, 2026</div>
+        </div>
+        <div><span class="pill mix">Hold / Buy</span></div>
+        <div>
+          <div class="value price-value" data-symbol="TEL">$205.15</div>
+          <div class="subvalue live">Current via Yahoo</div>
+        </div>
+        <div>
+          <div class="value positive">$241.50</div>
+          <div class="subvalue">P/E target</div>
+        </div>
+        <div>
+          <div class="value positive">+18.0%</div>
+          <div class="subvalue">12 months</div>
+        </div>
+        <div class="thesis"><strong>Copper is having a last laugh.</strong> TEL is being re-rated as AI infrastructure while everyone argues about whether optical eventually steals its lunch.</div>
+      </a>
 
-  <a href="be.html" class="report-card">
-    <span class="card-arrow">&rarr;</span>
-    <div class="card-ticker mono">$BE</div>
-    <div class="card-company">Bloom Energy Corp</div>
-    <div class="card-desc">Equity research dashboard with financial analysis, valuation modeling, and risk assessment for Bloom Energy Corp.</div>
-    <span class="card-badge hold">NEW</span>
-  </a>
+      <a class="row" href="ampx.html" data-symbol="AMPX">
+        <div class="ticker-block">
+          <div class="ticker-line">
+            <span class="ticker mono">$AMPX</span>
+            <span class="company">Amprius Technologies</span>
+          </div>
+          <div class="meta">Last updated: 2026-03-05</div>
+        </div>
+        <div><span class="pill mix">Buy / Hold</span></div>
+        <div>
+          <div class="value price-value" data-symbol="AMPX">$12.30</div>
+          <div class="subvalue live">Current via Yahoo</div>
+        </div>
+        <div>
+          <div class="value positive">$14.50</div>
+          <div class="subvalue">Base target</div>
+        </div>
+        <div>
+          <div class="value positive">+18.0%</div>
+          <div class="subvalue">6–9 months</div>
+        </div>
+        <div class="thesis"><strong>The battery story finally met revenue.</strong> Commercial scale and positive EBITDA are real now, but so is the part where the stock still trades like nothing bad is allowed to happen.</div>
+      </a>
 
-  <a href="nvda.html" class="report-card">
-    <span class="card-arrow">&rarr;</span>
-    <div class="card-ticker mono">$NVDA</div>
-    <div class="card-company">NVIDIA Corp</div>
-    <div class="card-desc">Equity research dashboard with financial analysis, valuation modeling, and risk assessment for NVIDIA Corp.</div>
-    <span class="card-badge hold">NEW</span>
-  </a>
+      <a class="row" href="be.html" data-symbol="BE">
+        <div class="ticker-block">
+          <div class="ticker-line">
+            <span class="ticker mono">$BE</span>
+            <span class="company">Bloom Energy</span>
+          </div>
+          <div class="meta">Last updated: March 5, 2026</div>
+        </div>
+        <div><span class="pill buy">Buy</span></div>
+        <div>
+          <div class="value price-value" data-symbol="BE">$165.00</div>
+          <div class="subvalue live">Current via Yahoo</div>
+        </div>
+        <div>
+          <div class="value positive">$190</div>
+          <div class="subvalue">12M target</div>
+        </div>
+        <div>
+          <div class="value positive">+15.1%</div>
+          <div class="subvalue">12–18 months</div>
+        </div>
+        <div class="thesis"><strong>AI data centers need power before the grid gets around to it.</strong> Bloom’s pitch is basically “why wait five years for the utility when you can overpay us much sooner?” which, to be fair, is currently working.</div>
+      </a>
 
-  <a href="mcd.html" class="report-card">
-    <span class="card-arrow">&rarr;</span>
-    <div class="card-ticker mono">$MCD</div>
-    <div class="card-company">McDonald's</div>
-    <div class="card-desc">Equity research dashboard with financial analysis, valuation modeling, and risk assessment for McDonald's.</div>
-    <span class="card-badge speculative-buy">Buy</span>
-  </a>
+      <a class="row" href="nvda.html" data-symbol="NVDA">
+        <div class="ticker-block">
+          <div class="ticker-line">
+            <span class="ticker mono">$NVDA</span>
+            <span class="company">NVIDIA</span>
+          </div>
+          <div class="meta">Last updated: 2026-03-04</div>
+        </div>
+        <div><span class="pill buy">Buy</span></div>
+        <div>
+          <div class="value price-value" data-symbol="NVDA">$181.40</div>
+          <div class="subvalue live">Current via Yahoo</div>
+        </div>
+        <div>
+          <div class="value positive">$229.60</div>
+          <div class="subvalue">Base target</div>
+        </div>
+        <div>
+          <div class="value positive">+24.7%</div>
+          <div class="subvalue">12 months</div>
+        </div>
+        <div class="thesis"><strong>Still the tollbooth.</strong> NVIDIA keeps monetizing the AI capex panic better than anyone else, while the main existential debate is whether hyperscalers eventually discover arithmetic.</div>
+      </a>
 
+      <a class="row" href="mcd.html" data-symbol="MCD">
+        <div class="ticker-block">
+          <div class="ticker-line">
+            <span class="ticker mono">$MCD</span>
+            <span class="company">McDonald’s</span>
+          </div>
+          <div class="meta">Last updated: March 5, 2026</div>
+        </div>
+        <div><span class="pill mix">Hold / Buy</span></div>
+        <div>
+          <div class="value price-value" data-symbol="MCD">$331.00</div>
+          <div class="subvalue live">Current via Yahoo</div>
+        </div>
+        <div>
+          <div class="value positive">$345.52</div>
+          <div class="subvalue">Base target</div>
+        </div>
+        <div>
+          <div class="value positive">+4.5%</div>
+          <div class="subvalue">12 months</div>
+        </div>
+        <div class="thesis"><strong>The stock version of a defensive crouch.</strong> Great business, fortress margins, and not much room for heroics unless franchisees agree to suffer for the greater good of value meals.</div>
+      </a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>For informational purposes only. Not financial advice. Definitely not emotional support.</p>
+  </footer>
 </div>
+<script>
+const yahooSymbols = ["FLY", "TEL", "AMPX", "BE", "NVDA", "MCD"];
 
-<footer class="site-footer">
-  <p>For informational purposes only. Not financial advice.</p>
-</footer>
+function formatUsd(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+}
 
+async function loadYahooPrices() {
+  await Promise.all(yahooSymbols.map(async (symbol) => {
+    const target = document.querySelector(`.price-value[data-symbol="${symbol}"]`);
+    if (!target) return;
+
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1d`;
+      const response = await fetch(url, { mode: "cors" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      const price = meta?.regularMarketPrice;
+      if (typeof price !== "number") throw new Error("Missing price");
+
+      target.textContent = formatUsd(price);
+    } catch (error) {
+      target.dataset.yahooError = "true";
+    }
+  }));
+}
+
+loadYahooPrices();
+</script>
 </body>
 </html>
