@@ -12,27 +12,26 @@
   --cream: #e8e0d0; --muted: #8a8a7a; --green: #4caf50; --red: #e74c3c;
   --yellow: #f1c40f; --blue: #5dade2; --orange: #e67e22;
 }
-body { background: var(--bg); color: var(--cream); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.7; font-size: 14px; }
+body { background: var(--bg); color: var(--cream); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; }
 .mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
 a { color: var(--gold); text-decoration: none; }
-.header { padding: 24px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-.header-left { display: flex; align-items: baseline; gap: 16px; }
-.ticker { font-size: 32px; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
-.company-name { font-size: 16px; color: var(--muted); }
-.header-right { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
-.price-block { text-align: right; }
-.price { font-size: 28px; font-weight: 700; }
-.price-sub { font-size: 13px; color: var(--muted); }
-.badge { display: inline-block; padding: 4px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+.header { background: var(--card); border-bottom: 1px solid var(--border); padding: 18px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.header-left h1 { font-size: 1.5rem; color: var(--gold); font-weight: 700; letter-spacing: 0; }
+.header-left .subtitle { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.header-badge { background: #1e1e1e; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; text-align: center; }
+.header-badge .val { font-size: 1.1rem; font-weight: 700; color: var(--cream); font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+.header-badge .lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
 .badge-hold { background: rgba(241,196,15,0.15); color: var(--yellow); border: 1px solid rgba(241,196,15,0.3); }
 .badge-buy { background: rgba(76,175,80,0.15); color: var(--green); border: 1px solid rgba(76,175,80,0.3); }
 .badge-conviction-low { background: rgba(241,196,15,0.1); color: var(--yellow); border: 1px solid rgba(241,196,15,0.25); }
 .badge-conviction-high { background: rgba(76,175,80,0.1); color: var(--green); border: 1px solid rgba(76,175,80,0.25); }
 .date-stamp { font-size: 12px; color: var(--muted); }
-.tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 24px; overflow-x: auto; white-space: nowrap; }
-.tab-btn { padding: 12px 14px; font-size: 12px; font-weight: 500; color: var(--muted); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
-.tab-btn:hover { color: var(--cream); }
-.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+.tab-bar { display: flex; gap: 0; border-bottom: 2px solid var(--border); padding: 0 10px; overflow-x: auto; white-space: nowrap; background: #111; }
+.tab-btn { padding: 10px 11px; font-size: 11px; font-weight: 500; color: var(--muted); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.tab-btn:hover { color: var(--gold); background: #1a1a1a; }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: #1a1a14; }
 .tab-content { display: none; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
 .tab-content.active { display: block; }
 .grid { display: grid; gap: 20px; }
@@ -74,13 +73,13 @@ canvas { max-width: 100%; }
 .kill-check { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
 .thesis-box { background: rgba(212,168,67,0.05); border: 1px solid rgba(212,168,67,0.15); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
 .thesis-box p { font-size: 15px; line-height: 1.7; }
-.section-header { font-size: 18px; font-weight: 700; color: var(--gold); margin: 28px 0 16px 0; }
+.section-header { font-size: 1.25rem; font-weight: 700; color: var(--gold); margin: 24px 0 16px 0; }
 .section-header:first-child { margin-top: 0; }
-.analysis-prose { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin: 20px 0; line-height: 1.8; }
+.analysis-prose { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 10px; padding: 22px 24px; margin: 20px 0; line-height: 1.75; font-size: 0.92rem; color: #ccc8b8; }
 .analysis-prose p { margin-bottom: 14px; font-size: 14px; }
 .analysis-prose p:last-child { margin-bottom: 0; }
 .analysis-prose strong { color: var(--cream); }
-.analysis-label { display: inline-block; font-size: 11px; color: var(--gold); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; padding: 4px 10px; background: rgba(212,168,67,0.08); border-radius: 4px; }
+.analysis-label { display: inline-block; background: var(--gold); color: var(--bg); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 14px; padding: 3px 10px; border-radius: 4px; }
 .section-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
 .waterfall-bar { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
 .waterfall-label { width: 120px; font-size: 13px; text-align: right; color: var(--muted); }
@@ -111,23 +110,14 @@ canvas { max-width: 100%; }
 <!-- HEADER -->
 <div class="header">
   <div class="header-left">
-    <span class="ticker">$TEL</span>
-    <span class="company-name">TE Connectivity plc</span>
+    <h1>$TEL — TE Connectivity plc</h1>
+    <div class="subtitle">Equity Research Dashboard &nbsp;|&nbsp; Data as of March 4, 2026</div>
   </div>
   <div class="header-right">
-    <div>
-      <span class="badge badge-hold">HOLD (Swing)</span>
-      <span class="badge badge-buy" style="margin-left:6px;">BUY (Position)</span>
-    </div>
-    <div>
-      <span class="badge badge-conviction-low">Conviction: LOW (Swing)</span>
-      <span class="badge badge-conviction-high" style="margin-left:4px;">HIGH (Position)</span>
-    </div>
-    <div class="price-block">
-      <div class="price mono">$205.15</div>
-      <div class="price-sub">Expected: <span class="positive">+18% &rarr; $242</span></div>
-    </div>
-    <div class="date-stamp">Data as of March 4, 2026</div>
+    <div class="header-badge"><div class="val">$205.15</div><div class="lbl">Current Price</div></div>
+    <div class="header-badge"><div class="val" style="color:#f1c40f;">HOLD</div><div class="lbl">Swing Rating</div></div>
+    <div class="header-badge"><div class="val" style="color:#4caf50;">BUY</div><div class="lbl">Position Rating</div></div>
+    <div class="header-badge"><div class="val" style="color:#4caf50;">$241.50</div><div class="lbl">Target</div></div>
   </div>
 </div>
 

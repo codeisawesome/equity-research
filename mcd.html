@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>$MCD — McDonald's | Equity Research Dashboard</title>
+    <title>McDonald's (MCD) — Equity Research Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{background:#0a0a0a;color:#e8e0d0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.6;font-size:14px}
+        body{background:#0a0a0a;color:#e8e0d0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.6}
         .card{background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:24px;margin-bottom:16px}
         .card-title{color:#d4a843;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
         .card-value{font-size:28px;font-weight:700;color:#e8e0d0;font-family:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace;margin-bottom:4px}
         .card-label{font-size:12px;color:#8a8a7a}
         .metric-strip{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-        .metric-item{background:#1a1a1a;border:1px solid #2a2a2a;padding:12px 16px;border-radius:8px;flex:1;min-width:120px}
+        .metric-item{background:#141414;border:1px solid #2a2a2a;padding:12px 16px;border-radius:8px;flex:1;min-width:120px;text-align:center}
         .metric-item .card-title{margin-bottom:4px}
         .metric-item .card-value{font-size:18px}
-        .analysis-prose{background:#111;border-left:3px solid #d4a843;padding:28px 24px 24px;border-radius:8px;position:relative;margin-bottom:24px;margin-top:16px;line-height:1.75}
+        .analysis-prose{background:#0f0f0f;border:1px solid #1e1e1e;padding:22px 24px;border-radius:10px;position:relative;margin-bottom:20px;margin-top:16px;line-height:1.75;font-size:.92rem;color:#ccc8b8}
         .analysis-prose p{margin-bottom:12px}
-        .analysis-label{color:#d4a843;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;position:absolute;top:-12px;left:24px;background:#0a0a0a;padding:2px 12px}
-        .section-header{color:#d4a843;font-size:22px;font-weight:700;margin-top:32px;margin-bottom:16px;letter-spacing:1px}
+        .analysis-label{display:inline-block;background:#d4a843;color:#0a0a0a;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:3px 10px;border-radius:4px;margin-bottom:14px;position:static}
+        .section-header{color:#d4a843;font-size:1.25rem;font-weight:700;margin:24px 0 16px 0;letter-spacing:0}
         .section-divider{border:none;border-top:1px solid #2a2a2a;margin:32px 0}
         .thesis-box{background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.3);border-radius:12px;padding:24px;line-height:1.75;margin-bottom:16px}
         .thesis-box p{margin-bottom:10px}
@@ -55,13 +55,13 @@
         .badge-red{background:rgba(231,76,60,.15);color:#e74c3c;border:1px solid rgba(231,76,60,.3)}
         .badge-gold{background:rgba(212,168,67,.15);color:#d4a843;border:1px solid rgba(212,168,67,.3)}
         .grade-circle{width:64px;height:64px;border-radius:50%;border:3px solid #4caf50;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#4caf50;margin:0 auto 8px}
-        .tab-bar{display:flex;overflow-x:auto;background:#111;border-bottom:1px solid #2a2a2a;padding:0 16px;gap:2px;position:sticky;top:0;z-index:100}
+        .tab-bar{display:flex;overflow-x:auto;background:#111;border-bottom:2px solid #2a2a2a;padding:0 10px;gap:0;position:sticky;top:0;z-index:100}
         .tab-bar::-webkit-scrollbar{height:4px}
         .tab-bar::-webkit-scrollbar-track{background:#0a0a0a}
         .tab-bar::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:2px}
-        .tab-btn{padding:12px 14px;background:transparent;border:none;color:#8a8a7a;cursor:pointer;font-size:12px;white-space:nowrap;border-bottom:2px solid transparent;transition:.2s;font-weight:500;font-family:inherit}
-        .tab-btn:hover{color:#e8e0d0}
-        .tab-btn.active{color:#d4a843;border-bottom-color:#d4a843}
+        .tab-btn{padding:10px 11px;background:transparent;border:none;color:#8a8a7a;cursor:pointer;font-size:11px;white-space:nowrap;border-bottom:2px solid transparent;transition:.2s;font-weight:500;font-family:inherit}
+        .tab-btn:hover{color:#d4a843;background:#1a1a1a}
+        .tab-btn.active{color:#d4a843;border-bottom-color:#d4a843;background:#1a1a14}
         .tab-content{display:none;padding:24px;max-width:1200px;margin:0 auto}
         .tab-content.active{display:block}
         table{width:100%;border-collapse:collapse;margin:16px 0}
@@ -71,16 +71,28 @@
         canvas{max-width:100%;margin:16px 0}
         .chart-wrap{background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin-bottom:16px}
         .issue-label{display:inline-block;background:#e74c3c;color:#fff;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:8px}
-        .header-bar{background:#111;padding:16px 24px;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-        .header-bar h1{font-size:20px;font-weight:700;color:#d4a843}
-        .header-bar .sub{color:#8a8a7a;font-size:13px}
+        .header,.header-bar{background:#141414;padding:18px 28px;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+        .header-left h1,.header-bar h1{font-size:1.5rem;font-weight:700;color:#d4a843}
+        .header-left .subtitle,.header-bar .sub{color:#8a8a7a;font-size:.85rem;margin-top:2px}
+        .header-right{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+        .header-badge{background:#1e1e1e;border:1px solid #2a2a2a;border-radius:8px;padding:6px 14px;text-align:center}
+        .header-badge .val{font-size:1.1rem;font-weight:700;color:#e8e0d0;font-family:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace}
+        .header-badge .lbl{font-size:.65rem;color:#8a8a7a;text-transform:uppercase;letter-spacing:.5px}
         @media(max-width:768px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}.tab-btn{font-size:10px;padding:10px 8px}.card{padding:16px}th,td{padding:8px;font-size:11px}}
     </style>
 </head>
 <body>
-<div class="header-bar">
-    <h1>$MCD &mdash; McDonald's Corporation</h1>
-    <span class="sub">Equity Research Dashboard &bull; Data as of March 5, 2026</span>
+<div class="header">
+    <div class="header-left">
+        <h1>$MCD &mdash; McDonald's Corporation</h1>
+        <div class="subtitle">Equity Research Dashboard &bull; Data as of March 5, 2026</div>
+    </div>
+    <div class="header-right">
+        <div class="header-badge"><div class="val">$331.00</div><div class="lbl">Current Price</div></div>
+        <div class="header-badge"><div class="val" style="color:#f1c40f;">HOLD</div><div class="lbl">Swing Rating</div></div>
+        <div class="header-badge"><div class="val" style="color:#4caf50;">BUY</div><div class="lbl">Position Rating</div></div>
+        <div class="header-badge"><div class="val" style="color:#d4a843;">$345.52</div><div class="lbl">Target</div></div>
+    </div>
 </div>
 <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>

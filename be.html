@@ -30,7 +30,7 @@
             color: var(--text-cream);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
             line-height: 1.6;
-            padding: 20px;
+            padding: 0;
         }
 
         .container {
@@ -39,29 +39,66 @@
         }
 
         header {
-            margin-bottom: 30px;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 18px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 0;
         }
 
-        header h1 {
-            font-size: 2.5em;
-            margin-bottom: 5px;
+        .header-left h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0;
             color: var(--accent-gold);
         }
 
-        header p {
+        .header-left p {
             color: var(--text-muted);
-            font-size: 0.95em;
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-badge {
+            background: #1e1e1e;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 14px;
+            text-align: center;
+        }
+
+        .header-badge .val {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-cream);
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+        }
+
+        .header-badge .lbl {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .tab-buttons {
             display: flex;
-            gap: 8px;
+            gap: 0;
             overflow-x: auto;
             margin-bottom: 20px;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
+            padding: 0 10px;
+            border-bottom: 2px solid var(--border);
+            background: #111;
             scroll-behavior: smooth;
         }
 
@@ -79,28 +116,29 @@
         }
 
         button.tab-btn {
-            padding: 8px 14px;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--text-cream);
+            padding: 10px 11px;
+            background-color: transparent;
+            border: none;
+            color: var(--text-muted);
             cursor: pointer;
-            border-radius: 6px;
-            font-size: 12px;
+            border-radius: 0;
+            font-size: 11px;
             font-weight: 500;
             white-space: nowrap;
             transition: all 0.2s;
             flex-shrink: 0;
+            border-bottom: 2px solid transparent;
         }
 
         button.tab-btn:hover {
-            border-color: var(--accent-gold);
             color: var(--accent-gold);
+            background: #1a1a1a;
         }
 
         button.tab-btn.active {
-            background-color: var(--accent-gold);
-            color: var(--bg-primary);
-            border-color: var(--accent-gold);
+            background-color: #1a1a14;
+            color: var(--accent-gold);
+            border-bottom-color: var(--accent-gold);
         }
 
         .tab-content {
@@ -118,14 +156,14 @@
         }
 
         .analysis-prose {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 30px;
-            color: var(--text-cream);
-            line-height: 1.8;
-            font-size: 0.95em;
+            background-color: #0f0f0f;
+            border: 1px solid #1e1e1e;
+            border-radius: 10px;
+            padding: 22px 24px;
+            margin-bottom: 20px;
+            color: #ccc8b8;
+            line-height: 1.75;
+            font-size: 0.92rem;
             text-align: justify;
         }
 
@@ -785,8 +823,16 @@
 <body>
     <div class="container">
         <header>
-            <h1>BE — Bloom Energy Corp</h1>
-            <p>Comprehensive Equity Research Dashboard | AI Infrastructure Revolution</p>
+            <div class="header-left">
+                <h1>$BE — Bloom Energy Corp</h1>
+                <p>Equity Research Dashboard | AI Infrastructure Revolution</p>
+            </div>
+            <div class="header-right">
+                <div class="header-badge"><div class="val">$165.00</div><div class="lbl">Current Price</div></div>
+                <div class="header-badge"><div class="val" style="color:#4caf50;">BUY</div><div class="lbl">Rating</div></div>
+                <div class="header-badge"><div class="val" style="color:#4caf50;">$190</div><div class="lbl">Target</div></div>
+                <div class="header-badge"><div class="val" style="color:#4caf50;">+15.1%</div><div class="lbl">Expected Move</div></div>
+            </div>
         </header>
 
         <div class="tab-buttons">
