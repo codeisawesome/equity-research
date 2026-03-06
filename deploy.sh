@@ -45,31 +45,33 @@ echo -e "${YELLOW}Pulling latest changes from GitHub...${NC}"
 git pull --quiet origin main 2>/dev/null || true
 
 # -- Find all HTML files that are NOT index.html --------------
-ALL_HTML=$(ls *.html 2>/dev/null | grep -v '^index\.html$' || true)
+ALL_HTML=$(find . -maxdepth 1 -name '*.html' -print | sed 's|^\./||' | grep -v '^index\.html$' | sort || true)
+LINKED_FILES=$(grep -o 'href="[^"]*\.html"' index.html 2>/dev/null | sed 's/href="//;s/"$//' | grep -v '^index\.html$' || true)
 
-if [ -z "$ALL_HTML" ]; then
-    echo -e "${YELLOW}No dashboard HTML files found. Nothing to do.${NC}"
-    exit 0
-fi
-
-# -- Detect which files are already linked in index.html ------
 NEW_FILES=""
+REMOVED_FILES=""
 EXISTING_COUNT=0
 
 for file in $ALL_HTML; do
-    if grep -q "href=\"${file}\"" index.html 2>/dev/null; then
+    if echo "$LINKED_FILES" | grep -qx "$file"; then
         EXISTING_COUNT=$((EXISTING_COUNT + 1))
     else
         NEW_FILES="$NEW_FILES $file"
     fi
 done
 
-NEW_FILES=$(echo "$NEW_FILES" | xargs)  # trim whitespace
+for file in $LINKED_FILES; do
+    if ! echo "$ALL_HTML" | grep -qx "$file"; then
+        REMOVED_FILES="$REMOVED_FILES $file"
+    fi
+done
 
-if [ -z "$NEW_FILES" ]; then
-    echo -e "${GREEN}All $EXISTING_COUNT dashboard(s) already on the landing page.${NC}"
+NEW_FILES=$(echo "$NEW_FILES" | xargs)
+REMOVED_FILES=$(echo "$REMOVED_FILES" | xargs)
+
+if [ -z "$NEW_FILES" ] && [ -z "$REMOVED_FILES" ]; then
+    echo -e "${GREEN}Landing page is already aligned with current dashboard files.${NC}"
     echo ""
-    # Still check for any uncommitted changes to push
     if git diff --quiet && git diff --cached --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
         echo -e "${GREEN}Everything is up to date. Nothing to deploy.${NC}"
         exit 0
@@ -83,21 +85,42 @@ if [ -z "$NEW_FILES" ]; then
     fi
 fi
 
-echo -e "${GREEN}Found ${EXISTING_COUNT} existing dashboard(s).${NC}"
-echo -e "${YELLOW}Detected $(echo "$NEW_FILES" | wc -w | xargs) new file(s):${NC}"
-for file in $NEW_FILES; do
-    echo "  → $file"
-done
+echo -e "${GREEN}Found ${EXISTING_COUNT} dashboard(s) already linked in index.html.${NC}"
+if [ -n "$NEW_FILES" ]; then
+    echo -e "${YELLOW}Detected $(echo "$NEW_FILES" | wc -w | xargs) new file(s):${NC}"
+    for file in $NEW_FILES; do
+        echo "  + $file"
+    done
+fi
+if [ -n "$REMOVED_FILES" ]; then
+    echo -e "${YELLOW}Detected $(echo "$REMOVED_FILES" | wc -w | xargs) removed file(s):${NC}"
+    for file in $REMOVED_FILES; do
+        echo "  - $file"
+    done
+fi
 echo ""
 
+# -- Preserve existing card order, remove missing files, append new files --
+ORDERED_FILES=""
+for file in $LINKED_FILES; do
+    if echo "$ALL_HTML" | grep -qx "$file"; then
+        ORDERED_FILES="$ORDERED_FILES $file"
+    fi
+done
+for file in $ALL_HTML; do
+    if ! echo " $ORDERED_FILES " | grep -q " $file "; then
+        ORDERED_FILES="$ORDERED_FILES $file"
+    fi
+done
+ORDERED_FILES=$(echo "$ORDERED_FILES" | xargs)
+
 # ============================================================
-#  PARSE each new HTML file and generate a card
+#  PARSE each current HTML file and generate cards
 # ============================================================
 
-# Clean up any previous temp file
-rm -f /tmp/equity_new_cards.txt
+rm -f /tmp/equity_cards.txt
 
-for file in $NEW_FILES; do
+for file in $ORDERED_FILES; do
     echo -e "${CYAN}Parsing: ${file}${NC}"
 
     # -- Extract ticker and company from <title> tag ----------
@@ -160,44 +183,41 @@ for file in $NEW_FILES; do
 
     # -- Generate card HTML (store ticker/company/etc for Python) --
     # Append parsed data to a temp file for Python to process
-    echo "${file}|||${TICKER}|||${COMPANY}|||${DESC}|||${BADGE_CLASS}|||${RATING}" >> /tmp/equity_new_cards.txt
+    echo "${file}|||${TICKER}|||${COMPANY}|||${DESC}|||${BADGE_CLASS}|||${RATING}" >> /tmp/equity_cards.txt
     echo -e "${GREEN}  ✓ Card generated.${NC}"
     echo ""
 done
 
-# -- Insert new cards into index.html -------------------------
-if [ -f /tmp/equity_new_cards.txt ]; then
-    echo -e "${YELLOW}Updating index.html...${NC}"
+# -- Rebuild cards section in index.html ----------------------
+echo -e "${YELLOW}Updating index.html...${NC}"
 
-    python3 << 'PYEOF'
+python3 << 'PYEOF'
 import os
+import re
 
 # Read the card data
 cards_data = []
-with open('/tmp/equity_new_cards.txt', 'r') as f:
-    for line in f:
-        line = line.strip()
-        if not line:
-            continue
-        parts = line.split('|||')
-        if len(parts) == 6:
-            cards_data.append({
-                'file': parts[0],
-                'ticker': parts[1],
-                'company': parts[2],
-                'desc': parts[3],
-                'badge_class': parts[4],
-                'rating': parts[5],
-            })
+if os.path.exists('/tmp/equity_cards.txt'):
+    with open('/tmp/equity_cards.txt', 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split('|||')
+            if len(parts) == 6:
+                cards_data.append({
+                    'file': parts[0],
+                    'ticker': parts[1],
+                    'company': parts[2],
+                    'desc': parts[3],
+                    'badge_class': parts[4],
+                    'rating': parts[5],
+                })
 
-if not cards_data:
-    print("  No card data found.")
-    exit(0)
-
-# Build HTML for new cards
-new_cards_html = ""
+# Build HTML for cards
+cards_html = ""
 for card in cards_data:
-    new_cards_html += f"""
+    cards_html += f"""
   <a href="{card['file']}" class="report-card">
     <span class="card-arrow">&rarr;</span>
     <div class="card-ticker mono">{card['ticker']}</div>
@@ -211,39 +231,46 @@ for card in cards_data:
 with open('index.html', 'r') as f:
     content = f.read()
 
-insert_point = content.rfind('</a>')
-if insert_point == -1:
-    print("  Error: Could not find insertion point in index.html")
+pattern = re.compile(r'(<div class="reports-grid">\s*)(.*?)(\s*</div>\s*<footer class="site-footer">)', re.S)
+match = pattern.search(content)
+if not match:
+    print("  Error: Could not find reports grid in index.html")
     exit(1)
 
-insert_after = content.index('\n', insert_point) + 1
-new_content = content[:insert_after] + new_cards_html + content[insert_after:]
+new_content = pattern.sub(
+    lambda m: f"{m.group(1)}{cards_html}{m.group(3)}",
+    content,
+    count=1,
+)
 
 with open('index.html', 'w') as f:
     f.write(new_content)
 
-print(f"  index.html updated — added {len(cards_data)} new card(s).")
+print(f"  index.html updated — now contains {len(cards_data)} dashboard card(s).")
 
 # Clean up
-os.remove('/tmp/equity_new_cards.txt')
+if os.path.exists('/tmp/equity_cards.txt'):
+    os.remove('/tmp/equity_cards.txt')
 PYEOF
-
-    echo ""
-fi
+echo ""
 
 # -- Git add, commit, and push --------------------------------
 echo -e "${YELLOW}Committing and pushing to GitHub...${NC}"
 git add -A
 
 # Build a useful commit message
-NEW_TICKERS=""
-for file in $NEW_FILES; do
-    T=$(grep -o '<title>[^<]*</title>' "$file" | head -1 | sed 's/<[^>]*>//g' | sed -n 's/^\(\$[A-Z]*\).*/\1/p')
-    NEW_TICKERS="$NEW_TICKERS $T"
-done
-NEW_TICKERS=$(echo "$NEW_TICKERS" | xargs)
-
-COMMIT_MSG="Add dashboard(s): ${NEW_TICKERS}"
+COMMIT_MSG="Sync dashboard index"
+if [ -n "$NEW_FILES" ] && [ -z "$REMOVED_FILES" ]; then
+    NEW_TICKERS=""
+    for file in $NEW_FILES; do
+        T=$(grep -o '<title>[^<]*</title>' "$file" | head -1 | sed 's/<[^>]*>//g' | sed -n 's/^\(\$[A-Z]*\).*/\1/p')
+        NEW_TICKERS="$NEW_TICKERS $T"
+    done
+    NEW_TICKERS=$(echo "$NEW_TICKERS" | xargs)
+    COMMIT_MSG="Add dashboard(s): ${NEW_TICKERS}"
+elif [ -z "$NEW_FILES" ] && [ -n "$REMOVED_FILES" ]; then
+    COMMIT_MSG="Remove deleted dashboard(s) from index"
+fi
 git commit -m "$COMMIT_MSG"
 git push origin main
 
