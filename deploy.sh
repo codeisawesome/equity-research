@@ -379,18 +379,29 @@ for card in cards_data:
       </a>
 """
 
-# Read index.html and replace the current dashboard rows inside the list
+# Read index.html and replace the full dashboard list block
 with open('index.html', 'r') as f:
     content = f.read()
 
-pattern = re.compile(r'(<div class="list">\s*<div class="list-head">.*?</div>)(.*?)(\s*</div>\s*</section>)', re.S)
+list_block = f"""    <div class="list">
+      <div class="list-head">
+        <div>Name</div>
+        <div>Rating</div>
+        <div>Price</div>
+        <div>Target</div>
+        <div>Move</div>
+        <div>Why It Exists</div>
+      </div>{rows_html}
+    </div>"""
+
+pattern = re.compile(r'<div class="list">.*?</div>\s*</section>', re.S)
 match = pattern.search(content)
 if not match:
     print("  Error: Could not find dashboard list in index.html")
     exit(1)
 
 new_content = pattern.sub(
-    lambda m: f"{m.group(1)}{rows_html}{m.group(3)}",
+    lambda m: f"{list_block}\n  </section>",
     content,
     count=1,
 )
@@ -398,7 +409,7 @@ new_content = pattern.sub(
 with open('index.html', 'w') as f:
     f.write(new_content)
 
-print(f"  index.html updated — now contains {len(cards_data)} dashboard card(s).")
+print(f"  index.html updated — now contains {len(cards_data)} dashboard row(s).")
 
 # Clean up
 if os.path.exists('/tmp/equity_cards.txt'):
