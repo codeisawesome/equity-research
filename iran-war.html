@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>War in Iran | Ad Hoc Macro Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0a;
+            --card: #141414;
+            --card-2: #101010;
+            --border: #2a2a2a;
+            --gold: #d4a843;
+            --text: #e8e0d0;
+            --muted: #8a8a7a;
+            --green: #4caf50;
+            --red: #e74c3c;
+            --yellow: #f1c40f;
+            --blue: #5dade2;
+        }
+        body {
+            background:
+                radial-gradient(circle at top right, rgba(212, 168, 67, 0.12), transparent 28%),
+                radial-gradient(circle at top left, rgba(93, 173, 226, 0.08), transparent 24%),
+                linear-gradient(180deg, #0b0b0b 0%, #090909 100%);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.65;
+        }
+        a { color: var(--gold); text-decoration: none; }
+        .mono, .num { font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace; }
+        .positive { color: var(--green); }
+        .negative { color: var(--red); }
+        .neutral { color: var(--yellow); }
+        .info { color: var(--blue); }
+
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: rgba(20, 20, 20, 0.96);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .header-left h1 {
+            color: var(--gold);
+            font-size: 1.55rem;
+            font-weight: 700;
+        }
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.86rem;
+            margin-top: 4px;
+        }
+        .header-right {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .header-badge {
+            min-width: 110px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        .header-badge .val {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+        .header-badge .lbl {
+            font-size: 0.64rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+        }
+        .back-link {
+            padding: 18px 28px 0;
+            color: var(--muted);
+            font-size: 0.84rem;
+        }
+        .back-link a { color: var(--muted); }
+        .back-link a:hover { color: var(--gold); }
+
+        .tab-bar {
+            display: flex;
+            overflow-x: auto;
+            background: #101010;
+            border-bottom: 1px solid var(--border);
+            padding: 0 12px;
+            scrollbar-width: thin;
+        }
+        .tab-btn {
+            flex-shrink: 0;
+            padding: 10px 11px;
+            font-size: 12px;
+            border: none;
+            border-bottom: 2px solid transparent;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s ease;
+            font-family: inherit;
+        }
+        .tab-btn:hover { color: var(--gold); background: rgba(255, 255, 255, 0.03); }
+        .tab-btn.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+            background: rgba(212, 168, 67, 0.08);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 26px;
+        }
+        .tab-content.active { display: block; }
+
+        .section-header {
+            color: var(--gold);
+            font-size: 1.28rem;
+            margin-bottom: 18px;
+        }
+        .section-divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 28px 0;
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.005));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            color: var(--gold);
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .card-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        .card-label {
+            color: var(--muted);
+            font-size: 0.78rem;
+            margin-top: 6px;
+        }
+
+        .metric-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .metric-item {
+            flex: 1 1 130px;
+            min-width: 130px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        .metric-item .card-value { font-size: 1.02rem; }
+
+        .analysis-prose {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid #1f1f1f;
+            border-radius: 12px;
+            padding: 24px;
+            font-size: 0.93rem;
+            color: #d7d0bf;
+            margin-bottom: 16px;
+        }
+        .analysis-prose p { margin-bottom: 14px; }
+        .analysis-prose p:last-child { margin-bottom: 0; }
+        .analysis-prose ul, .analysis-prose ol {
+            margin: 8px 0 14px 20px;
+        }
+        .analysis-prose li { margin-bottom: 8px; }
+        .analysis-label {
+            display: inline-block;
+            background: var(--gold);
+            color: #0a0a0a;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-size: 0.62rem;
+            padding: 3px 10px;
+            border-radius: 999px;
+            margin-bottom: 16px;
+        }
+
+        .thesis-box {
+            background: linear-gradient(135deg, rgba(212, 168, 67, 0.14), rgba(212, 168, 67, 0.04));
+            border: 1px solid rgba(212, 168, 67, 0.35);
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 16px;
+        }
+
+        .grid-2, .grid-3, .grid-4 {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            border: 1px solid transparent;
+        }
+        .badge-green { background: rgba(76, 175, 80, 0.14); color: var(--green); border-color: rgba(76, 175, 80, 0.25); }
+        .badge-red { background: rgba(231, 76, 60, 0.14); color: var(--red); border-color: rgba(231, 76, 60, 0.25); }
+        .badge-yellow { background: rgba(241, 196, 15, 0.14); color: var(--yellow); border-color: rgba(241, 196, 15, 0.25); }
+        .badge-blue { background: rgba(93, 173, 226, 0.14); color: var(--blue); border-color: rgba(93, 173, 226, 0.25); }
+        .badge-gold { background: rgba(212, 168, 67, 0.14); color: var(--gold); border-color: rgba(212, 168, 67, 0.25); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 0.84rem;
+        }
+        th {
+            background: #1a1708;
+            color: var(--gold);
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #3a3520;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #1e1e1e;
+            color: #ccc8b8;
+            vertical-align: top;
+        }
+        tr:nth-child(even) td { background: #0f0f0f; }
+
+        .scenario-card {
+            border-radius: 12px;
+            padding: 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--muted);
+        }
+        .scenario-card.base { border-left-color: var(--gold); }
+        .scenario-card.bull { border-left-color: var(--green); }
+        .scenario-card.bear { border-left-color: var(--red); }
+        .scenario-card.warn { border-left-color: var(--blue); }
+
+        .prob-bar-container {
+            display: flex;
+            height: 30px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+        .prob-bar-container > div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            margin-bottom: 18px;
+        }
+        .timeline-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .timeline-dot.green { background: var(--green); }
+        .timeline-dot.red { background: var(--red); }
+        .timeline-dot.gold { background: var(--gold); }
+        .timeline-dot.blue { background: var(--blue); }
+
+        .footer-note {
+            color: var(--muted);
+            font-size: 0.78rem;
+            margin-top: 6px;
+        }
+
+        @media (max-width: 900px) {
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .header { padding: 14px 16px; }
+            .back-link { padding: 14px 16px 0; }
+            .tab-content { padding: 14px; }
+            .tab-btn { padding: 8px 8px; font-size: 10px; }
+            .metric-strip { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-left">
+        <h1>War in Iran</h1>
+        <div class="subtitle">Ad Hoc Macro Report &bull; Updated March 9, 2026</div>
+    </div>
+    <div class="header-right">
+        <div class="header-badge"><div class="val neutral">Macro</div><div class="lbl">Type</div></div>
+        <div class="header-badge"><div class="val">$107.97</div><div class="lbl">Brent</div></div>
+        <div class="header-badge"><div class="val negative">Near Halt</div><div class="lbl">Hormuz</div></div>
+        <div class="header-badge"><div class="val" style="color:#d4a843;">Persistent Shock</div><div class="lbl">Base Case</div></div>
+    </div>
+</div>
+
+<div class="shell">
+    <div class="back-link"><a href="index.html">&larr; Back to research hub</a></div>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+        <button class="tab-btn" onclick="switchTab(1)">2. Macro</button>
+        <button class="tab-btn" onclick="switchTab(2)">3. History</button>
+        <button class="tab-btn" onclick="switchTab(3)">4. Scenarios</button>
+        <button class="tab-btn" onclick="switchTab(4)">5. Watchlist</button>
+        <button class="tab-btn" onclick="switchTab(5)">6. Sources</button>
+    </div>
+
+    <div class="tab-content active">
+        <h2 class="section-header">1. Executive Summary</h2>
+
+        <div class="analysis-prose">
+            <span class="analysis-label">Normalized Draft</span>
+            <p><strong>The cleanest way to frame this is not "Middle East risk premium."</strong> It is a live transport-system shock layered on top of regime hardening. The war began on February 28, 2026, when U.S. and Israeli strikes killed Ali Khamenei; by March 8, Iran's Assembly of Experts had elevated Mojtaba Khamenei, which materially lowers the odds of a quick political climbdown.</p>
+            <p><strong>The macro hinge is the Strait of Hormuz.</strong> Official closure or not, commercial reality already looks broken. Reuters reported shipping had ground to a near halt within days of the opening strikes, and AP reported on March 9 that tanker traffic had been all but stopped by missile and drone risk. That matters more than any single damaged facility because Hormuz is a system bottleneck, not a repair job.</p>
+            <p><strong>The conflict is also no longer bilateral.</strong> Reuters confirmed a drone strike on RAF Akrotiri in Cyprus, and AP confirmed Bahraini officials accused Iran of damaging a desalination plant. That combination matters because it widens the war's footprint from oil and missiles into allied basing, water infrastructure, insurance markets, and Gulf-state domestic stability.</p>
+            <p><strong>My base case remains "persistent shock," not "quick normalization."</strong> Brent opened around $107.97 on March 9 according to AP, already above the psychological threshold that starts feeding inflation expectations back into equities and rates. Even if the shooting slows, war-risk insurance, fleet positioning, and owner caution can keep flows impaired after headlines cool down.</p>
+            <p><strong>Inference:</strong> Mojtaba's succession, the White House's maximalist rhetoric, and the shift from facility damage to transit paralysis together argue for a slower market healing process than the first-pass bullish reflex usually assumes.</p>
+        </div>
+
+        <div class="thesis-box">
+            <div class="card-title">Core View</div>
+            <p>This report has been rewritten around confirmed facts. The earlier draft leaned too hard on a few specific numbers that were difficult to verify cleanly. The durable thesis survives: Hormuz impairment plus hardline succession is more consistent with a sticky oil shock than with a quick V-shaped reset.</p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                <span class="badge badge-gold">Base Case: Persistent Shock</span>
+                <span class="badge badge-yellow">Conviction: Medium</span>
+                <span class="badge badge-blue">Horizon: March-June 2026</span>
+                <span class="badge badge-red">Bias: Defensive</span>
+            </div>
+        </div>
+
+        <div class="metric-strip">
+            <div class="metric-item"><div class="card-title">Conflict Start</div><div class="card-value mono">2026-02-28</div><div class="card-label">CENTCOM fact sheet</div></div>
+            <div class="metric-item"><div class="card-title">New Supreme Leader</div><div class="card-value mono">Mojtaba</div><div class="card-label">AP / Reuters, March 8</div></div>
+            <div class="metric-item"><div class="card-title">Brent</div><div class="card-value mono">$107.97</div><div class="card-label">AP, March 9 open</div></div>
+            <div class="metric-item"><div class="card-title">Hormuz Traffic</div><div class="card-value negative mono">Near Halt</div><div class="card-label">Reuters / AP reporting</div></div>
+            <div class="metric-item"><div class="card-title">U.S. Public Opinion</div><div class="card-value mono">27 / 43</div><div class="card-label">Approve / disapprove</div></div>
+        </div>
+
+        <div class="grid-3">
+            <div class="card">
+                <div class="card-title">Pillar 1: Hardline Succession</div>
+                <p>Mojtaba Khamenei's elevation points to continuity under stress, not capitulation. That does not guarantee escalation, but it clearly weakens the case for a fast diplomatic off-ramp.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">Pillar 2: Chokepoint Damage Beats Facility Damage</div>
+                <p>Abqaiq-style outages can be repaired. Hormuz disruption is a traffic, insurance, routing, and confidence problem spread across multiple countries and fleets.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">Pillar 3: Regional Spillover</div>
+                <p>Cyprus, Bahrain, Gulf desalination assets, and Lebanese fronts are now part of the same market story. The war's perimeter has widened faster than most asset prices initially assumed.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content">
+        <h2 class="section-header">2. Market Structure</h2>
+
+        <div class="card">
+            <div class="card-title">The Critical Macro Fact</div>
+            <p>The most important edit to the original draft is semantic but meaningful: Hormuz is not best described as formally "closed." It is better described as commercially impaired to the point of near-freeze. That wording matches the reporting more closely and still captures the market consequence.</p>
+            <p style="margin-top:10px;">Reuters reported on March 2 that shipping through the strait had ground to a near halt and that about 150 ships were stranded around Hormuz as insurers pulled war-risk cover. By March 6, shipping monitors were reporting only two ships had passed in the prior 24 hours, neither of them tankers. AP then reported on March 9 that tanker movement had effectively stopped under missile and drone threat.</p>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Why This Matters</div>
+                <ul>
+                    <li>Hormuz normally carries roughly one-fifth of global oil flows.</li>
+                    <li>It also handles key LNG exports, especially from Qatar.</li>
+                    <li>When shipping stops, producers cannot simply "wait it out" because storage fills quickly.</li>
+                    <li>That turns a maritime-security event into an upstream production problem.</li>
+                </ul>
+            </div>
+            <div class="card">
+                <div class="card-title">Why This Is Worse Than A Single Facility Outage</div>
+                <ul>
+                    <li>A refinery or processing plant can be inspected, repaired, and restarted.</li>
+                    <li>A transit corridor requires military deterrence, insurer confidence, and shipowner willingness.</li>
+                    <li>Even after a ceasefire, shipping economics can remain impaired.</li>
+                    <li>That is why the shock can outlive the military headlines.</li>
+                </ul>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Confirmed Development</th>
+                    <th>Why Markets Care</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="mono">2026-02-28</td>
+                    <td>U.S. and Israeli strikes kill Ali Khamenei; CENTCOM says Operation Epic Fury began at 1:15 a.m. on February 28.</td>
+                    <td>Leadership shock immediately raises escalation risk and reduces visibility on regime behavior.</td>
+                </tr>
+                <tr>
+                    <td class="mono">2026-03-02</td>
+                    <td>Reuters reports RAF Akrotiri in Cyprus was hit by a drone strike, causing limited damage.</td>
+                    <td>The war's perimeter expands into allied basing and European political risk.</td>
+                </tr>
+                <tr>
+                    <td class="mono">2026-03-02 to 03-06</td>
+                    <td>Reuters reports shipping through Hormuz has ground to a near halt; shipping monitors later show only two transits in a 24-hour span, neither tankers.</td>
+                    <td>The oil shock shifts from fear to real physical disruption.</td>
+                </tr>
+                <tr>
+                    <td class="mono">2026-03-08</td>
+                    <td>AP and Reuters report Mojtaba Khamenei was chosen as supreme leader.</td>
+                    <td>Succession outcome argues against a quick moderation story.</td>
+                </tr>
+                <tr>
+                    <td class="mono">2026-03-09</td>
+                    <td>AP reports Brent crude at $107.97 and WTI at $106.22 as production and shipping remain impaired.</td>
+                    <td>Inflation, consumer spending, and risk-asset repricing become immediate macro channels.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="card">
+            <div class="card-title">Second-Order Transmission Channels</div>
+            <div class="grid-4">
+                <div>
+                    <div class="card-value mono">$3.45</div>
+                    <div class="card-label">U.S. regular gasoline, AP March 9</div>
+                </div>
+                <div>
+                    <div class="card-value mono">$4.60</div>
+                    <div class="card-label">U.S. diesel, AP March 9</div>
+                </div>
+                <div>
+                    <div class="card-value mono">43%</div>
+                    <div class="card-label">Reuters/Ipsos disapproval</div>
+                </div>
+                <div>
+                    <div class="card-value mono">27%</div>
+                    <div class="card-label">Reuters/Ipsos approval</div>
+                </div>
+            </div>
+            <p class="footer-note">Those numbers matter because the market has to price both energy inflation and political durability at the same time.</p>
+        </div>
+    </div>
+
+    <div class="tab-content">
+        <h2 class="section-header">3. Historical Analogues</h2>
+
+        <div class="analysis-prose">
+            <span class="analysis-label">Framework</span>
+            <p>Past oil shocks usually fit one of two buckets. The first is the <strong>sharp but reversible spike</strong>: violent price action, heavy headlines, then relatively quick normalization once the damaged asset or threatened route is brought back under control. The 1990-91 Gulf War and the 2019 Abqaiq strike are the most useful reference points there.</p>
+            <p>The second is the <strong>structural shock</strong>: revolution, sanctions, civil conflict, or state breakdown that keeps supply impaired well after the first military phase ends. The 1973-74 embargo and the 1979-80 Iranian revolution are the cleaner templates.</p>
+            <p>The current episode looks like a hybrid but leans toward the second bucket. The succession outcome hardens the political side of the story, while Hormuz disruption hardens the logistics side. That combination is what makes this episode more dangerous than a generic "risk premium" move.</p>
+        </div>
+
+        <div class="grid-3">
+            <div class="scenario-card bull">
+                <div class="card-title">1990-91 / 2019 Template</div>
+                <p><strong>Pattern:</strong> fast spike, then repair and rerouting.</p>
+                <p><strong>Bull case for today:</strong> convoy protection works, insurers return, and Gulf exports resume faster than feared.</p>
+            </div>
+            <div class="scenario-card bear">
+                <div class="card-title">1979-80 Template</div>
+                <p><strong>Pattern:</strong> political break plus extended supply disruption.</p>
+                <p><strong>Bear case for today:</strong> hardline succession reduces the odds of compromise while transit risk stays elevated.</p>
+            </div>
+            <div class="scenario-card base">
+                <div class="card-title">2026 Working Analogue</div>
+                <p><strong>Pattern:</strong> initial military shock, then a slower unwind driven by insurance, shipping, and regime posture.</p>
+                <p><strong>My read:</strong> closer to a persistent chokepoint event than to a quick repair story.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Key Distinction From Abqaiq</div>
+            <p>The draft's strongest idea was also the right one: Abqaiq was a facility outage. Hormuz is a transit-system outage. That distinction is worth keeping because it changes the expected duration profile. Even if missiles stop, the market still needs insurers, charterers, crews, and naval protection to believe the route is usable again.</p>
+        </div>
+    </div>
+
+    <div class="tab-content">
+        <h2 class="section-header">4. Scenario Map</h2>
+
+        <div class="card">
+            <div class="card-title">Probability Distribution Through March 31, 2026</div>
+            <div class="prob-bar-container">
+                <div style="width:20%; background:#4caf50; color:#0a0a0a;">20% Rapid</div>
+                <div style="width:50%; background:#d4a843; color:#0a0a0a;">50% Base</div>
+                <div style="width:20%; background:#5dade2; color:#0a0a0a;">20% Squeeze</div>
+                <div style="width:10%; background:#e74c3c;">10% Break</div>
+            </div>
+            <p class="footer-note">These are judgment calls, not market prices. They are meant to express the report's working base case after normalizing the original draft.</p>
+        </div>
+
+        <div class="grid-2">
+            <div class="scenario-card bull">
+                <div class="card-title">Rapid Off-Ramp | 20%</div>
+                <p>Brent retraces toward roughly $85-$95, escorted traffic resumes, and risk assets stabilize.</p>
+                <p>Needs both a political off-ramp and credible Hormuz reopening.</p>
+            </div>
+            <div class="scenario-card base">
+                <div class="card-title">Persistent Shock | 50%</div>
+                <p>Brent holds around $100-$125, inflation expectations stay sticky, and the S&amp;P 500 remains roughly 5% to 12% below its pre-shock range.</p>
+                <p>This is the most plausible path if the war continues without a full U.S. ground campaign but shipping remains impaired.</p>
+            </div>
+            <div class="scenario-card warn">
+                <div class="card-title">Severe Squeeze | 20%</div>
+                <p>Brent moves into the $125-$150 band, jet fuel and diesel stress intensify, and cyclicals break harder.</p>
+                <p>Requires continued traffic paralysis plus further damage to Gulf infrastructure.</p>
+            </div>
+            <div class="scenario-card bear">
+                <div class="card-title">Systemic Break | 10%</div>
+                <p>Brent pushes beyond $150, policy response turns emergency-oriented, and markets enter full panic conditions.</p>
+                <p>Likely requires multi-country production losses or overt expansion of the war.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Working Event Probabilities</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>My Estimate</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Formal ceasefire by March 31</td>
+                        <td class="mono">15%</td>
+                        <td>Possible, but leadership and rhetoric still point the wrong way.</td>
+                    </tr>
+                    <tr>
+                        <td>Meaningful de-escalation by June 30</td>
+                        <td class="mono">60%</td>
+                        <td>More plausible than a fast ceasefire, but not the same thing as normal trade flows.</td>
+                    </tr>
+                    <tr>
+                        <td>Substantial Hormuz normalization by March 31</td>
+                        <td class="mono">10%</td>
+                        <td>Shipping confidence usually lags political headlines.</td>
+                    </tr>
+                    <tr>
+                        <td>Limited U.S. boots on the ground inside Iran by March 31</td>
+                        <td class="mono">20%</td>
+                        <td>Still a tail, but not dismissible under maximalist war aims.</td>
+                    </tr>
+                    <tr>
+                        <td>Iranian regime fall by June 30</td>
+                        <td class="mono">20%</td>
+                        <td>Leadership damage is real, but a cohesive replacement has already emerged.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="tab-content">
+        <h2 class="section-header">5. Watchlist</h2>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">What Would Improve The View</div>
+                <div class="timeline-item">
+                    <div class="timeline-dot green"></div>
+                    <div><strong>Escorted tanker traffic resumes at scale.</strong><br>One or two symbolic crossings are not enough; the market needs repeatable commercial flow.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot green"></div>
+                    <div><strong>Qatar LNG and Gulf export systems restart cleanly.</strong><br>Energy normalization must show up in both oil and gas logistics.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot green"></div>
+                    <div><strong>Washington drops "unconditional surrender" language.</strong><br>Rhetoric is not everything, but it changes the odds on negotiation.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot green"></div>
+                    <div><strong>Insurance cover and charter pricing normalize.</strong><br>This is the market's real signal that shipping risk is easing.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">What Would Worsen The View</div>
+                <div class="timeline-item">
+                    <div class="timeline-dot red"></div>
+                    <div><strong>More strikes on civilian infrastructure.</strong><br>Desalination, ports, and grid assets broaden the economic blast radius.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot red"></div>
+                    <div><strong>Further Saudi, Iraqi, or UAE output curtailments.</strong><br>The shock becomes supply destruction, not just transport stress.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot red"></div>
+                    <div><strong>U.S. ground entry.</strong><br>That would likely push markets from oil shock into full geopolitical panic mode.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot red"></div>
+                    <div><strong>Evidence of regime cohesion around a longer war.</strong><br>Mojtaba's appointment already leans that direction.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Bottom Line</div>
+            <p>This report should be read as a market note, not as a battlefield forecast. The investable point is that the shock has already migrated from headline risk to logistics impairment. Once that happens, the bar for a clean reset rises sharply. The original draft was directionally right on that point, but it is stronger after removing a few over-specific claims and anchoring the thesis to what is actually confirmed.</p>
+        </div>
+    </div>
+
+    <div class="tab-content">
+        <h2 class="section-header">6. Sources</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Why It Was Used</th>
+                    <th>Link</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>U.S. Central Command</td>
+                    <td>Confirmed operation name and launch timing for Operation Epic Fury.</td>
+                    <td><a href="https://www.centcom.mil/OPERATIONS-AND-EXERCISES/EPIC-FURY/" target="_blank" rel="noopener noreferrer">centcom.mil</a></td>
+                </tr>
+                <tr>
+                    <td>CENTCOM Fact Sheet</td>
+                    <td>Confirmed the February 28, 2026 launch time and target location.</td>
+                    <td><a href="https://www.centcom.mil/Portals/6/Documents/Publications/260303-Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">fact sheet PDF</a></td>
+                </tr>
+                <tr>
+                    <td>Associated Press</td>
+                    <td>Confirmed Ali Khamenei's death at the start of the war.</td>
+                    <td><a href="https://apnews.com/article/c2f11247d8a66e36929266f2c557a54c" target="_blank" rel="noopener noreferrer">AP: Khamenei killed</a></td>
+                </tr>
+                <tr>
+                    <td>Associated Press</td>
+                    <td>Confirmed Mojtaba Khamenei's succession on March 8.</td>
+                    <td><a href="https://apnews.com/article/f0b20dbffaea9351ae1e54183ffe53ff" target="_blank" rel="noopener noreferrer">AP: Mojtaba named leader</a></td>
+                </tr>
+                <tr>
+                    <td>Reuters</td>
+                    <td>Confirmed the drone strike on RAF Akrotiri in Cyprus and the widening regional footprint.</td>
+                    <td><a href="https://www.yahoo.com/news/articles/british-air-cyprus-hit-suspected-025720629.html" target="_blank" rel="noopener noreferrer">Reuters via Yahoo</a></td>
+                </tr>
+                <tr>
+                    <td>Reuters</td>
+                    <td>Confirmed Hormuz shipping had ground to a near halt and vessels were stranded.</td>
+                    <td><a href="https://www.yahoo.com/news/articles/iran-conflict-disrupts-global-shipping-122545396.html" target="_blank" rel="noopener noreferrer">Reuters via Yahoo</a></td>
+                </tr>
+                <tr>
+                    <td>Associated Press</td>
+                    <td>Confirmed oil above $100 and linked the move to impaired production and shipping.</td>
+                    <td><a href="https://apnews.com/article/ecab41ec6a365e58282f4cfbab62a9ff" target="_blank" rel="noopener noreferrer">AP: crude above $100</a></td>
+                </tr>
+                <tr>
+                    <td>Associated Press</td>
+                    <td>Confirmed Bahrain's accusation that an Iranian strike damaged a desalination plant.</td>
+                    <td><a href="https://apnews.com/article/iran-war-desalination-water-oil-middle-east-12b23f2fa26ed5c4a10f80c4077e61ce" target="_blank" rel="noopener noreferrer">AP: desalination risk</a></td>
+                </tr>
+                <tr>
+                    <td>Reuters / Ipsos</td>
+                    <td>Used for U.S. public opinion on the strikes: 27% approval, 43% disapproval.</td>
+                    <td><a href="https://www.ipsos.com/en-us/more-americans-disapprove-approve-us-strikes-against-iran" target="_blank" rel="noopener noreferrer">Ipsos poll release</a></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="analysis-prose">
+            <span class="analysis-label">Method Note</span>
+            <p>This page intentionally avoids a few unsupported specifics from the original draft, including exact stranded-vessel counts later in the week, highly precise Gulf production-loss percentages, and detailed prediction-market snapshots that were moving too quickly to present as stable facts.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(index) {
+    const tabs = document.querySelectorAll(".tab-content");
+    const buttons = document.querySelectorAll(".tab-btn");
+    tabs.forEach((tab, i) => tab.classList.toggle("active", i === index));
+    buttons.forEach((button, i) => button.classList.toggle("active", i === index));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+</script>
+</body>
+</html>
