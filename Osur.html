@@ -1,0 +1,1999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$OSUR | OraSure Technologies Equity Research Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0a;
+  --card: #141414;
+  --border: #2a2a2a;
+  --gold: #d4a843;
+  --cream: #e8e0d0;
+  --muted: #8a8a7a;
+  --green: #4caf50;
+  --red: #e74c3c;
+  --yellow: #f1c40f;
+  --blue: #5dade2;
+}
+body {
+  background: radial-gradient(circle at top, rgba(212, 168, 67, 0.08), transparent 28%), var(--bg);
+  color: var(--cream);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+}
+a { color: var(--blue); }
+.mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+.positive { color: var(--green); }
+.negative { color: var(--red); }
+.neutral { color: var(--yellow); }
+.muted { color: var(--muted); }
+.num { text-align: right; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(20, 20, 20, 0.96);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+}
+.header-left h1 { color: var(--gold); font-size: 1.55rem; }
+.subtitle { color: var(--muted); font-size: 0.88rem; margin-top: 3px; }
+.header-right {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.header-badge {
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  min-width: 100px;
+}
+.header-badge .val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+.header-badge .lbl {
+  font-size: 0.64rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-top: 2px;
+}
+.tab-bar {
+  display: flex;
+  overflow-x: auto;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--border);
+  background: #101010;
+  padding: 0 8px;
+}
+.tab-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 11px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.tab-btn:hover { color: var(--gold); background: rgba(212, 168, 67, 0.06); }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(212, 168, 67, 0.08); }
+.tab-content {
+  display: none;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 26px 30px 44px;
+}
+.tab-content.active { display: block; }
+body:has(.tab-content:target) .tab-content.active { display: none; }
+.tab-content:target { display: block; }
+body:has(.tab-content:target) .tab-btn.active {
+  color: var(--muted);
+  border-bottom-color: transparent;
+  background: transparent;
+}
+body:has(#tab-0:target) .tab-btn[href="#tab-0"],
+body:has(#tab-1:target) .tab-btn[href="#tab-1"],
+body:has(#tab-2:target) .tab-btn[href="#tab-2"],
+body:has(#tab-3:target) .tab-btn[href="#tab-3"],
+body:has(#tab-4:target) .tab-btn[href="#tab-4"],
+body:has(#tab-5:target) .tab-btn[href="#tab-5"],
+body:has(#tab-6:target) .tab-btn[href="#tab-6"],
+body:has(#tab-7:target) .tab-btn[href="#tab-7"],
+body:has(#tab-8:target) .tab-btn[href="#tab-8"],
+body:has(#tab-9:target) .tab-btn[href="#tab-9"],
+body:has(#tab-10:target) .tab-btn[href="#tab-10"],
+body:has(#tab-11:target) .tab-btn[href="#tab-11"],
+body:has(#tab-12:target) .tab-btn[href="#tab-12"] {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+  background: rgba(212, 168, 67, 0.08);
+}
+.section-header {
+  font-size: 1.28rem;
+  color: var(--gold);
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.analysis-prose {
+  background: #0f0f0f;
+  border: 1px solid #1e1e1e;
+  border-radius: 12px;
+  padding: 22px 24px;
+  color: #d6d0c2;
+}
+.analysis-prose p { margin-bottom: 14px; font-size: 14px; }
+.analysis-prose p:last-child { margin-bottom: 0; }
+.analysis-prose ul { margin: 8px 0 16px 20px; }
+.analysis-prose li { margin-bottom: 9px; }
+.analysis-prose table { margin-top: 14px; }
+.analysis-label {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--bg);
+  border-radius: 4px;
+  padding: 3px 9px;
+  margin-bottom: 14px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 28px 0;
+}
+.grid { display: grid; gap: 18px; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.card-title {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.card-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+}
+.card-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge-buy {
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+.badge-hold {
+  background: rgba(241, 196, 15, 0.15);
+  color: var(--yellow);
+  border: 1px solid rgba(241, 196, 15, 0.3);
+}
+.badge-sell {
+  background: rgba(231, 76, 60, 0.15);
+  color: var(--red);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+.thesis-box {
+  background: rgba(212, 168, 67, 0.06);
+  border: 1px solid rgba(212, 168, 67, 0.24);
+  border-radius: 12px;
+  padding: 20px;
+}
+.thesis-box p { margin-bottom: 10px; font-size: 14px; }
+.thesis-box p:last-child { margin-bottom: 0; }
+.metric-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.metric-item {
+  flex: 1;
+  min-width: 130px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.metric-item .label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.metric-item .value {
+  margin-top: 4px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+.source-badge {
+  display: inline-block;
+  background: rgba(212, 168, 67, 0.16);
+  color: var(--gold);
+  border: 1px solid rgba(212, 168, 67, 0.22);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+.source-badge.unverified {
+  background: rgba(231, 76, 60, 0.14);
+  color: #ffb3ac;
+  border-color: rgba(231, 76, 60, 0.28);
+}
+.source-badge.info {
+  background: rgba(93, 173, 226, 0.12);
+  color: var(--blue);
+  border-color: rgba(93, 173, 226, 0.26);
+}
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  background: rgba(212, 168, 67, 0.12);
+  color: var(--gold);
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(42, 42, 42, 0.7);
+  vertical-align: top;
+}
+tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
+.chart-container {
+  position: relative;
+  height: 320px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.chart-container.tall { height: 360px; }
+.scenario-card {
+  border-left: 4px solid var(--muted);
+}
+.scenario-card.bull { border-left-color: var(--green); }
+.scenario-card.base { border-left-color: var(--gold); }
+.scenario-card.bear { border-left-color: var(--red); }
+.prob-bar-container {
+  display: flex;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin: 14px 0 10px;
+}
+.prob-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  font-size: 12px;
+  font-weight: 700;
+}
+.prob-segment.bull { background: var(--green); }
+.prob-segment.base { background: var(--gold); }
+.prob-segment.bear { background: var(--red); color: #fff; }
+.pill-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.circle-grade {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 3px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  margin-bottom: 12px;
+}
+.split-stat {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.split-stat .cell {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.015);
+}
+.signal-list {
+  list-style: none;
+  margin: 0;
+}
+.signal-list li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.signal-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+.signal-icon.good {
+  background: rgba(76, 175, 80, 0.18);
+  color: var(--green);
+}
+.signal-icon.warn {
+  background: rgba(241, 196, 15, 0.18);
+  color: var(--yellow);
+}
+.signal-icon.bad {
+  background: rgba(231, 76, 60, 0.18);
+  color: var(--red);
+}
+.timeline-item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(42, 42, 42, 0.7);
+}
+.timeline-item:last-child { border-bottom: none; }
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 6px;
+}
+.timeline-dot.bull { background: var(--green); }
+.timeline-dot.bear { background: var(--red); }
+.timeline-dot.neutral { background: #888; }
+.timeline-date { color: var(--gold); font-weight: 700; }
+.timeline-impact { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.kill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+.kill-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.kill-check {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.revision-card {
+  background: rgba(231, 76, 60, 0.06);
+  border: 1px solid rgba(231, 76, 60, 0.18);
+  border-radius: 12px;
+  padding: 18px;
+}
+.revision-card .rev-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.issue-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(231, 76, 60, 0.18);
+  color: #ffb3ac;
+}
+.rev-original {
+  color: #b7aea0;
+  text-decoration: line-through;
+  margin-bottom: 10px;
+}
+.rev-revised {
+  color: #dff3de;
+  margin-bottom: 8px;
+}
+.note {
+  color: var(--muted);
+  font-size: 13px;
+}
+.tight-list {
+  list-style: none;
+  margin: 0;
+}
+.tight-list li { margin-bottom: 8px; }
+.footer-note {
+  padding: 16px 30px 34px;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+@media (max-width: 900px) {
+  .header {
+    position: static;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+@media (max-width: 768px) {
+  .tab-content { padding: 18px 14px 34px; }
+  .header { padding: 18px 14px; }
+  .tab-btn { font-size: 11px; padding: 10px 8px; }
+  .card, .analysis-prose, .thesis-box { padding: 16px; }
+  .chart-container { height: 280px; }
+  .split-stat { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-left">
+    <h1>$OSUR | OraSure Technologies Inc.</h1>
+    <div class="subtitle">Fact-checked equity research dashboard | Data as of March 8, 2026 | Report date March 9, 2026</div>
+  </div>
+  <div class="header-right">
+    <div class="header-badge">
+      <div class="val">$3.19</div>
+      <div class="lbl">Current Price</div>
+    </div>
+    <div class="header-badge">
+      <div class="val">$228.8M</div>
+      <div class="lbl">Market Cap</div>
+    </div>
+    <div class="header-badge">
+      <div class="val">$199.3M</div>
+      <div class="lbl">Cash</div>
+    </div>
+    <div class="header-badge">
+      <div class="val">$29.5M</div>
+      <div class="lbl">Enterprise Value</div>
+    </div>
+    <div class="header-badge">
+      <div class="val">$5.58</div>
+      <div class="lbl">PW Value</div>
+    </div>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <a class="tab-btn active" href="#tab-0" data-tab-index="0">1. Executive</a>
+  <a class="tab-btn" href="#tab-1" data-tab-index="1">2. Narrative</a>
+  <a class="tab-btn" href="#tab-2" data-tab-index="2">3. Fundamentals</a>
+  <a class="tab-btn" href="#tab-3" data-tab-index="3">4. Balance Sheet</a>
+  <a class="tab-btn" href="#tab-4" data-tab-index="4">5. Cash Flow</a>
+  <a class="tab-btn" href="#tab-5" data-tab-index="5">6. Earnings Quality</a>
+  <a class="tab-btn" href="#tab-6" data-tab-index="6">7. Forward Model</a>
+  <a class="tab-btn" href="#tab-7" data-tab-index="7">8. Key Ratios</a>
+  <a class="tab-btn" href="#tab-8" data-tab-index="8">9. Ownership</a>
+  <a class="tab-btn" href="#tab-9" data-tab-index="9">10. Scenarios</a>
+  <a class="tab-btn" href="#tab-10" data-tab-index="10">11. Risks</a>
+  <a class="tab-btn" href="#tab-11" data-tab-index="11">12. Catalysts</a>
+  <a class="tab-btn" href="#tab-12" data-tab-index="12">Revisions</a>
+</div>
+
+<div class="tab-content active" id="tab-0">
+  <h2 class="section-header">Executive Summary</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <ul>
+      <li><strong>Massive Margin of Safety:</strong> OSUR holds <strong>$199.3M</strong> in cash with zero debt against a market cap of <strong>$228.8M</strong>, yielding enterprise value of roughly <strong>$29.5M</strong>. The market is pricing the core business for dead. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></li>
+      <li><strong>Transition to Growth:</strong> 2025 was a brutal reset as COVID-19 revenues vanished and international funding stalled. Management has now stabilized the base, projecting Q1 2026 revenue of <strong>$26M-$29M</strong>. <span class="source-badge">SEC</span></li>
+      <li><strong>The Catalyst:</strong> The entire thesis hinges on two major FDA submissions, the Sherlock CT/NG molecular self-test and the Colli-Pee urine device, filed in late 2025 and targeting H2 2026 launches. <span class="source-badge">SEC</span></li>
+      <li><strong>Margin Leverage:</strong> With the Bethlehem, PA manufacturing consolidation complete, the facility is running at just <strong>30% capacity</strong>. Any new volume from H2 approvals would drive significant gross-margin flow-through. <span class="source-badge">Earnings Call</span></li>
+    </ul>
+    <p><strong>Conviction &amp; Ratings:</strong></p>
+    <ul>
+      <li><strong>Swing Trading (Days-Weeks):</strong> <strong>Low Conviction | HOLD.</strong> The stock is dead money locked in a tight range until FDA readouts or technical volume returns.</li>
+      <li><strong>Position Investing (Months-Years):</strong> <strong>High Conviction | STRONG BUY.</strong> Expected move: <strong>+64.5%</strong> over 18-24 months, based on the <strong>$5.25</strong> P/E target in Section 7. <span class="source-badge">Calc</span></li>
+    </ul>
+    <p><strong>Bottom Line:</strong> At its current EV, you are essentially buying a massive cash pile and getting a free call option on a potentially disruptive H2 2026 STI diagnostic pipeline.</p>
+    <p><strong>The Single Most Important Thing:</strong> The market is valuing OraSure at little more than cash plus a shrinking legacy business. If the FDA clears Sherlock CT/NG and Colli-Pee on the current timeline, even modest commercialization could force a sharp multiple re-rating. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2" style="margin-bottom:18px;">
+    <div class="thesis-box">
+      <p><strong style="color:var(--gold);">Investment Thesis:</strong> The setup rests on a large cash cushion, a zero-debt balance sheet, a base business that appears stabilized after the 2025 reset, and two late-2025 FDA submissions that could meaningfully change the revenue mix in H2 2026. <span class="source-badge">SEC</span></p>
+      <p><strong style="color:var(--gold);">What Changed in Revision:</strong> The thesis survives, but the balance-sheet framing had to be tightened: liquidity ratios were stale, EV is low but not zero, and downside support should be described as balance-sheet support rather than liquidation certainty. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+      <p><strong style="color:var(--gold);">Source Stack:</strong> Q4 2025 earnings release and financial statements, 2024 10-K and proxy disclosures, and the supplied revision packet. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Conviction + Rating</div>
+      <div class="pill-row" style="margin-bottom:12px;">
+        <span class="badge badge-hold">Low Conviction</span>
+        <span class="badge badge-hold">Hold</span>
+        <span class="badge badge-buy">High Conviction</span>
+        <span class="badge badge-buy">Strong Buy</span>
+      </div>
+      <div class="card-label">Short-term posture is range-bound; long-term posture assumes FDA execution and margin leverage. <span class="source-badge">Calc</span></div>
+      <div class="card" style="margin-top:14px;padding:14px;background:#111;">
+        <div class="card-title">Probability-Weighted Value</div>
+        <div class="card-value mono">$5.58</div>
+        <div class="card-label">0.35 x $8.10 + 0.45 x $5.25 + 0.20 x $1.90 = $5.58 <span class="source-badge">Calc</span></div>
+        <div class="prob-bar-container">
+          <div class="prob-segment bull" style="width:35%;">Bull 35%</div>
+          <div class="prob-segment base" style="width:45%;">Base 45%</div>
+          <div class="prob-segment bear" style="width:20%;">Bear 20%</div>
+        </div>
+        <div class="card-label">Targets: <span class="positive mono">$8.10</span> / <span class="neutral mono">$5.25</span> / <span class="negative mono">$1.90</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric-strip" style="margin-bottom:18px;">
+    <div class="metric-item"><div class="label">Current Price</div><div class="value">$3.19</div></div>
+    <div class="metric-item"><div class="label">Market Cap</div><div class="value">$228.8M</div></div>
+    <div class="metric-item"><div class="label">P/E (TTM)</div><div class="value">N/A</div></div>
+    <div class="metric-item"><div class="label">P/E (Forward)</div><div class="value">N/A</div></div>
+    <div class="metric-item"><div class="label">EV/EBITDA</div><div class="value">N/M</div></div>
+    <div class="metric-item"><div class="label">FCF Yield</div><div class="value">-23.3%</div></div>
+    <div class="metric-item"><div class="label">Dividend Yield</div><div class="value">0.0%</div></div>
+    <div class="metric-item"><div class="label">Target Price</div><div class="value">$5.25</div></div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Thesis Pillar 1</div>
+      <div class="card-value mono">$199.3M</div>
+      <div class="card-label">Year-end 2025 cash gives OraSure time to fund the 2026-2027 transition without debt. <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Thesis Pillar 2</div>
+      <div class="card-value mono">30%</div>
+      <div class="card-label">Plant utilization remains low, so incremental FDA-driven volume carries meaningful operating leverage. <span class="source-badge">Earnings Call</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Thesis Pillar 3</div>
+      <div class="card-value mono">Late 2025</div>
+      <div class="card-label">Sherlock CT/NG and Colli-Pee were submitted at the end of 2025, keeping the H2 2026 catalyst window alive. <span class="source-badge">SEC</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-1">
+  <h2 class="section-header">Current Narrative &amp; Sentiment</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <p>The overarching narrative for OSUR is a painful post-pandemic hangover transitioning into a "show-me" turnaround story. The legacy business suffered severely in 2025 due to a combination of evaporating COVID-19 test demand and unpredictable USAID and PEPFAR funding freezes in Africa. Management spent the last year defensively rightsizing the ship by consolidating manufacturing, trimming headcount, and executing a nearshoring strategy in Africa to stabilize public-health contracts.</p>
+    <p>Recent Q4 2025 earnings confirmed the bleeding has at least slowed. Revenue of <strong>$26.8M</strong> beat the midpoint of guidance, and management issued a Q1 2026 guide of <strong>$26M-$29M</strong>. Gross margin for the quarter reached <strong>41.0%</strong>. Wall Street remains skeptical, treating the stock as a melting ice cube until the pipeline proves viable. One current consensus source, MarketBeat as accessed on <strong>March 8, 2026</strong>, shows an average target around <strong>$3.00</strong>, roughly in line with the current stock price, but that figure should always be cited with provider and date because third-party target aggregators are not perfectly synchronized. <span class="source-badge">SEC</span> <span class="source-badge info">MarketBeat</span></p>
+    <p>Retail sentiment appears washed out. There is little credible retail or "FinTwit" discussion, and the stock reads more like a pure institutional holding pattern than a retail momentum trade.</p>
+    <p><strong>Contrarian Signal Check:</strong> The dominant bear argument is that OSUR's <strong>$199.3M</strong> cash pile will be consumed by R&amp;D and operating burn before the new FDA products can scale, pushing operating-cash-flow breakeven out to <strong>2027</strong>. The contrarian bull response is that this burn is still containable. Because enterprise value is only about <strong>$29.5M</strong> on the supplied market cap, even modest commercial success from Sherlock CT/NG in late 2026 could force a violent re-rating relative to the market's current low terminal-value assumption. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Q1 2026 Setup</div>
+      <div class="card-value mono">$26M-$29M</div>
+      <div class="card-label">Management Q1 revenue guide after a Q4 2025 print of $26.8M and gross margin of 41.0%. <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Market Sentiment</div>
+      <div class="card-value mono">$3.00</div>
+      <div class="card-label">MarketBeat average target as of March 8, 2026. Treat aggregator targets as source-dated snapshots, not universal truth. <span class="source-badge info">MarketBeat</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bear Thesis</div>
+      <div class="card-value mono">2027</div>
+      <div class="card-label">The core bear view is that the company burns cash until breakeven is pushed out and the pipeline fails to monetize on time. <span class="source-badge">SEC</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-2">
+  <h2 class="section-header">Fundamental Analysis</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <p>OraSure operates through two primary segments: Diagnostics, which includes rapid tests for HIV, HCV, COVID-19, and potentially CT/NG, and Molecular Solutions and Sample Management, which includes kits for collecting genetic material and microbiome samples. Historically, the revenue model has been a mix of steady B2B recurring sample-kit orders and lumpy, government-funded public-health tenders.</p>
+    <p>The historical top-line trend is jarring. Revenue collapsed from <strong>$405.5M</strong> in 2023 to <strong>$185.8M</strong> in 2024 and then to <strong>$115.0M</strong> in full-year 2025. The business should no longer be described as a roughly <strong>$110M</strong> annualized run rate now that the full-year 2025 result is available. Forward assumptions suggest stabilization in 2026, and the current Section 7 model implies roughly <strong>23%</strong> revenue growth from <strong>2026E ($118M)</strong> to <strong>2027E ($145M)</strong> as Sherlock commercialization begins. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+    <p>Profitability trends show an optical disaster hiding an operational recovery. Operating margins cratered to <strong>-15.2%</strong> in 2024. Yet Q4 2025 gross margin improved to <strong>41.0%</strong> from <strong>36.2%</strong> a year earlier. The Bethlehem, PA manufacturing transfer is complete, and management has said the site is only running at about <strong>30% capacity</strong>. That creates real fixed-cost leverage if volume returns. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></p>
+    <p>The competitive moat in the legacy public-health business is still mediocre, with meaningful dependence on government relationships and funding cycles. The Sample Management segment is better positioned: once customers validate OraSure's collection kits inside their assays, switching costs are real, as shown by renewed work with Myriad and Fulgent Genetics.</p>
+    <p>Management deserves credit for executing on several controllables in 2025. The manufacturing-transfer project was described as completed months ahead of the expected timeline, and OraSure did submit the CT/NG and Colli-Pee FDA applications at the end of 2025. But "delivered exactly what they promised" is too absolute unless it is paired with the fact that operating-cash-flow breakeven was pushed out to <strong>2027</strong>. Capital allocation still looks disciplined: the company completed a de-risked <strong>$4M</strong> BioMedomics acquisition and repurchased about <strong>5.3M</strong> shares in 2025. <span class="source-badge">OraSure Technologies</span> <span class="source-badge">SEC</span></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th class="num">Revenue</th>
+            <th class="num">Growth</th>
+            <th class="num">Gross Margin</th>
+            <th class="num">Operating Margin</th>
+            <th class="num">EPS</th>
+            <th class="num">FCF</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>2023A</td><td class="num">$405.5M</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">$135.8M</td></tr>
+          <tr><td>2024A</td><td class="num">$185.8M</td><td class="num">-54.2%</td><td class="num">N/A</td><td class="num">-15.2%</td><td class="num">N/A</td><td class="num">$23.6M</td></tr>
+          <tr><td>2025A</td><td class="num">$115.0M</td><td class="num">-38.1%</td><td class="num">41.9%</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">-$53.2M</td></tr>
+          <tr><td>2026E</td><td class="num">$118.0M</td><td class="num">+2.6%</td><td class="num">42.5%</td><td class="num">-10.0%</td><td class="num">$(0.45)</td><td class="num">$(25.0M)</td></tr>
+          <tr><td>2027E</td><td class="num">$145.0M</td><td class="num">+22.9%</td><td class="num">46.0%</td><td class="num">2.0%</td><td class="num">$0.05</td><td class="num">$5.0M</td></tr>
+          <tr><td>2028E</td><td class="num">$185.0M</td><td class="num">+27.6%</td><td class="num">51.0%</td><td class="num">12.0%</td><td class="num">$0.35</td><td class="num">$30.0M</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2" style="margin-bottom:18px;">
+    <div class="chart-container"><canvas id="revenueEpsChart"></canvas></div>
+    <div class="chart-container"><canvas id="marginTrendChart"></canvas></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="card-title">Growth Rates Table</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th class="num">Revenue</th>
+              <th class="num">Growth</th>
+              <th class="num">Gross Margin</th>
+              <th class="num">Op. Margin</th>
+              <th class="num">EPS</th>
+              <th class="num">FCF</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>2023A</td><td class="num">$405.5M</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">$135.8M</td></tr>
+            <tr><td>2024A</td><td class="num">$185.8M</td><td class="num">-54.2%</td><td class="num">N/A</td><td class="num">-15.2%</td><td class="num">N/A</td><td class="num">$23.6M</td></tr>
+            <tr><td>2025A</td><td class="num">$115.0M</td><td class="num">-38.1%</td><td class="num">41.9%</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">-$53.2M</td></tr>
+            <tr><td>2026E</td><td class="num">$118.0M</td><td class="num">+2.6%</td><td class="num">42.5%</td><td class="num">-10.0%</td><td class="num">$(0.45)</td><td class="num">$(25.0M)</td></tr>
+            <tr><td>2027E</td><td class="num">$145.0M</td><td class="num">+22.9%</td><td class="num">46.0%</td><td class="num">2.0%</td><td class="num">$0.05</td><td class="num">$5.0M</td></tr>
+            <tr><td>2028E</td><td class="num">$185.0M</td><td class="num">+27.6%</td><td class="num">51.0%</td><td class="num">12.0%</td><td class="num">$0.35</td><td class="num">$30.0M</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Latest Quarter Highlights</div>
+      <div class="grid grid-2">
+        <div class="card" style="padding:14px;background:#111;">
+          <div class="card-value mono">$26.8M</div>
+          <div class="card-label">Q4 2025 revenue <span class="source-badge">SEC</span></div>
+        </div>
+        <div class="card" style="padding:14px;background:#111;">
+          <div class="card-value mono">41.0%</div>
+          <div class="card-label">Q4 2025 gross margin <span class="source-badge">SEC</span></div>
+        </div>
+        <div class="card" style="padding:14px;background:#111;">
+          <div class="card-value mono">$26M-$29M</div>
+          <div class="card-label">Q1 2026 guide <span class="source-badge">SEC</span></div>
+        </div>
+        <div class="card" style="padding:14px;background:#111;">
+          <div class="card-value mono">Late 2025</div>
+          <div class="card-label">CT/NG + Colli-Pee submissions <span class="source-badge">SEC</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-3">
+  <h2 class="section-header">Balance Sheet Deep Dive</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <ul>
+      <li><strong>Asset Quality:</strong> Goodwill and intangibles stand at <strong>$57.7M</strong> combined, representing about <strong>12%</strong> of total assets of <strong>$479.7M</strong>. There have been no catastrophic write-downs recently, and a large share of the balance sheet remains liquid or tangible. <span class="source-badge">SEC</span></li>
+      <li><strong>Debt Structure:</strong> Pristine. OraSure carries <strong>zero</strong> long-term debt and <strong>zero</strong> total debt. There is no maturity wall to manage over the next 1, 3, or 5 years. <span class="source-badge">SEC</span></li>
+      <li><strong>Covenant and Credit Risk:</strong> With no debt, covenant restrictions and downgrade risk are essentially absent. That gives management substantial flexibility while the business remains in an R&amp;D-heavy burn phase.</li>
+      <li><strong>Off-Balance-Sheet / Liability Review:</strong> Operating leases appear standard, and there is no sign of unusual unconsolidated JV or pension exposure in the cited filings. However, the latest balance sheet does show a <strong>current acquisition-related contingent consideration obligation of $18.38M</strong>, so it is inaccurate to say there are no meaningful contingent liabilities. <span class="source-badge">SEC</span></li>
+      <li><strong>Liquidity Position:</strong> The company had <strong>$199.3M</strong> of cash and equivalents at <strong>December 31, 2025</strong>. Using the latest year-end balance sheet, the current ratio was about <strong>6.58x</strong> and the quick ratio was about <strong>5.80x</strong>, not 9.95x and 8.93x. Using <strong>FY2025 operating cash burn of $49.0M</strong>, implied cash runway is roughly <strong>4.1 years</strong>; using the narrower <strong>Q4 burn heuristic of about $9M per quarter</strong> gives roughly <strong>5.5 years</strong>. The method should be stated explicitly. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></li>
+      <li><strong>Net-Net Assessment:</strong> The balance sheet is a genuine source of strength and gives patient capital time to wait through a turnaround, but it should be described as balance-sheet support rather than a hard floor on the equity. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Liquidity</div>
+      <div class="card-value mono">$199.3M</div>
+      <div class="card-label">Cash and equivalents at December 31, 2025 <span class="source-badge">SEC</span></div>
+      <ul class="tight-list" style="margin-top:12px;">
+        <li>Current ratio: <span class="mono">6.58x</span></li>
+        <li>Quick ratio: <span class="mono">5.80x</span></li>
+        <li>Cash runway: <span class="mono">4.1 years</span> on FY2025 burn</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Leverage</div>
+      <div class="card-value mono">$479.7M</div>
+      <div class="card-label">Total assets with <span class="mono">$340.8M</span> equity and zero debt <span class="source-badge">SEC</span></div>
+      <ul class="tight-list" style="margin-top:12px;">
+        <li>Debt / equity: <span class="mono">0.00x</span></li>
+        <li>Interest coverage: <span class="mono">N/A</span></li>
+        <li>Maturity wall: <span class="mono">None disclosed</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Asset Quality</div>
+      <div class="card-value mono">$57.7M</div>
+      <div class="card-label">Goodwill + intangibles <span class="source-badge">SEC</span></div>
+      <ul class="tight-list" style="margin-top:12px;">
+        <li>Goodwill / assets: <span class="mono">~12.0%</span></li>
+        <li>Goodwill / equity: <span class="mono">~16.9%</span></li>
+        <li>Recent impairments: <span class="mono">None cited</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-4">
+  <h2 class="section-header">Cash Flow Analysis</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <p>The cash-flow narrative for OSUR is a tale of strategic investment versus legacy decline. Following a massive free-cash-flow year in 2023 of <strong>$135.8M</strong>, OraSure still produced <strong>positive FCF in 2024 of about $23.6M</strong> before swinging sharply negative in 2025. For full-year 2025, <strong>operating cash flow was -$49.0M</strong> and <strong>free cash flow was about -$53.2M</strong>. Q4 2025 operating cash flow was negative <strong>$9.0M</strong>. Management explicitly pushed out the operating-cash-flow breakeven target to <strong>2027</strong>, prioritizing R&amp;D spend and clinical trials for the Sherlock platform over near-term cosmetic profitability. <span class="source-badge">SEC</span></p>
+    <p>Cash-flow quality metrics are mixed but explainable, but the latest figures should be used. If the gap between earnings and cash flow is discussed, the correct current non-cash add-backs are <strong>$10.1M</strong> of stock-based compensation in 2025 and <strong>$10.2M</strong> of depreciation and amortization. There are no glaring working-capital swings masking deterioration; inventory ended 2025 at <strong>$31.1M</strong>, down materially from <strong>$95.7M</strong> in 2022. Capex in 2025 was <strong>$4.2M</strong>, or roughly <strong>3.6%</strong> of revenue. <span class="source-badge">SEC</span></p>
+    <p><strong>Capital Allocation Scorecard:</strong></p>
+    <ul>
+      <li><strong>Buybacks:</strong> Excellent. Management deployed <strong>$15M</strong> across Q2-Q4 2025, retiring roughly <strong>5.3M</strong> shares. The share count is shrinking rather than merely offsetting SBC dilution. <span class="source-badge">SEC</span></li>
+      <li><strong>Dividends:</strong> None. Given the transition phase, a dividend would be hard to defend.</li>
+      <li><strong>Debt Management:</strong> Flawless, because debt remains zero.</li>
+      <li><strong>M&amp;A Track Record:</strong> Measured and accretive. The BioMedomics deal required only <strong>$4M</strong> up front, with future payouts tied to performance. <span class="source-badge">SEC</span></li>
+    </ul>
+    <p><strong>Sustainability Verdict:</strong> OSUR cannot comfortably fund current operations from free cash flow alone, but the cash reserve still gives it a credible bridge to the 2027 breakeven target without resorting to distressed debt or immediate equity dilution. <span class="source-badge">SEC</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2" style="margin-bottom:18px;">
+    <div class="chart-container"><canvas id="fcfTrendChart"></canvas></div>
+    <div class="chart-container"><canvas id="fcfMarginChart"></canvas></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="chart-container"><canvas id="waterfallChart"></canvas></div>
+    <div class="chart-container"><canvas id="capitalAllocationChart"></canvas></div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-5">
+  <h2 class="section-header">Earnings Quality &amp; Accounting Red Flags</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <ul>
+      <li><strong>GAAP vs. Non-GAAP Spread:</strong> The spread looks moderate and fairly standard for a small-cap diagnostics company. The current non-cash adjustments that matter are stock-based compensation of <strong>$10.1M</strong> in 2025 and standard amortization within total depreciation and amortization of <strong>$10.2M</strong>. The adjustment stack does not read like a rapidly widening attempt to hide decay. <span class="source-badge">SEC</span></li>
+      <li><strong>"One-time" Charge Frequency:</strong> OraSure's income statement has not become a perpetual restructuring vehicle. Manufacturing-transition costs did show up during the insourcing period, but the latest description still looks more temporary than chronic.</li>
+      <li><strong>Revenue Recognition Signals:</strong> There are no cited recent changes to revenue-recognition policy. Deferred-revenue and contract-asset behavior appears consistent with the stabilization of government tenders rather than with channel stuffing or obvious demand pull-forward.</li>
+      <li><strong>Accrual Quality:</strong> Cash flow has weakened, but the disclosed bridge still points more toward R&amp;D and SG&amp;A spending than aggressive accrual engineering. This remains a business-model stress story more than an accounting-red-flag story.</li>
+      <li><strong>Audit and Disclosure Flags:</strong> As of <strong>December 31, 2024</strong>, management concluded internal control over financial reporting was effective and Grant Thornton issued an unqualified opinion. There was no going-concern language or qualified audit opinion identified. However, it is incorrect to say there were no auditor changes: OraSure dismissed <strong>KPMG on March 11, 2024</strong> and appointed <strong>Grant Thornton</strong> for 2024. <span class="source-badge">SEC</span></li>
+      <li><strong>Insider Signals in Context:</strong> Insider activity shows a mix of award-related acquisitions and tax-withholding sales. The CEO and CFO did receive stock awards and had related withholding transactions. However, the supplied insider ledger does <strong>not</strong> support the claim that Director <strong>John P. Kenny</strong> executed multiple open-market buys. His late-2025 additions are coded <strong>A</strong>, not <strong>P</strong>. The clearest late-2025 open-market purchase in the supplied data is <strong>Nancy J. Gagliano's</strong> purchase on <strong>November 28, 2025</strong> of <strong>2,100</strong> shares at <strong>$2.37</strong>. <span class="source-badge">SEC</span></li>
+      <li><strong>Overall Accounting Confidence:</strong> <strong>Clean</strong>. The financials still read like a company navigating a revenue trough rather than a company using aggressive accounting to hide it.</li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-3" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="card-title">Management Credibility</div>
+      <div class="circle-grade">B+</div>
+      <div class="card-label">Controls appear clean and disclosures are straightforward, but the report needed corrections on the auditor-change claim and on insider-activity characterization. <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cash Conversion Quality</div>
+      <div class="split-stat">
+        <div class="cell">
+          <div class="card-value mono">-$49.0M</div>
+          <div class="card-label">FY2025 OCF <span class="source-badge">SEC</span></div>
+        </div>
+        <div class="cell">
+          <div class="card-value mono">2025 loss</div>
+          <div class="card-label">Net income was negative, but the exact FY2025 figure was not reproduced in the supplied packet.</div>
+        </div>
+      </div>
+      <div class="card-label" style="margin-top:12px;">Key add-backs: SBC <span class="mono">$10.1M</span> and D&amp;A <span class="mono">$10.2M</span>. <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Audit Snapshot</div>
+      <div class="card-value mono">Effective ICFR</div>
+      <div class="card-label">Grant Thornton unqualified opinion; no going-concern language identified. <span class="source-badge">SEC</span></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Bullish Signals</div>
+      <ul class="signal-list">
+        <li><span class="signal-icon good">+</span><span>ICFR was effective as of December 31, 2024, and the audit opinion was unqualified. <span class="source-badge">SEC</span></span></li>
+        <li><span class="signal-icon good">+</span><span>There is no cited going-concern language or qualified opinion. <span class="source-badge">SEC</span></span></li>
+        <li><span class="signal-icon good">+</span><span>The financial stress still looks operational, not accounting-driven. </span></li>
+        <li><span class="signal-icon good">+</span><span>Insider ledger does show at least one clear late-2025 open-market buy from Nancy J. Gagliano. <span class="source-badge">SEC</span></span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Caution / Watch Items</div>
+      <ul class="signal-list">
+        <li><span class="signal-icon warn">!</span><span>The original report missed the KPMG-to-Grant-Thornton auditor transition. <span class="source-badge">SEC</span></span></li>
+        <li><span class="signal-icon warn">!</span><span>John P. Kenny's late-2025 transactions were award-coded, not open-market purchases. <span class="source-badge">SEC</span></span></li>
+        <li><span class="signal-icon bad">!</span><span>OCF remains deeply negative at <span class="mono">-$49.0M</span> for FY2025. <span class="source-badge">SEC</span></span></li>
+        <li><span class="signal-icon warn">!</span><span>Current acquisition-related contingent consideration of <span class="mono">$18.38M</span> should be monitored. <span class="source-badge">SEC</span></span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-6">
+  <h2 class="section-header">Forward Model &amp; Valuation Bridge</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <p>To properly value OSUR, the model has to look past the 2025 trough. The framework below anchors on Q1 2026 management guidance, assumes 2026 is a stabilization year, and then layers in a product-driven ramp in 2027 and 2028.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th class="num">2026E</th>
+            <th class="num">2027E</th>
+            <th class="num">2028E</th>
+            <th>Basis</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Revenue</strong></td><td class="num">$118M</td><td class="num">$145M</td><td class="num">$185M</td><td>Assumed</td></tr>
+          <tr><td><strong>Gross Margin</strong></td><td class="num">42.5%</td><td class="num">46.0%</td><td class="num">51.0%</td><td>Assumed</td></tr>
+          <tr><td><strong>Operating Margin</strong></td><td class="num">-10.0%</td><td class="num">2.0%</td><td class="num">12.0%</td><td>Assumed</td></tr>
+          <tr><td><strong>EPS</strong></td><td class="num">$(0.45)</td><td class="num">$0.05</td><td class="num">$0.35</td><td>Calculated from assumed margins, tax, and share count</td></tr>
+          <tr><td><strong>Free Cash Flow</strong></td><td class="num">$(25M)</td><td class="num">$5M</td><td class="num">$30M</td><td>Calculated / assumed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Assumptions:</strong> 2026 revenue assumes an approximately <strong>$28M</strong> quarterly base plus a mild <strong>$6M</strong> Q4 contribution from early approvals. By 2028, the model assumes Sherlock CT/NG captures meaningful market share, helping gross margin move past <strong>50%</strong> as plant utilization improves. <span class="source-badge">Calc</span></p>
+    <p><strong>Consensus Delta:</strong> The earlier <strong>~$115M run-rate</strong> sell-side line should not be presented as sourced consensus. Either cite a dated provider or remove the line. A current third-party source shows FY2026 revenue consensus around <strong>$117.81M</strong>, while Yahoo's surfaced snippet shows quarter-level revenue estimates rather than a clean full-year number. <span class="source-badge info">Seeking Alpha</span> <span class="source-badge info">Yahoo Finance</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Metric</th>
+            <th>Management Guidance</th>
+            <th>Sell-Side Consensus</th>
+            <th>Delta</th>
+            <th>Interpretation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Q1 2026</td>
+            <td>Revenue</td>
+            <td><span class="mono">$26M-$29M</span> <span class="source-badge">SEC</span></td>
+            <td>No clean packet-level quarter consensus provided <span class="source-badge unverified">UNVERIFIED</span></td>
+            <td>N/A</td>
+            <td>Only company guidance is hard-sourced in the supplied record.</td>
+          </tr>
+          <tr>
+            <td>FY2026</td>
+            <td>Revenue</td>
+            <td>No full-year company guide disclosed <span class="source-badge">SEC</span></td>
+            <td><span class="mono">~$117.81M</span> from third-party estimate page <span class="source-badge info">Seeking Alpha</span> <span class="source-badge unverified">UNVERIFIED</span></td>
+            <td>N/A</td>
+            <td>Use provider and date, or omit the delta framing.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Valuation Bridge:</strong> The anchor target remains the <strong>2028E EPS</strong> method. At <strong>$0.35</strong> of EPS and a <strong>15x</strong> multiple, implied target price is <strong>$5.25</strong>, or <strong>+64.5%</strong> from <strong>$3.19</strong>. A secondary FCF-yield cross-check is best treated as illustrative rather than as a primary valuation anchor because the underlying FCF line is itself assumption-driven. <span class="source-badge">Calc</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="card-title">Forward Model Table</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th class="num">2026E</th>
+              <th class="num">2027E</th>
+              <th class="num">2028E</th>
+              <th>Basis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Revenue</td><td class="num">$118M</td><td class="num">$145M</td><td class="num">$185M</td><td>Assumed</td></tr>
+            <tr><td>Gross Margin</td><td class="num">42.5%</td><td class="num">46.0%</td><td class="num">51.0%</td><td>Assumed</td></tr>
+            <tr><td>Operating Margin</td><td class="num">-10.0%</td><td class="num">2.0%</td><td class="num">12.0%</td><td>Assumed</td></tr>
+            <tr><td>EPS</td><td class="num">$(0.45)</td><td class="num">$0.05</td><td class="num">$0.35</td><td>Calculated</td></tr>
+            <tr><td>Free Cash Flow</td><td class="num">$(25M)</td><td class="num">$5M</td><td class="num">$30M</td><td>Calculated / assumed</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Management vs. Consensus</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Management</th>
+              <th>Consensus</th>
+              <th>Delta</th>
+              <th>Interpretation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Q1 2026 Revenue</td>
+              <td><span class="mono">$26M-$29M</span> <span class="source-badge">SEC</span></td>
+              <td>Not provided in packet <span class="source-badge unverified">UNVERIFIED</span></td>
+              <td>N/A</td>
+              <td>Use only company guidance unless a quarter consensus is cited.</td>
+            </tr>
+            <tr>
+              <td>FY2026 Revenue</td>
+              <td>No company FY guide <span class="source-badge">SEC</span></td>
+              <td><span class="mono">~$117.81M</span> <span class="source-badge info">Seeking Alpha</span> <span class="source-badge unverified">UNVERIFIED</span></td>
+              <td>N/A</td>
+              <td>Consensus exists in third-party pages, but provider/date should travel with the number.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-label" style="margin-top:10px;">Consensus numbers are shown for context only and should be treated as third-party snapshots.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">Valuation Bridge Table</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Forecast Year</th>
+            <th>Metric</th>
+            <th>Multiple / Yield</th>
+            <th class="num">Implied Target</th>
+            <th class="num">Current Price</th>
+            <th class="num">Upside</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>P/E</strong></td>
+            <td>2028E</td>
+            <td>$0.35 EPS</td>
+            <td>15x</td>
+            <td class="num">$5.25</td>
+            <td class="num">$3.19</td>
+            <td class="num positive">+64.5%</td>
+          </tr>
+          <tr>
+            <td><strong>FCF Yield</strong></td>
+            <td>2028E</td>
+            <td>$30M FCF</td>
+            <td>10.0% yield</td>
+            <td class="num">$4.18</td>
+            <td class="num">$3.19</td>
+            <td class="num neutral">+31.0%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-label" style="margin-top:10px;">The FCF-yield method is an illustrative cross-check built from the report's own 2028E FCF assumption and current share count. <span class="source-badge">Calc</span></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="chart-container"><canvas id="peBridgeChart"></canvas></div>
+    <div class="chart-container"><canvas id="fcfBridgeChart"></canvas></div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-7">
+  <h2 class="section-header">Key Ratios &amp; Comparisons</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th class="num">Current Value</th>
+            <th class="num">5-yr Company Avg</th>
+            <th class="num">Peer / Sector Avg</th>
+            <th>Interpretation / Flag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>P/E (TTM)</strong></td><td class="num">N/A</td><td class="num">14.2x</td><td class="num">22.5x</td><td>Unprofitable TTM.</td></tr>
+          <tr><td><strong>P/E (Forward)</strong></td><td class="num">N/A</td><td class="num">N/A</td><td class="num">18.0x</td><td>Near-term EPS still negative.</td></tr>
+          <tr><td><strong>EV/EBITDA</strong></td><td class="num">N/M</td><td class="num">8.5x</td><td class="num">12.5x</td><td>TTM EBITDA remains negative, so a positive multiple is not defensible.</td></tr>
+          <tr><td><strong>EV/Revenue</strong></td><td class="num">0.26x</td><td class="num">N/A</td><td class="num">N/A</td><td>Useful cash-adjusted low-level multiple. <span class="source-badge">Calc</span></td></tr>
+          <tr><td><strong>P/S (TTM)</strong></td><td class="num">1.99x</td><td class="num">2.4x</td><td class="num">3.5x</td><td>Compressed versus peers and history.</td></tr>
+          <tr><td><strong>P/B</strong></td><td class="num">0.67x</td><td class="num">1.8x</td><td class="num">2.8x</td><td>Below book, but book value is not liquidation value.</td></tr>
+          <tr><td><strong>Debt / Equity</strong></td><td class="num">0.00</td><td class="num">0.01</td><td class="num">0.45</td><td>Fortress balance sheet.</td></tr>
+          <tr><td><strong>Current Ratio</strong></td><td class="num">6.58x</td><td class="num">6.1x</td><td class="num">2.5x</td><td>Large liquidity buffer, now stated on a current basis.</td></tr>
+          <tr><td><strong>Gross Margin</strong></td><td class="num">41.9%</td><td class="num">46.6%</td><td class="num">55.0%</td><td>Still below normalized levels due to utilization drag.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Synthesis:</strong> OSUR trades below book value and at a low cash-adjusted valuation, which does provide balance-sheet support. But it is not accurate to call the stock "effectively zero EV," and a sub-1x P/B multiple does not prove liquidation-value support or a heavily bounded downside by itself. The single most important ratio to watch going forward remains <strong>gross margin</strong>; if it pushes into the mid-40s before the new products launch, that would support the case that the legacy business has reached a healthier steady state. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="card">
+    <div class="card-title">Full Comparison Table</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th class="num">Current Value</th>
+            <th class="num">5-yr Average</th>
+            <th class="num">Peer / Sector Average</th>
+            <th>Interpretation / Flag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>P/E (TTM)</td><td class="num">N/A</td><td class="num">14.2x</td><td class="num">22.5x <span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Not currently useful while earnings are negative.</td></tr>
+          <tr><td>P/E (Forward)</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">18.0x <span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Forward EPS remains too thin to anchor valuation.</td></tr>
+          <tr><td>EV/EBITDA</td><td class="num">N/M</td><td class="num">8.5x</td><td class="num">12.5x <span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">Should not be shown as a positive current multiple.</td></tr>
+          <tr><td>EV/Revenue</td><td class="num positive">0.26x</td><td class="num">N/A</td><td class="num">N/A</td><td class="positive">Very low cash-adjusted revenue valuation. <span class="source-badge">Calc</span></td></tr>
+          <tr><td>P/S (TTM)</td><td class="num positive">1.99x</td><td class="num">2.4x</td><td class="num">3.5x <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Discount to own history and peers.</td></tr>
+          <tr><td>P/B</td><td class="num positive">0.67x</td><td class="num">1.8x</td><td class="num">2.8x <span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Supportive, but not a liquidation proof point.</td></tr>
+          <tr><td>Debt / Equity</td><td class="num positive">0.00</td><td class="num">0.01</td><td class="num">0.45 <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Materially cleaner than peers.</td></tr>
+          <tr><td>Current Ratio</td><td class="num positive">6.58x</td><td class="num">6.1x</td><td class="num">2.5x <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Liquidity remains strong even after correction.</td></tr>
+          <tr><td>Gross Margin</td><td class="num negative">41.9%</td><td class="num">46.6%</td><td class="num">55.0% <span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">Still below sector-like levels until volume recovers.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-label" style="margin-top:10px;">Peers referenced in the original report: QuidelOrtho (QDEL), Hologic (HOLX), and Exact Sciences (EXAS).</div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-8">
+  <h2 class="section-header">Additional Key Factors</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <ul>
+      <li><strong>Insider, Institutional, and Governance Context:</strong> Institutions hold a large majority of shares, with BlackRock, Vanguard, and Altai among the largest holders. In the supplied ownership framing, institutions hold about <strong>86.6%</strong> of shares and effectively control about <strong>92.6%</strong> of the float. But Altai is not merely a passive <strong>5.2%</strong> holder in the current setup: OraSure disclosed that Altai intends to nominate <strong>two directors</strong> for the 2026 annual meeting, making governance a live near-term variable. <span class="source-badge">SEC</span> <span class="source-badge info">Reuters</span></li>
+      <li><strong>Short Interest:</strong> Short interest sits at about <strong>5.7%</strong> of float, or roughly <strong>4.02M</strong> shares, with days to cover near <strong>8.07</strong>. That is not the setup for a major squeeze, but it does show ongoing skepticism. <span class="source-badge info">Market data</span></li>
+      <li><strong>Liquidity:</strong> Average daily volume is roughly <strong>570k</strong> shares, which is enough for routine trading but still light for larger active positioning. <span class="source-badge info">Market data</span></li>
+      <li><strong>Beta and Macro Exposure:</strong> Beta is about <strong>0.96</strong>. The more important exposures are public-health spending cycles and FDA timelines rather than rates, energy, or commodity swings. <span class="source-badge info">Market data</span></li>
+      <li><strong>Estimate Revisions / Surprise Context:</strong> Recent revision data look light-to-negative, but not like repeated estimate cuts. Yahoo's surfaced EPS-trend snippet shows unchanged visible estimates across the <strong>7 / 30 / 60 / 90-day</strong> windows, while another provider shows <strong>one negative EPS revision</strong> in the last 90 days. <span class="source-badge info">Yahoo Finance</span> <span class="source-badge info">Investing.com</span> <span class="source-badge unverified">UNVERIFIED</span></li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2" style="margin-bottom:18px;">
+    <div class="chart-container"><canvas id="institutionalOwnershipChart"></canvas></div>
+    <div class="card">
+      <div class="card-title">Insider Activity</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Action</th>
+              <th class="num">Shares</th>
+              <th class="num">Price Range</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Nancy J. Gagliano</td>
+              <td>Director</td>
+              <td class="positive">Open-market buy (P)</td>
+              <td class="num">2,100</td>
+              <td class="num">$2.37</td>
+              <td><span class="source-badge">SEC</span></td>
+            </tr>
+            <tr>
+              <td>John P. Kenny</td>
+              <td>Director</td>
+              <td>Award acquisition (A)</td>
+              <td class="num">Not specified</td>
+              <td class="num">Not specified</td>
+              <td><span class="source-badge">SEC</span></td>
+            </tr>
+            <tr>
+              <td>Carrie Eglinton Manner</td>
+              <td>CEO</td>
+              <td>Award + withholding activity</td>
+              <td class="num">Not specified</td>
+              <td class="num">Not specified</td>
+              <td><span class="source-badge">SEC</span></td>
+            </tr>
+            <tr>
+              <td>Ken McGrath</td>
+              <td>CFO</td>
+              <td>Award + withholding activity</td>
+              <td class="num">Not specified</td>
+              <td class="num">Not specified</td>
+              <td><span class="source-badge">SEC</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Short Interest</div>
+      <div class="card-value mono">5.7%</div>
+      <div class="card-label">Of float, or about 4.02M shares; days to cover about 8.07. <span class="source-badge info">Market data</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Trading Liquidity</div>
+      <div class="card-value mono">570k ADV</div>
+      <div class="card-label">Float remains institutionally controlled; beta about 0.96. <span class="source-badge info">Market data</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sentiment Summary</div>
+      <div class="card-value mono">$3.00</div>
+      <div class="card-label">Average target from one current aggregator snapshot; governance campaign from Altai adds an additional headline variable. <span class="source-badge info">MarketBeat</span> <span class="source-badge">SEC</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-9">
+  <h2 class="section-header">Scenario Analysis</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <p>Like a grueling endurance race, holding this equity requires ignoring the immediate fatigue of flat price action and focusing on the H2 catalyst finish line.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th class="num">Probability</th>
+            <th>Key Assumptions</th>
+            <th class="num">Target Price</th>
+            <th class="num">Upside / Downside</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Bull</strong></td><td class="num">35%</td><td>Sherlock CT/NG and Colli-Pee cleared by Aug. 2026. Rapid commercial adoption drives 2028 EPS to $0.45.</td><td class="num">$8.10</td><td class="num positive">+153.9%</td></tr>
+          <tr><td><strong>Base</strong></td><td class="num">45%</td><td>FDA clears products by late 2026. Moderate ramp. Legacy business stays flat. 2028 EPS of $0.35.</td><td class="num">$5.25</td><td class="num positive">+64.5%</td></tr>
+          <tr><td><strong>Bear</strong></td><td class="num">20%</td><td>FDA requires additional data or a secondary trial, delaying launch into late 2027. Legacy diagnostics stays under funding pressure and valuation collapses toward book-value support.</td><td class="num">$1.90</td><td class="num negative">-40.4%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Bull Case (35%):</strong> Management's execution streak continues. The FDA approves the Sherlock and Colli-Pee platforms without requests for additional clinical data. OraSure captures the at-home STI testing market faster than expected. <strong>Valuation Bridge:</strong> 2028E EPS of <strong>$0.45</strong> times an <strong>18x</strong> multiple equals <strong>$8.10</strong>. <strong>Leading Indicator:</strong> R&amp;D costs roll down materially as the regulatory process clears. <span class="source-badge">Calc</span></p>
+    <p><strong>Base Case (45%):</strong> The recovery remains slow but intact. FDA approvals arrive in Q3 or Q4 2026, the revenue ramp takes time, and the legacy business stays broadly flat. <strong>Valuation Bridge:</strong> 2028E EPS of <strong>$0.35</strong> times a <strong>15x</strong> multiple equals <strong>$5.25</strong>. <strong>Leading Indicator:</strong> Base gross margin holds around <strong>42%</strong>. <span class="source-badge">Calc</span></p>
+    <p><strong>Bear Case (20%):</strong> The innovation pipeline breaks. The FDA requires additional data or a secondary clinical trial for Sherlock, delaying launch into late 2027. The legacy diagnostics business faces another round of funding pressure, and the stock trades largely on shrinking cash and book value. <strong>Valuation Bridge:</strong> using <strong>0.4x</strong> the latest year-end book value, the implied price is about <strong>$1.90</strong>, not $2.20. <strong>Leading Indicator:</strong> complete lack of FDA updates by Q3 2026 earnings. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+    <p><strong>Probability-Weighted Expected Value:</strong> <strong>$5.58</strong>, or about <strong>+74.9%</strong> versus <strong>$3.19</strong>. <span class="source-badge">Calc</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-3" style="margin-bottom:18px;">
+    <div class="card scenario-card bull">
+      <div class="card-title">Bull Case</div>
+      <div class="card-value mono">35% | $8.10</div>
+      <div class="card-label positive">+153.9% vs. current</div>
+      <p style="margin-top:10px;">Clearances by Aug. 2026, fast commercialization, and 2028 EPS of $0.45 at 18x.</p>
+      <p class="note">Leading indicator: R&amp;D costs drop as trials wind down. <span class="source-badge">Calc</span></p>
+    </div>
+    <div class="card scenario-card base">
+      <div class="card-title">Base Case</div>
+      <div class="card-value mono">45% | $5.25</div>
+      <div class="card-label neutral">+64.5% vs. current</div>
+      <p style="margin-top:10px;">Late-2026 approvals, moderate ramp, flat legacy business, and 2028 EPS of $0.35 at 15x.</p>
+      <p class="note">Leading indicator: gross margin holds near 42%. <span class="source-badge">Calc</span></p>
+    </div>
+    <div class="card scenario-card bear">
+      <div class="card-title">Bear Case</div>
+      <div class="card-value mono">20% | $1.90</div>
+      <div class="card-label negative">-40.4% vs. current</div>
+      <p style="margin-top:10px;">FDA delay pushes launch into late 2027 and valuation compresses toward 0.4x book value.</p>
+      <p class="note">Leading indicator: no material FDA update by Q3 2026 earnings. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div class="card-value mono">$5.58</div>
+    <div class="card-label">0.35 x $8.10 + 0.45 x $5.25 + 0.20 x $1.90 = $5.58 <span class="source-badge">Calc</span></div>
+    <div class="prob-bar-container">
+      <div class="prob-segment bull" style="width:35%;">Bull 35%</div>
+      <div class="prob-segment base" style="width:45%;">Base 45%</div>
+      <div class="prob-segment bear" style="width:20%;">Bear 20%</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th class="num">Probability</th>
+            <th class="num">Target</th>
+            <th class="num">Weighted Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Bull</td><td class="num">35%</td><td class="num">$8.10</td><td class="num">$2.84</td></tr>
+          <tr><td>Base</td><td class="num">45%</td><td class="num">$5.25</td><td class="num">$2.36</td></tr>
+          <tr><td>Bear</td><td class="num">20%</td><td class="num">$1.90</td><td class="num">$0.38</td></tr>
+          <tr><td><strong>Total</strong></td><td class="num">100%</td><td class="num">-</td><td class="num"><strong>$5.58</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-10">
+  <h2 class="section-header">Risks &amp; Opportunities</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <p><strong>Top 3 Risks:</strong></p>
+    <ul>
+      <li><strong>FDA Regulatory Delay (High Severity / Medium Likelihood):</strong> If the FDA requests more data on Sherlock CT/NG or Colli-Pee, the 2026 revenue-ramp case breaks and the cash-burn thesis dominates.</li>
+      <li><strong>Public Health Funding Freezes (Medium Severity / Medium Likelihood):</strong> The legacy business remains exposed to erratic USAID and PEPFAR budgets in Africa.</li>
+      <li><strong>Cash Burn Attrition (Medium Severity / High Likelihood):</strong> Even if the pipeline works, OSUR is likely to lose money through 2026, forcing investors to tolerate ugly headline results. <span class="source-badge">SEC</span></li>
+    </ul>
+    <p>Separately, Altai Capital's active campaign to nominate two directors for the 2026 annual meeting adds a real governance variable to the story. That does not automatically make the risk thesis worse, but it does raise the probability of strategy-related volatility. <span class="source-badge">SEC</span> <span class="source-badge info">Reuters</span></p>
+    <p><strong>Top 3 Opportunities:</strong></p>
+    <ul>
+      <li><strong>Operating Margin Explosion (High Magnitude / Medium Likelihood):</strong> With the PA facility at 30% capacity, new product volume could drive large gross-margin and operating-margin expansion.</li>
+      <li><strong>M&amp;A Takeout Target (Medium Magnitude / Low Likelihood):</strong> A low cash-adjusted valuation and clean balance sheet could make OraSure digestible for a larger diagnostics buyer.</li>
+      <li><strong>Nearshoring Success (Medium Magnitude / Medium Likelihood):</strong> Shifting final assembly to African nations could protect public-health contracts and stabilize legacy revenue.</li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Risk Matrix</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Risk</th>
+              <th>Severity</th>
+              <th>Likelihood</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>FDA Regulatory Delay</td><td class="negative">High</td><td class="neutral">Medium</td></tr>
+            <tr><td>Public Health Funding Freezes</td><td class="neutral">Medium</td><td class="neutral">Medium</td></tr>
+            <tr><td>Cash Burn Attrition</td><td class="neutral">Medium</td><td class="negative">High</td></tr>
+            <tr><td>Governance Campaign / Board Fight</td><td class="neutral">Medium</td><td class="neutral">Medium</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Opportunity Matrix</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Opportunity</th>
+              <th>Magnitude</th>
+              <th>Likelihood</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Operating Margin Explosion</td><td class="positive">High</td><td class="neutral">Medium</td></tr>
+            <tr><td>M&amp;A Takeout Interest</td><td class="neutral">Medium</td><td class="muted">Low</td></tr>
+            <tr><td>Nearshoring Success</td><td class="neutral">Medium</td><td class="neutral">Medium</td></tr>
+            <tr><td>Pipeline Approval Re-rating</td><td class="positive">High</td><td class="neutral">Medium</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-11">
+  <h2 class="section-header">Thesis Kill Criteria &amp; Catalyst Timeline</h2>
+  <div class="analysis-prose">
+    <div class="analysis-label">Full Analysis</div>
+    <p><strong>Bullish thesis invalidated if:</strong></p>
+    <ul>
+      <li>[ ] Gross margins fall below <strong>38%</strong> for two consecutive quarters, proving the base business lacks pricing power.</li>
+      <li>[ ] The FDA issues a Complete Response Letter or requests new clinical trials for the Sherlock CT/NG platform.</li>
+      <li>[ ] Cash falls below <strong>$150M</strong> by Q4 2026, indicating operational burn is not contained.</li>
+    </ul>
+    <p><strong>Bearish thesis invalidated if:</strong></p>
+    <ul>
+      <li>[ ] <strong>Q1 2026</strong> revenue exceeds the <strong>$29M</strong> top end of company guidance, and/or <strong>Q2 2026</strong> results clearly establish sequential improvement above the current base-business run rate. <span class="source-badge">SEC</span></li>
+      <li>[ ] Sherlock CT/NG receives expedited FDA clearance before July 2026.</li>
+    </ul>
+    <p><strong>Upcoming Catalyst Timeline:</strong></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date (Est.)</th>
+            <th>Event</th>
+            <th>Potential Impact</th>
+            <th>Favors</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>May 2026</strong></td><td>Q1 2026 Earnings</td><td>Proof of revenue stabilization and margin floor.</td><td>Neutral</td></tr>
+          <tr><td><strong>July - Sept 2026</strong></td><td>FDA Clearance Window</td><td>Approval of Sherlock CT/NG and Colli-Pee.</td><td>Bull</td></tr>
+          <tr><td><strong>Sept 2026</strong></td><td>TTMH Contract Renewal</td><td>Secures roughly <strong>$1.8M</strong> per quarter in domestic funding.</td><td>Bull</td></tr>
+          <tr><td><strong>Nov 2026</strong></td><td>Q3 2026 Earnings</td><td>First glimpse at forward guidance including new product sales.</td><td>Bull</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="card-title">Catalyst Timeline</div>
+      <div class="timeline-item">
+        <div class="timeline-dot neutral"></div>
+        <div>
+          <div class="timeline-date">May 2026 | Q1 2026 Earnings</div>
+          <div>Proof of revenue stabilization and whether the 41% margin floor holds.</div>
+          <div class="timeline-impact">Impact: Medium | Favors: <span class="muted">Neutral</span></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot bull"></div>
+        <div>
+          <div class="timeline-date">July - Sept 2026 | FDA Clearance Window</div>
+          <div>Approval window for Sherlock CT/NG and Colli-Pee.</div>
+          <div class="timeline-impact">Impact: High | Favors: <span class="positive">Bull</span></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot bull"></div>
+        <div>
+          <div class="timeline-date">Sept 2026 | TTMH Contract Renewal</div>
+          <div>Secures roughly $1.8M per quarter in domestic funding.</div>
+          <div class="timeline-impact">Impact: Medium | Favors: <span class="positive">Bull</span></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot bull"></div>
+        <div>
+          <div class="timeline-date">Nov 2026 | Q3 2026 Earnings</div>
+          <div>First clear read on how much new product revenue makes it into guidance.</div>
+          <div class="timeline-impact">Impact: High | Favors: <span class="positive">Bull</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="kill-grid">
+      <div class="card">
+        <div class="card-title">Bullish Thesis Invalidated If</div>
+        <div class="kill-item"><div class="kill-check"></div><div>Gross margins fall below <span class="mono">38%</span> for two consecutive quarters.</div></div>
+        <div class="kill-item"><div class="kill-check"></div><div>The FDA issues a CRL or requests new Sherlock CT/NG trials.</div></div>
+        <div class="kill-item"><div class="kill-check"></div><div>Cash drops below <span class="mono">$150M</span> by Q4 2026.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bearish Thesis Invalidated If</div>
+        <div class="kill-item"><div class="kill-check"></div><div>Q1 2026 revenue exceeds the <span class="mono">$29M</span> top end of guidance. <span class="source-badge">SEC</span></div></div>
+        <div class="kill-item"><div class="kill-check"></div><div>Q2 2026 results show clear sequential improvement versus the current base-business run rate. <span class="source-badge">SEC</span></div></div>
+        <div class="kill-item"><div class="kill-check"></div><div>Sherlock CT/NG receives expedited FDA clearance before July 2026.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-12">
+  <h2 class="section-header">Revision Summary</h2>
+  <div class="grid grid-3" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="card-title">Verdict</div>
+      <div class="pill-row" style="margin-bottom:10px;">
+        <span class="badge badge-sell">Major Revisions</span>
+        <span class="badge badge-hold">Confidence: Medium</span>
+      </div>
+      <div class="card-label">The broad setup was directionally right, but the report mixed stale ratios with post-Q4 cash, overstated some valuation claims, and missed governance and disclosure details. <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Corrections Count</div>
+      <div class="card-value mono">14</div>
+      <div class="card-label">Reported total corrections in the supplied revision summary.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Note</div>
+      <div class="card-label">The detailed revision table below enumerates 15 listed fixes even though the summary card states 14 total corrections. This tab preserves that mismatch rather than hiding it.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">Why Revisions Were Needed</div>
+    <p>The direction of the original thesis held up, but several figures and claims were not current to the Q4 2025 release. The biggest issues were stale liquidity ratios, vendor-derived valuation multiples that no longer fit the latest raw financials, an incorrect no-auditor-change statement, unsupported insider-activity language, overconfident consensus claims, and the omission of Altai Capital's live board-nomination campaign. <span class="source-badge">SEC</span></p>
+  </div>
+
+  <div id="revisionCards" class="grid grid-2"></div>
+</div>
+
+<div class="footer-note">
+  Dashboard uses revised figures from the supplied revision packet and the underlying report text. Peer and consensus fields that were not fully sourced in the packet are flagged as <span class="source-badge unverified">UNVERIFIED</span>.
+</div>
+
+<script>
+const tabContents = document.querySelectorAll('.tab-content');
+const tabBtns = document.querySelectorAll('.tab-btn');
+
+function setActiveTab(idx) {
+  tabContents.forEach((el) => el.classList.remove('active'));
+  tabBtns.forEach((el) => el.classList.remove('active'));
+  if (tabContents[idx]) tabContents[idx].classList.add('active');
+  if (tabBtns[idx]) tabBtns[idx].classList.add('active');
+  setTimeout(() => initCharts(idx), 50);
+}
+
+function switchTab(idx) {
+  setActiveTab(idx);
+  if (window.location.hash !== `#tab-${idx}`) {
+    window.location.hash = `tab-${idx}`;
+  }
+}
+
+window.switchTab = switchTab;
+
+tabBtns.forEach((btn, idx) => {
+  btn.addEventListener('click', (event) => {
+    event.preventDefault();
+    switchTab(idx);
+  });
+});
+
+function getTabIndexFromHash(hash) {
+  const match = /^#tab-(\d+)$/.exec(hash || '');
+  if (!match) return null;
+  const idx = Number(match[1]);
+  return Number.isInteger(idx) && idx >= 0 && idx < tabContents.length ? idx : null;
+}
+
+window.addEventListener('hashchange', () => {
+  const idx = getTabIndexFromHash(window.location.hash);
+  if (idx !== null) setActiveTab(idx);
+});
+
+const COLORS = {
+  gold: '#d4a843',
+  cream: '#e8e0d0',
+  muted: '#8a8a7a',
+  green: '#4caf50',
+  red: '#e74c3c',
+  yellow: '#f1c40f',
+  blue: '#5dade2',
+  border: 'rgba(42,42,42,0.6)'
+};
+
+const reportData = {
+  currentPrice: 3.19,
+  marketCap: 228.8,
+  cash: 199.3,
+  enterpriseValue: 29.5,
+  bookValue: 340.8,
+  shares: 71.73,
+  bookValuePerShare: 4.75,
+  scenarioTargets: { bull: 8.10, base: 5.25, bear: 1.90 },
+  scenarioProbabilities: { bull: 0.35, base: 0.45, bear: 0.20 }
+};
+
+const revenueEpsData = {
+  labels: ['2023A', '2024A', '2025A', '2026E', '2027E', '2028E'],
+  revenueActual: [405.5, 185.8, 115.0, null, null, null],
+  revenueForecast: [null, null, null, 118.0, 145.0, 185.0],
+  eps: [null, null, null, -0.45, 0.05, 0.35]
+};
+
+const marginTrendData = {
+  labels: ['2024A', 'Q4 2025', '2025A', '2026E', '2027E', '2028E'],
+  gross: [36.2, 41.0, 41.9, 42.5, 46.0, 51.0],
+  operating: [-15.2, null, null, -10.0, 2.0, 12.0],
+  fcf: [12.7, null, -46.3, -21.2, 3.4, 16.2]
+};
+
+const fcfTrendData = {
+  labels: ['2024A', '2025A', '2026E', '2027E', '2028E'],
+  ocf: [27.4, -49.0, -25.0, 5.0, 30.0],
+  capex: [-3.8, -4.2, 0.0, 0.0, 0.0],
+  fcf: [23.6, -53.2, -25.0, 5.0, 30.0]
+};
+
+const fcfMarginData = {
+  labels: ['2023A', '2024A', '2025A', '2026E', '2027E', '2028E'],
+  values: [33.5, 12.7, -46.3, -21.2, 3.4, 16.2]
+};
+
+const waterfallData = {
+  labels: ['FY2025 OCF', 'FY2025 CapEx', 'FY2025 FCF'],
+  values: [-49.0, -4.2, -53.2]
+};
+
+const capitalAllocationData = {
+  labels: ['Buybacks', 'Dividends', 'CapEx', 'M&A', 'Retained Cash'],
+  values: [15.0, 0.0, 4.2, 4.0, 199.3]
+};
+
+const peBridgeData = {
+  labels: ['Current', 'Implied Upside', 'Target'],
+  values: [3.19, 2.06, 5.25]
+};
+
+const fcfBridgeData = {
+  labels: ['Current', 'Implied Upside', 'Target'],
+  values: [3.19, 0.99, 4.18]
+};
+
+const institutionalOwnershipData = {
+  labels: ['BlackRock 9.0%', 'Vanguard 5.7%', 'Altai 5.2%', 'Other Institutions 66.7%', 'Other Holders 13.4%'],
+  values: [9.0, 5.7, 5.2, 66.7, 13.4]
+};
+
+const revisionsData = [
+  {
+    section: '4. Balance Sheet Deep Dive',
+    issueType: 'Numerical Error / Internal Inconsistency',
+    original: 'Liquidity Position: The company boasts $199.3M in cash and equivalents as of early 2026. The current ratio is 9.95, and the quick ratio is 8.93. Even at a roughly $9M quarterly burn rate, the company has roughly 5.5 years of runway.',
+    revised: 'Liquidity Position: The company had $199.3M of cash and equivalents at December 31, 2025. The latest year-end current ratio was about 6.58x and the quick ratio about 5.80x. Using FY2025 operating cash burn of $49.0M implies roughly 4.1 years of runway; the narrower Q4 burn heuristic implies roughly 5.5 years.',
+    why: 'The original version mixed 2025 cash with 2024 liquidity ratios. The runway framing also needed to distinguish between full-year burn and the narrower Q4 heuristic.',
+    sources: ['SEC', 'Calc']
+  },
+  {
+    section: '4. Balance Sheet Deep Dive',
+    issueType: 'Unsupported Claim / Other',
+    original: 'Off-Balance-Sheet Exposure: Filings do not indicate ticking contingent liabilities that would threaten the equity.',
+    revised: 'Off-Balance-Sheet / Liability Review: Operating leases appear standard, but the latest balance sheet does include $18.38M of current acquisition-related contingent consideration.',
+    why: 'The company is not distressed, but saying there are no meaningful contingent liabilities ignores a clearly disclosed balance-sheet item.',
+    sources: ['SEC']
+  },
+  {
+    section: '5. Cash Flow Analysis',
+    issueType: 'Numerical Error / Stale Data',
+    original: 'The company swung back to cash consumption in late 2024 and 2025. Inventory was $34.2M and capex was 2.0% of revenue.',
+    revised: 'OraSure still generated positive FCF of about $23.6M in 2024 before turning sharply negative in 2025. Inventory ended 2025 at about $31.1M, and 2025 capex was $4.2M or about 3.6% of revenue.',
+    why: '2024 was not a negative-FCF year, inventory was lower than stated, and the capex ratio used stale data.',
+    sources: ['SEC']
+  },
+  {
+    section: '6. Earnings Quality & Accounting Red Flags',
+    issueType: 'Numerical Error / Unsupported Claim',
+    original: 'Audit and Disclosure Flags: Zero material weaknesses in internal controls. No auditor changes, qualified opinions, or going concern language.',
+    revised: 'Audit and Disclosure Flags: ICFR was effective as of December 31, 2024, and Grant Thornton issued an unqualified opinion. No going-concern language was identified. OraSure did dismiss KPMG in March 2024 and appoint Grant Thornton for 2024.',
+    why: 'The original statement incorrectly said there were no auditor changes even though the proxy explicitly disclosed one.',
+    sources: ['SEC']
+  },
+  {
+    section: '6. Earnings Quality & Accounting Red Flags',
+    issueType: 'Unsupported Claim / Other',
+    original: 'Director John P. Kenny executed multiple open-market buys in late 2025.',
+    revised: 'The supplied insider ledger does not support multiple open-market buys by John P. Kenny. His late-2025 additions were coded A, not P. The clearest late-2025 open-market purchase was Nancy J. Gagliano\'s 2,100-share buy at $2.37 on Nov. 28, 2025.',
+    why: 'The original report overstated the evidence for board-level open-market accumulation.',
+    sources: ['SEC']
+  },
+  {
+    section: '3. Fundamental Analysis',
+    issueType: 'Numerical Error / Internal Inconsistency',
+    original: 'Revenue collapsed from $405.5M in 2023 to $185.8M in 2024, and is currently pacing an annualized run-rate of roughly $110M. Forward estimates suggest mid-single-digit growth by 2027.',
+    revised: 'Revenue fell from $405.5M in 2023 to $185.8M in 2024 and then to $115.0M in full-year 2025. The current forward model implies about 23% growth from 2026E to 2027E, not mid-single-digit growth.',
+    why: 'The report was still using stale run-rate framing after full-year 2025 results were available, and the growth commentary did not match the model table.',
+    sources: ['SEC', 'Calc']
+  },
+  {
+    section: '7. Forward Model & Valuation Bridge',
+    issueType: 'Missing Source / Unsupported Claim / Internal Inconsistency',
+    original: 'The forecast table used basis labels like Q1 Guide x4 and inferred H2 ramp, and the consensus line showed ~$115M run-rate.',
+    revised: 'Each forecast line should be labeled explicitly as assumed or calculated. The ~$115M run-rate consensus line should be removed or tied to a dated provider; one current source shows FY2026 consensus around $117.81M.',
+    why: 'Forecast basis labeling was too loose and the consensus line was not traceable to a clean source in the supplied record.',
+    sources: ['Seeking Alpha', 'Yahoo Finance', 'UNVERIFIED']
+  },
+  {
+    section: '8. Key Ratios & Comparisons',
+    issueType: 'Numerical Error / Stale Data',
+    original: 'EV/EBITDA was shown at 0.49x, P/S at 1.82x, P/B at 0.63x, current ratio at 9.95, and gross margin at 40.4%.',
+    revised: 'Updated current values are EV/EBITDA N/M because EBITDA is negative, EV/Revenue about 0.26x, P/S about 1.99x, P/B about 0.67x, current ratio about 6.58x, and FY2025 gross margin about 41.9%.',
+    why: 'Several current and TTM ratios were stale or no longer defensible after the latest raw figures were available.',
+    sources: ['SEC', 'Calc']
+  },
+  {
+    section: '8. Key Ratios & Comparisons',
+    issueType: 'Unsupported Claim',
+    original: 'OSUR is distinctly, undeniably cheap and effectively zero EV, so downside is heavily bound.',
+    revised: 'OSUR trades below book and at a low cash-adjusted valuation, which is supportive, but EV is not zero and a sub-1x P/B does not prove liquidation-value support.',
+    why: 'The original language overstated what low EV and low P/B can actually tell you.',
+    sources: ['SEC', 'Calc']
+  },
+  {
+    section: '9. Additional Key Factors',
+    issueType: 'Unsupported Claim',
+    original: 'EPS estimates have seen consistent downward revisions over the last 90 days.',
+    revised: 'Recent revision data look light-to-negative, but not like consistent downward revisions. Visible Yahoo snippets were unchanged across 7/30/60/90-day windows, while another provider showed one negative EPS revision over 90 days.',
+    why: 'The public snippets cited in the revision packet did not support the original stronger claim.',
+    sources: ['Yahoo Finance', 'Investing.com', 'UNVERIFIED']
+  },
+  {
+    section: '10. Scenario Analysis',
+    issueType: 'Numerical Error',
+    original: 'Bear-case target price was $2.20 based on 0.4x book value.',
+    revised: 'Bear-case target should be about $1.90 using 0.4x the latest year-end book value per share.',
+    why: 'The original figure used an older book-value base rather than the latest year-end equity and share count.',
+    sources: ['SEC', 'Calc']
+  },
+  {
+    section: '12. Thesis Kill Criteria & Catalyst Timeline',
+    issueType: 'Internal Inconsistency',
+    original: 'Bearish thesis invalidated if Q1/Q2 2026 revenue safely beats the $29M upper-bound guidance.',
+    revised: 'Bearish thesis invalidated if Q1 2026 revenue exceeds the $29M top end of company guidance, and/or Q2 2026 results establish sequential improvement above the current base-business run rate.',
+    why: 'The $29M ceiling is a Q1 guidance figure and should not be reused as a Q2 benchmark.',
+    sources: ['SEC']
+  },
+  {
+    section: '9. Additional Key Factors / 11. Risks & Opportunities',
+    issueType: 'Missing Source / Other',
+    original: 'Institutions hold 86.6% and Altai Capital is listed as a 5.2% holder.',
+    revised: 'Altai should also be framed as an active governance factor because OraSure disclosed its intent to nominate two directors for the 2026 annual meeting.',
+    why: 'The original report treated Altai as a passive ownership datapoint and omitted the active campaign context.',
+    sources: ['SEC', 'Reuters']
+  },
+  {
+    section: '2. Current Narrative & Sentiment',
+    issueType: 'Missing Source / Stale Data',
+    original: 'The consensus price target sits tightly around $3.00.',
+    revised: 'One current source, MarketBeat as accessed on March 8, 2026, shows an average target around $3.00, but provider and date should be cited because third-party target pages diverge.',
+    why: 'Consensus aggregators are not synchronized, so a precise unsourced target should not be presented as universal fact.',
+    sources: ['MarketBeat', 'UNVERIFIED']
+  },
+  {
+    section: '3. Fundamental Analysis',
+    issueType: 'Unsupported Claim',
+    original: 'Management delivered exactly what they promised in 2025.',
+    revised: 'Management deserves credit for executing on several controllables in 2025, including early manufacturing-transfer completion and end-2025 CT/NG and Colli-Pee submissions, but that should be balanced with the operating-cash-flow breakeven timeline moving out to 2027.',
+    why: 'The original framing was too absolute and omitted a meaningful target delay.',
+    sources: ['OraSure Technologies', 'SEC']
+  }
+];
+
+const hasChartJs = typeof window.Chart !== 'undefined';
+
+if (hasChartJs) {
+  Chart.defaults.color = COLORS.muted;
+  Chart.defaults.borderColor = COLORS.border;
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
+}
+
+const chartInstances = {};
+
+function baseChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        labels: {
+          usePointStyle: true,
+          padding: 14
+        }
+      }
+    }
+  };
+}
+
+function initCharts(idx) {
+  if (!hasChartJs) return;
+
+  if (idx === 2 && !chartInstances.revenueEps) {
+    const revenueEl = document.getElementById('revenueEpsChart');
+    const marginEl = document.getElementById('marginTrendChart');
+    chartInstances.revenueEps = new Chart(revenueEl, {
+      data: {
+        labels: revenueEpsData.labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Revenue Actual ($M)',
+            data: revenueEpsData.revenueActual,
+            backgroundColor: 'rgba(212,168,67,0.55)',
+            borderColor: COLORS.gold,
+            borderWidth: 1,
+            yAxisID: 'y'
+          },
+          {
+            type: 'bar',
+            label: 'Revenue Forecast ($M)',
+            data: revenueEpsData.revenueForecast,
+            backgroundColor: 'rgba(212,168,67,0.18)',
+            borderColor: COLORS.gold,
+            borderWidth: 1,
+            yAxisID: 'y'
+          },
+          {
+            type: 'line',
+            label: 'EPS',
+            data: revenueEpsData.eps,
+            borderColor: COLORS.green,
+            pointBackgroundColor: COLORS.green,
+            pointRadius: 4,
+            tension: 0.3,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        ...baseChartOptions(),
+        scales: {
+          y: { title: { display: true, text: 'Revenue ($M)' } },
+          y1: { position: 'right', title: { display: true, text: 'EPS' }, grid: { display: false } }
+        }
+      }
+    });
+    chartInstances.marginTrend = new Chart(marginEl, {
+      type: 'line',
+      data: {
+        labels: marginTrendData.labels,
+        datasets: [
+          { label: 'Gross Margin %', data: marginTrendData.gross, borderColor: COLORS.gold, pointRadius: 4, tension: 0.3 },
+          { label: 'Operating Margin %', data: marginTrendData.operating, borderColor: COLORS.green, pointRadius: 4, tension: 0.3 },
+          { label: 'FCF Margin %', data: marginTrendData.fcf, borderColor: COLORS.blue, pointRadius: 4, tension: 0.3, borderDash: [5, 4], fill: false }
+        ]
+      },
+      options: {
+        ...baseChartOptions(),
+        scales: {
+          y: { title: { display: true, text: 'Margin %' } }
+        }
+      }
+    });
+  }
+
+  if (idx === 4 && !chartInstances.fcfTrend) {
+    chartInstances.fcfTrend = new Chart(document.getElementById('fcfTrendChart'), {
+      data: {
+        labels: fcfTrendData.labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'OCF ($M)',
+            data: fcfTrendData.ocf,
+            backgroundColor: 'rgba(93,173,226,0.55)',
+            borderColor: COLORS.blue,
+            borderWidth: 1
+          },
+          {
+            type: 'bar',
+            label: 'CapEx ($M)',
+            data: fcfTrendData.capex,
+            backgroundColor: 'rgba(231,76,60,0.45)',
+            borderColor: COLORS.red,
+            borderWidth: 1
+          },
+          {
+            type: 'line',
+            label: 'FCF ($M)',
+            data: fcfTrendData.fcf,
+            borderColor: COLORS.gold,
+            pointBackgroundColor: COLORS.gold,
+            pointRadius: 4,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        ...baseChartOptions(),
+        scales: {
+          y: { title: { display: true, text: '$M' } }
+        }
+      }
+    });
+    chartInstances.fcfMargin = new Chart(document.getElementById('fcfMarginChart'), {
+      type: 'line',
+      data: {
+        labels: fcfMarginData.labels,
+        datasets: [
+          {
+            label: 'FCF Margin %',
+            data: fcfMarginData.values,
+            borderColor: COLORS.green,
+            backgroundColor: 'rgba(76,175,80,0.12)',
+            pointBackgroundColor: COLORS.green,
+            pointRadius: 4,
+            tension: 0.3,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        ...baseChartOptions(),
+        scales: {
+          y: { title: { display: true, text: 'Margin %' } }
+        }
+      }
+    });
+    chartInstances.waterfall = new Chart(document.getElementById('waterfallChart'), {
+      type: 'bar',
+      data: {
+        labels: waterfallData.labels,
+        datasets: [{
+          label: '$M',
+          data: waterfallData.values,
+          backgroundColor: [COLORS.blue, COLORS.red, COLORS.gold],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        ...baseChartOptions(),
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: '$M' } }
+        }
+      }
+    });
+    chartInstances.capAlloc = new Chart(document.getElementById('capitalAllocationChart'), {
+      type: 'doughnut',
+      data: {
+        labels: capitalAllocationData.labels,
+        datasets: [{
+          data: capitalAllocationData.values,
+          backgroundColor: [COLORS.gold, COLORS.yellow, COLORS.blue, COLORS.green, '#6b6b63'],
+          borderColor: '#111',
+          borderWidth: 2
+        }]
+      },
+      options: baseChartOptions()
+    });
+  }
+
+  if (idx === 6 && !chartInstances.peBridge) {
+    chartInstances.peBridge = new Chart(document.getElementById('peBridgeChart'), {
+      type: 'bar',
+      data: {
+        labels: peBridgeData.labels,
+        datasets: [{
+          label: 'Price ($)',
+          data: peBridgeData.values,
+          backgroundColor: [COLORS.blue, COLORS.gold, COLORS.green]
+        }]
+      },
+      options: {
+        ...baseChartOptions(),
+        plugins: { legend: { display: false } },
+        scales: { y: { title: { display: true, text: 'Price ($)' } } }
+      }
+    });
+    chartInstances.fcfBridge = new Chart(document.getElementById('fcfBridgeChart'), {
+      type: 'bar',
+      data: {
+        labels: fcfBridgeData.labels,
+        datasets: [{
+          label: 'Price ($)',
+          data: fcfBridgeData.values,
+          backgroundColor: [COLORS.blue, COLORS.gold, COLORS.yellow]
+        }]
+      },
+      options: {
+        ...baseChartOptions(),
+        plugins: { legend: { display: false } },
+        scales: { y: { title: { display: true, text: 'Price ($)' } } }
+      }
+    });
+  }
+
+  if (idx === 8 && !chartInstances.institutionalOwnership) {
+    chartInstances.institutionalOwnership = new Chart(document.getElementById('institutionalOwnershipChart'), {
+      type: 'doughnut',
+      data: {
+        labels: institutionalOwnershipData.labels,
+        datasets: [{
+          data: institutionalOwnershipData.values,
+          backgroundColor: [COLORS.gold, COLORS.blue, COLORS.green, '#6c6b63', COLORS.red],
+          borderColor: '#111',
+          borderWidth: 2
+        }]
+      },
+      options: baseChartOptions()
+    });
+  }
+}
+
+function renderRevisions() {
+  const container = document.getElementById('revisionCards');
+  if (!container) return;
+  const badgeHtml = (label) => label === 'UNVERIFIED'
+    ? '<span class="source-badge unverified">UNVERIFIED</span>'
+    : `<span class="source-badge">${label}</span>`;
+
+  container.innerHTML = revisionsData.map((item) => `
+    <div class="revision-card">
+      <div class="rev-meta">
+        <div><strong>${item.section}</strong></div>
+        <div class="issue-label">${item.issueType}</div>
+      </div>
+      <div class="rev-original"><strong>Original:</strong> ${item.original}</div>
+      <div class="rev-revised"><strong>Revised:</strong> ${item.revised}</div>
+      <div class="note"><strong>Why:</strong> ${item.why}</div>
+      <div class="card-label" style="margin-top:10px;">${item.sources.map(badgeHtml).join(' ')}</div>
+    </div>
+  `).join('');
+}
+
+renderRevisions();
+const initialTabIdx = getTabIndexFromHash(window.location.hash);
+if (initialTabIdx !== null) {
+  setActiveTab(initialTabIdx);
+} else {
+  setActiveTab(0);
+}
+</script>
+</body>
+</html>

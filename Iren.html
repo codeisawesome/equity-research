@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$IREN | IREN Ltd Equity Research Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0a;
+  --card: #141414;
+  --border: #2a2a2a;
+  --gold: #d4a843;
+  --cream: #e8e0d0;
+  --muted: #8a8a7a;
+  --green: #4caf50;
+  --red: #e74c3c;
+  --yellow: #f1c40f;
+  --blue: #5dade2;
+}
+body {
+  background: radial-gradient(circle at top, rgba(212,168,67,0.08), transparent 28%), var(--bg);
+  color: var(--cream);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+}
+.mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+.positive { color: var(--green); }
+.negative { color: var(--red); }
+.neutral { color: var(--yellow); }
+.muted { color: var(--muted); }
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(20,20,20,0.96);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+}
+.header-left h1 { font-size: 1.55rem; color: var(--gold); }
+.subtitle { color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
+.header-right { display: flex; gap: 14px; flex-wrap: wrap; }
+.header-badge {
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  min-width: 96px;
+}
+.header-badge .val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+.header-badge .lbl {
+  font-size: 0.64rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-top: 2px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge-buy { background: rgba(76,175,80,0.15); color: var(--green); border: 1px solid rgba(76,175,80,0.3); }
+.badge-hold { background: rgba(241,196,15,0.15); color: var(--yellow); border: 1px solid rgba(241,196,15,0.3); }
+.badge-sell { background: rgba(231,76,60,0.15); color: var(--red); border: 1px solid rgba(231,76,60,0.3); }
+.tab-bar {
+  display: flex;
+  overflow-x: auto;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--border);
+  background: #101010;
+  padding: 0 8px;
+}
+.tab-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 11px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+.tab-btn:hover { color: var(--gold); background: rgba(212,168,67,0.06); }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(212,168,67,0.08); }
+.tab-content {
+  display: none;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 26px 30px 44px;
+}
+.tab-content.active { display: block; }
+.section-header {
+  font-size: 1.28rem;
+  color: var(--gold);
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.analysis-prose {
+  background: #0f0f0f;
+  border: 1px solid #1e1e1e;
+  border-radius: 12px;
+  padding: 22px 24px;
+  color: #d2ccbb;
+}
+.analysis-prose p { margin-bottom: 14px; font-size: 14px; }
+.analysis-prose p:last-child { margin-bottom: 0; }
+.analysis-prose ul { margin: 8px 0 14px 20px; }
+.analysis-prose li { margin-bottom: 8px; }
+.analysis-label {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--bg);
+  border-radius: 4px;
+  padding: 3px 9px;
+  margin-bottom: 14px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 28px 0;
+}
+.grid { display: grid; gap: 18px; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.card-title {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.card-value { font-size: 1.9rem; font-weight: 700; }
+.card-label { color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
+.thesis-box {
+  background: rgba(212,168,67,0.06);
+  border: 1px solid rgba(212,168,67,0.22);
+  border-radius: 12px;
+  padding: 20px;
+}
+.thesis-box p { margin-bottom: 10px; font-size: 14px; }
+.thesis-box p:last-child { margin-bottom: 0; }
+.metric-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.metric-item {
+  flex: 1;
+  min-width: 128px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.metric-item .label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.metric-item .value {
+  margin-top: 4px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+.source-badge {
+  display: inline-block;
+  background: rgba(212,168,67,0.16);
+  color: var(--gold);
+  border: 1px solid rgba(212,168,67,0.22);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+.source-badge.unverified {
+  background: rgba(231,76,60,0.14);
+  color: #ffb3ac;
+  border-color: rgba(231,76,60,0.28);
+}
+.source-badge.assumed {
+  background: rgba(241,196,15,0.12);
+  color: var(--yellow);
+  border-color: rgba(241,196,15,0.24);
+}
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  background: rgba(212,168,67,0.12);
+  color: var(--gold);
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(42,42,42,0.7);
+}
+tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.num { text-align: right; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+.chart-container {
+  position: relative;
+  height: 320px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.scenario-card { border-left: 4px solid var(--muted); }
+.scenario-card.bull { border-left-color: var(--green); }
+.scenario-card.base { border-left-color: var(--gold); }
+.scenario-card.bear { border-left-color: var(--red); }
+.prob-bar-container {
+  display: flex;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 14px 0;
+}
+.prob-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(42,42,42,0.7);
+}
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.timeline-content { flex: 1; }
+.timeline-date { color: var(--gold); font-size: 12px; font-weight: 700; }
+.timeline-event { font-size: 14px; margin-top: 2px; }
+.timeline-impact { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.kill-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 14px;
+}
+.kill-check {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.waterfall-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 90px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.waterfall-track {
+  height: 26px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.waterfall-fill {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.revision-card {
+  background: rgba(231,76,60,0.04);
+  border: 1px solid rgba(231,76,60,0.18);
+  border-radius: 12px;
+  padding: 18px;
+}
+.rev-section {
+  color: var(--gold);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+}
+.rev-type { color: var(--red); font-size: 11px; margin-top: 4px; }
+.rev-original {
+  margin-top: 10px;
+  color: var(--muted);
+  text-decoration: line-through;
+  font-size: 13px;
+}
+.rev-revised { margin-top: 8px; color: #bff0c1; font-size: 13px; }
+.rev-why { margin-top: 8px; color: var(--muted); font-size: 12px; }
+.split-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.signal-list { list-style: none; margin: 0; }
+.signal-list li { padding: 8px 0; border-bottom: 1px solid rgba(42,42,42,0.7); font-size: 13px; }
+.signal-list li:last-child { border-bottom: none; }
+.circle-grade {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(212,168,67,0.25);
+  background: rgba(212,168,67,0.06);
+  color: var(--gold);
+  font-size: 1.55rem;
+  font-weight: 800;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+.note {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 10px;
+}
+@media (max-width: 768px) {
+  .header { padding: 16px; position: static; }
+  .tab-content { padding: 18px 14px 34px; }
+  .grid-2, .grid-3, .grid-4, .split-list { grid-template-columns: 1fr; }
+  .tab-btn { font-size: 11px; padding: 10px 8px; }
+  .waterfall-row { grid-template-columns: 84px 1fr 72px; }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>$IREN | IREN Ltd</h1>
+    <div class="subtitle">Interactive equity research dashboard | Revised report date: March 8, 2026</div>
+  </div>
+  <div class="header-right">
+    <div class="header-badge"><div class="val">$36.78</div><div class="lbl">Current Price</div></div>
+    <div class="header-badge"><div class="val">$12.2B</div><div class="lbl">Market Cap</div></div>
+    <div class="header-badge"><div class="val" style="color:var(--green);">BUY</div><div class="lbl">Rating</div></div>
+    <div class="header-badge"><div class="val" style="color:var(--gold);">$62.50</div><div class="lbl">P/E Target</div></div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+  <button class="tab-btn" onclick="switchTab(1)">2. Narrative</button>
+  <button class="tab-btn" onclick="switchTab(2)">3. Fundamentals</button>
+  <button class="tab-btn" onclick="switchTab(3)">4. Balance Sheet</button>
+  <button class="tab-btn" onclick="switchTab(4)">5. Cash Flow</button>
+  <button class="tab-btn" onclick="switchTab(5)">6. Earnings Quality</button>
+  <button class="tab-btn" onclick="switchTab(6)">7. Forward Model</button>
+  <button class="tab-btn" onclick="switchTab(7)">8. Key Ratios</button>
+  <button class="tab-btn" onclick="switchTab(8)">9. Ownership</button>
+  <button class="tab-btn" onclick="switchTab(9)">10. Scenarios</button>
+  <button class="tab-btn" onclick="switchTab(10)">11. Risks</button>
+  <button class="tab-btn" onclick="switchTab(11)">12. Catalysts</button>
+  <button class="tab-btn" onclick="switchTab(12)">Revisions</button>
+</div>
+
+<div class="tab-content active">
+  <h2 class="section-header">1. Executive Summary</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <ul>
+      <li><strong>Strategic Pivot:</strong> IREN is pivoting from Bitcoin mining toward AI Cloud, anchored by a $9.7B Microsoft contract. <span class="source-badge">SEC</span></li>
+      <li><strong>Funding Improved, Not Fully De-risked:</strong> IREN disclosed a binding commitment letter for approximately $3.6B of delayed-draw GPU financing, and together with Microsoft’s $1.9B prepayment this is expected to cover about 95% of GPU-related capex for Horizons 1-4 under the Microsoft contract. That does not remove broader funding or dilution risk, especially after the March 4, 2026 $6.0B ATM filing and management’s statement that additional capital sources will be used to finance roughly $3.5B of extra capex tied to the new 50k+ GPU orders. <span class="source-badge">SEC</span></li>
+      <li><strong>Unmatched Infrastructure Moat:</strong> With 4.5 GW of secured, grid-connected power, including a new 1.6 GW site in Oklahoma, IREN controls one of the scarcest assets in the AI arms race: energized land. <span class="source-badge">SEC</span></li>
+      <li><strong>Near-Term Optical Mispricing:</strong> Q2 FY26 revenue fell to $184.7M, down 23% sequentially from $240.3M, as Bitcoin mining revenue fell while AI Cloud revenue rose. As of February 5, 2026, management reiterated a target of 140,000 GPUs and $3.4B ARR by end-CY2026; however, on March 4, 2026 IREN announced purchase agreements for 50,000+ additional NVIDIA B300 GPUs, increasing planned fleet size to 150,000 GPUs and indicating AI Cloud annualized run-rate revenue of over $3.7B by end-2026. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></li>
+      <li><strong>Conviction Level:</strong> <span class="positive">High</span> for position trading (12-24 months) | <span class="neutral">Medium</span> for swing trading (near-term accounting noise and high beta will cause volatility).</li>
+      <li><strong>Rating:</strong> <span class="badge badge-buy">Strong Buy</span> | Expected move: <span class="positive mono">+70% upside</span> over the next 12-18 months. This expected move is explicitly derived from the 2027E EPS of $2.50 at a 25x multiple, detailed in Section 7. <span class="source-badge">Calc</span></li>
+    </ul>
+    <p><strong>The Single Most Important Thing:</strong> The market is weighing IREN’s AI-cloud upside against execution, capital intensity, and dilution risk. Management has described the Microsoft project as carrying an estimated ~85% project EBITDA margin, but that is still a management estimate, and equity dilution risk has not been eliminated given prior ATM usage, the December 2025 equity issuance, and the new $6.0B ATM facility. <span class="source-badge">Earnings Call</span> <span class="source-badge">SEC</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="thesis-box">
+    <p><strong style="color:var(--gold);">Investment Thesis:</strong> The revised thesis still rests on the Microsoft-backed AI-cloud pivot, the value of IREN’s secured power footprint, and a sharp operating inflection if the GPU ramp lands on schedule. What changed is the funding framing: the business is better financed, but not dilution-proof after the March 4, 2026 ATM expansion and the additional capex tied to the 150,000-GPU plan. <span class="source-badge">SEC</span></p>
+    <p><strong style="color:var(--gold);">Core Source Stack:</strong> Microsoft contract, Q2 FY26 release, Dec. 31, 2025 10-Q, March 4, 2026 GPU expansion release, and the March 4, 2026 424B5 ATM filing. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span> <span class="source-badge">Calc</span></p>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;">
+    <span class="badge badge-buy">Conviction: High</span>
+    <span class="badge badge-buy">Rating: Strong Buy</span>
+    <span class="badge badge-hold">Swing: Medium</span>
+  </div>
+
+  <div class="metric-strip">
+    <div class="metric-item"><div class="label">Current Price</div><div class="value">$36.78</div></div>
+    <div class="metric-item"><div class="label">Market Cap</div><div class="value">$12.2B</div></div>
+    <div class="metric-item"><div class="label">P/E (TTM)</div><div class="value">34.9x</div></div>
+    <div class="metric-item"><div class="label">P/E (Forward)</div><div class="value">80.0x</div></div>
+    <div class="metric-item"><div class="label">EV/EBITDA</div><div class="value">492.6x</div></div>
+    <div class="metric-item"><div class="label">FCF Yield</div><div class="value negative">-2.7%</div></div>
+    <div class="metric-item"><div class="label">Dividend Yield</div><div class="value">0.0%</div></div>
+    <div class="metric-item"><div class="label">Target Price</div><div class="value positive">$62.50</div></div>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:18px;">
+    <div class="card">
+      <div class="card-title">Microsoft Anchor</div>
+      <div class="card-value">$9.7B</div>
+      <div class="card-label">Contract value <span class="source-badge">SEC</span></div>
+      <p style="margin-top:10px;font-size:13px;">The Microsoft contract is the central strategic anchor, but the modeled ~85% project EBITDA margin remains a management estimate, not a realized reported margin. <span class="source-badge">Earnings Call</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Fleet Expansion</div>
+      <div class="card-value">150,000</div>
+      <div class="card-label">Planned GPUs by end-2026 after Mar. 4 expansion <span class="source-badge">SEC</span></div>
+      <p style="margin-top:10px;font-size:13px;">Management moved from 140,000 GPUs / $3.4B ARR to 150,000 GPUs and more than $3.7B annualized run-rate revenue by end-2026. <span class="source-badge">SEC</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Funding Caveat</div>
+      <div class="card-value">$6.0B</div>
+      <div class="card-label">ATM capacity still outstanding <span class="source-badge">SEC</span></div>
+      <p style="margin-top:10px;font-size:13px;">The delayed-draw GPU financing improves funding visibility, but the ATM overhang expanded rather than disappeared. <span class="source-badge">SEC</span></p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px;">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div class="card-value positive mono">$61.50</div>
+    <div class="card-label">0.60 × $75.00 + 0.30 × $50.00 + 0.10 × $15.00 = $61.50 <span class="source-badge">Calc</span></div>
+    <div class="prob-bar-container">
+      <div class="prob-segment" style="width:60%;background:rgba(76,175,80,0.25);color:var(--green);">Bull 60%</div>
+      <div class="prob-segment" style="width:30%;background:rgba(212,168,67,0.3);color:var(--gold);">Base 30%</div>
+      <div class="prob-segment" style="width:10%;background:rgba(231,76,60,0.25);color:var(--red);">Bear 10%</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;" class="mono">
+      <span class="positive">Bull: $75.00 (+103.9%)</span>
+      <span class="neutral">Base: $50.00 (+35.9%)</span>
+      <span class="negative">Bear: $15.00 (-59.2%)</span>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">2. Current Narrative &amp; Sentiment</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The overarching narrative driving IREN today is the violent tug-of-war between its legacy identity and its future state. The company reported Q2 FY2026 revenue of $184.7M, down 23% sequentially from $240.3M, as Bitcoin mining revenue fell while AI Cloud revenue rose. Any statement that the quarter “missed estimates” requires a cited consensus source; none is provided here. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p>As of February 5, 2026, management reiterated a target of 140,000 GPUs and $3.4B ARR by end-CY2026; however, on March 4, 2026 IREN announced purchase agreements for 50,000+ additional NVIDIA B300 GPUs, increasing planned fleet size to 150,000 GPUs and indicating AI Cloud annualized run-rate revenue of over $3.7B by end-2026. <span class="source-badge">SEC</span></p>
+    <p>Wall Street consensus is fiercely divided, reflecting the binary nature of execution risk. Available live analyst snippets show a much higher and wider published range than the earlier report stated: Yahoo’s quote-page snippet showed an analyst range of roughly $39 to $125 with an average target around $79.46, while H.C. Wainwright reiterated $80 on March 4, 2026 and J.P. Morgan had a $39 Underweight target in published coverage. Also, the March 4, 2026 424B5 expanded the ATM capacity to $6.0B; it did not remove the overhang. <span class="source-badge">Yahoo</span> <span class="source-badge">Analyst coverage</span> <span class="source-badge">SEC</span></p>
+    <p>The sentiment on financial platforms and FinTwit is similarly split. Bulls focus on the $3.6B GPU financing and the “Time to Data Center” advantage of IREN’s air-cooled facilities. Bears focus on execution risk, fearing supply-chain delays will stall the AI transition while the legacy BTC cash cow dries up. <span class="source-badge">SEC</span></p>
+    <p><strong>Contrarian Signal Check:</strong> Jim Chanos has publicly argued that the Microsoft deal is uneconomic and has pointed to sharply lower FY2027/FY2028 adjusted EPS estimates since the deal was announced. The more specific claim that the deal offers “mid-single-digit pre-tax returns below IREN’s true cost of capital” should be either directly sourced to Chanos’s own published analysis or labeled unsupported. Bulls counter by pointing to the 3% effective blended cost of capital on the MSFT project debt, but that specific rebuttal also requires a direct source here. <span class="source-badge">News/X</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Q2 Headline Numbers</div>
+      <div class="card-value mono">$184.7M</div>
+      <div class="card-label">Revenue, down 23% sequentially from $240.3M <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+      <p style="margin-top:10px;font-size:13px;">Bitcoin Mining revenue: $167.4M. AI Cloud Services revenue: $17.3M. <span class="source-badge">SEC</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Market Sentiment</div>
+      <div class="card-value mono">$39-$125</div>
+      <div class="card-label">Published analyst target range; average around $79.46 <span class="source-badge">Yahoo</span></div>
+      <p style="margin-top:10px;font-size:13px;">H.C. Wainwright: $80. J.P. Morgan: $39 Underweight. The range widened, and the ATM overhang increased. <span class="source-badge">Analyst coverage</span> <span class="source-badge">SEC</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Bear Thesis Summary</div>
+      <div class="card-value mono">Execution</div>
+      <div class="card-label">Capital intensity, supply chain, and dilution remain live concerns</div>
+      <p style="margin-top:10px;font-size:13px;">Chanos has criticized deal economics, but the specific “mid-single-digit pre-tax return” math is not directly sourced in the supplied packet. <span class="source-badge">News/X</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">3. Fundamental Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>IREN is in the middle of a radical business model overhaul. Historically relying on the highly cyclical, capital-intensive mining of Bitcoin, which provided daily liquid rewards but zero predictability, the company is pivoting toward an AI Cloud Service Provider model. This shifts revenue to longer-duration, amortized contracts and annualized run-rate revenue with hyperscale counterparties. <span class="source-badge">SEC</span></p>
+    <p>Trailing 12-month revenue growth sits at 163%, but historical CAGRs are less useful as the revenue mix transitions. Profitability trends currently look chaotic; trailing 12-month net profit margin is 46.4%, but trailing operating margin is -19.1%. This divergence is driven by large non-cash accounting adjustments rather than clean operational cash generation. Looking forward, management has described the Microsoft project as carrying an estimated ~85% project EBITDA margin, but that remains a management estimate rather than a realized reported margin. <span class="source-badge">Finnhub</span> <span class="source-badge">Earnings Call</span></p>
+    <p>IREN’s competitive moat is exceptional and expanding. In the AI infrastructure space, GPUs are commoditized, but gigawatt-scale, grid-connected power is extremely scarce. By securing 4.5 GW of power across ERCOT, British Columbia, and newly acquired SPP territory in Oklahoma, IREN possesses large-scale capacity advantages. Their ability to deploy air-cooled GPUs into legacy mining facilities addresses a hyperscaler pain point: time-to-market. <span class="source-badge">SEC</span></p>
+    <p>Management’s track record is a key part of the story, but the funding language has to be narrower than the original report suggested. Management has secured financing that management says covers roughly 95% of the GPU-related capex for Horizons 1-4 tied to the Microsoft contract when combined with Microsoft prepayments, but this should not be generalized to “the buildout” as a whole. IREN has also raised substantial equity recently, including a December 2025 registered direct offering and prior ATM issuance. Insider alignment is still meaningful, but the “rather than dilutive equity” framing is not supportable. <span class="source-badge">SEC</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2">
+    <div class="chart-container"><canvas id="revenueEpsChart"></canvas></div>
+    <div class="chart-container"><canvas id="marginChart"></canvas></div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:18px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th class="num">Revenue</th>
+          <th class="num">Growth</th>
+          <th class="num">Gross Margin</th>
+          <th class="num">Op. Margin</th>
+          <th class="num">EPS</th>
+          <th class="num">FCF</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Q1 FY26</td>
+          <td class="num">$240.3M <span class="source-badge">SEC</span></td>
+          <td class="num">N/A</td>
+          <td class="num">N/A</td>
+          <td class="num">N/A</td>
+          <td class="num">N/A</td>
+          <td class="num">-$138.2M <span class="source-badge">Calc</span></td>
+        </tr>
+        <tr>
+          <td>Q2 FY26</td>
+          <td class="num">$184.7M <span class="source-badge">SEC</span></td>
+          <td class="num negative">-23.0% seq <span class="source-badge">Calc</span></td>
+          <td class="num">N/A</td>
+          <td class="num negative">-63.0% <span class="source-badge">Calc</span></td>
+          <td class="num negative">-$0.52 <span class="source-badge">SEC</span></td>
+          <td class="num negative">-$755.1M <span class="source-badge">Calc</span></td>
+        </tr>
+        <tr>
+          <td>1H FY26</td>
+          <td class="num">$425.0M <span class="source-badge">SEC</span></td>
+          <td class="num">N/A</td>
+          <td class="num">N/A</td>
+          <td class="num">N/A</td>
+          <td class="num">$0.81 basic / $0.68 diluted <span class="source-badge">SEC</span></td>
+          <td class="num negative">-$893.3M <span class="source-badge">Calc</span></td>
+        </tr>
+        <tr>
+          <td>2026E</td>
+          <td class="num">$1.45B</td>
+          <td class="num">N/A</td>
+          <td class="num">62.0%</td>
+          <td class="num">15.0%</td>
+          <td class="num">$0.75</td>
+          <td class="num negative">-$650M</td>
+        </tr>
+        <tr>
+          <td>2027E</td>
+          <td class="num">$3.40B</td>
+          <td class="num positive">+134.5% <span class="source-badge">Calc</span></td>
+          <td class="num">75.0%</td>
+          <td class="num">40.0%</td>
+          <td class="num">$2.50</td>
+          <td class="num positive">$850M</td>
+        </tr>
+        <tr>
+          <td>2028E</td>
+          <td class="num">$4.25B</td>
+          <td class="num positive">+25.0% <span class="source-badge">Calc</span></td>
+          <td class="num">76.0%</td>
+          <td class="num">42.0%</td>
+          <td class="num">$3.35</td>
+          <td class="num positive">$1.20B</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid grid-4" style="margin-top:18px;">
+    <div class="card">
+      <div class="card-title">Latest Revenue</div>
+      <div class="card-value mono">$184.7M</div>
+      <div class="card-label">Q2 FY26 <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Latest GAAP EPS</div>
+      <div class="card-value mono negative">-$0.52</div>
+      <div class="card-label">Q2 FY26 basic and diluted <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Operating Margin</div>
+      <div class="card-value mono negative">-63.0%</div>
+      <div class="card-label">Q2 FY26 operating loss of $116.4M on $184.7M revenue <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">AI Cloud Growth</div>
+      <div class="card-value mono positive">+540.7%</div>
+      <div class="card-label">$17.3M vs $2.7M YoY in Q2 FY26 <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">4. Balance Sheet Deep Dive</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Asset Quality:</strong> As of December 31, 2025, total assets were $7.03B, total liabilities were $4.52B, stockholders’ equity was $2.51B, and cash and cash equivalents were $3.26B. Current assets were $3.38B against current liabilities of $682.1M, implying a current ratio of about 4.96x. Goodwill was not reported; intangible assets were $107.6M, so “negligible intangibles” has to be softened into a more precise statement. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+    <p><strong>Debt Structure:</strong> The balance sheet already carried $3.685B of convertible notes payable at December 31, 2025. The additional roughly $3.6B GS/JPM GPU financing was disclosed as a commitment subject to definitive documents and conditions, not as fully closed funded debt. <span class="source-badge">SEC</span></p>
+    <p><strong>Covenant and Credit Risk:</strong> Because the disclosed GPU financing is tied to a Microsoft project and backed by a $1.9B customer prepayment, classic covenant pressure is less severe than it would be for unsecured speculative capex. But that is not the same thing as saying the balance sheet is functionally anchored by Microsoft alone; the company still carries real leverage, conversion complexity, and dilution optionality. <span class="source-badge">SEC</span></p>
+    <p><strong>Off-Balance-Sheet Exposure:</strong> The primary exposure remains the scale of GPU procurement and data-center build commitments. Those commitments are partly supported by prepayments and financing commitments, but they are still large enough to make broader capital access relevant. <span class="source-badge">SEC</span></p>
+    <p><strong>Liquidity Position:</strong> Liquidity is materially stronger than the stale June 30, 2025 figures implied. Cash was $3.26B at the latest filing date and current ratio was about 4.96x. That said, the proper takeaway is strong liquidity, not a blanket claim that all funding risk has disappeared. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+    <p><strong>Net-Net Assessment:</strong> The balance sheet is still a source of strength because of the large cash balance and power-asset buildout, but it is more levered, more complex, and more dilution-sensitive than the original report claimed. <span class="source-badge">SEC</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Liquidity</div>
+      <div style="display:grid;gap:8px;font-size:13px;">
+        <div><strong class="mono">$3.26B</strong> cash and equivalents <span class="source-badge">SEC</span></div>
+        <div><strong class="mono">4.96x</strong> current ratio <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+        <div><strong class="mono">4.85x</strong> quick ratio <span class="source-badge">Calc</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Leverage</div>
+      <div style="display:grid;gap:8px;font-size:13px;">
+        <div><strong class="mono">$7.03B</strong> total assets <span class="source-badge">SEC</span></div>
+        <div><strong class="mono">$2.51B</strong> stockholders’ equity <span class="source-badge">SEC</span></div>
+        <div><strong class="mono">1.53x</strong> debt/equity <span class="source-badge">Finnhub</span></div>
+        <div><strong class="mono negative">-10.9x</strong> Q2 EBIT / finance expense <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Asset Quality</div>
+      <div style="display:grid;gap:8px;font-size:13px;">
+        <div><strong class="mono">$0</strong> goodwill reported <span class="source-badge">SEC</span></div>
+        <div><strong class="mono">$107.6M</strong> intangible assets <span class="source-badge">SEC</span></div>
+        <div><strong class="mono">0.0%</strong> goodwill / assets and goodwill / equity <span class="source-badge">Calc</span></div>
+        <div><strong class="mono">$31.8M</strong> Q2 impairment; <strong class="mono">$48.0M</strong> H1 impairment <span class="source-badge">SEC</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">5. Cash Flow Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Operating Cash Flow and Free Cash Flow trends currently reflect the messy reality of a hardware transition. FY25 free cash flow was -$327.6M, but that is a fiscal-year figure, not a current trailing-12-month figure as of March 8, 2026. For the quarter ended December 31, 2025, IREN reported net loss of $155.4M, operating loss of $116.4M, and net cash from operating activities of $71.6M. For the six months ended December 31, 2025, revenue was $425.0M and net income was $229.2M. <span class="source-badge">SEC</span></p>
+    <p>Cash flow quality still requires heavy scrutiny. There is a major divergence between accounting earnings and cash flow presentation, but the quarter-versus-six-month mix-up in the original report had to be corrected. The core issue is that derivative accounting, capped-call and prepaid-forward marks, and debt-conversion inducement expense distort GAAP net income and operating-line optics. <span class="source-badge">SEC</span></p>
+    <p><strong>Capital Allocation Scorecard:</strong></p>
+    <ul>
+      <li><strong>Buybacks:</strong> None. Capital is being protected for infrastructure expansion.</li>
+      <li><strong>Dividends:</strong> Yield is 0%. The company remains in the growth and reinvestment phase.</li>
+      <li><strong>Debt Management:</strong> Financing execution improved materially with the delayed-draw GPU financing commitment and Microsoft prepayments, but it is not accurate to say management has sidestepped equity risk entirely given prior ATM issuance, the December 2025 equity issuance, and the new $6.0B ATM facility. <span class="source-badge">SEC</span></li>
+      <li><strong>M&amp;A Track Record:</strong> The strategy remains centered on organic land and power acquisitions, such as Oklahoma, rather than corporate M&amp;A. <span class="source-badge">SEC</span></li>
+    </ul>
+    <p><strong>Sustainability Verdict:</strong> IREN cannot fund all of its capex from core operating cash flow yet. The combination of customer prepayments and project debt improves sustainability, but the revised conclusion is that funding risk is improved, not eliminated, and additional capital sources remain part of the plan. <span class="source-badge">SEC</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2">
+    <div class="chart-container"><canvas id="fcfTrendChart"></canvas></div>
+    <div class="chart-container"><canvas id="fcfMarginChart"></canvas></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px;">
+    <div class="card">
+      <div class="card-title">1H FY26 Cash Waterfall</div>
+      <div class="waterfall-row">
+        <div class="muted">OCF</div>
+        <div class="waterfall-track"><div class="waterfall-fill" style="width:19.3%;background:rgba(76,175,80,0.38);color:var(--green);">$214.0M</div></div>
+        <div class="num">$214.0M</div>
+      </div>
+      <div class="waterfall-row">
+        <div class="muted">CapEx</div>
+        <div class="waterfall-track"><div class="waterfall-fill" style="width:100%;background:rgba(231,76,60,0.34);color:#ffb3ac;">-$1,107.3M</div></div>
+        <div class="num negative">-$1,107.3M</div>
+      </div>
+      <div class="waterfall-row">
+        <div class="muted">FCF</div>
+        <div class="waterfall-track"><div class="waterfall-fill" style="width:80.7%;background:rgba(212,168,67,0.32);color:var(--gold);">-$893.3M</div></div>
+        <div class="num negative">-$893.3M</div>
+      </div>
+      <div class="note">OCF from the six-month cash flow statement. CapEx includes property, plant and equipment, computer hardware, and intangible assets. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="chart-container"><canvas id="capitalAllocationChart"></canvas></div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">6. Earnings Quality &amp; Accounting Red Flags</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>GAAP vs. Non-GAAP Spread:</strong> The gap is severe and growing. Q2 FY26 results were heavily affected by non-cash and non-recurring items. The company specifically identified about $219.2M from unrealized losses on prepaid forwards and capped calls plus debt-conversion inducement expense, along with $31.8M of mining hardware impairments. <span class="source-badge">SEC</span></p>
+    <p><strong>“One-Time” Charge Frequency:</strong> Frequent. The transition away from Bitcoin still requires impairment and restructuring-like noise as ASICs are displaced, even if these items should normalize over time. <span class="source-badge">SEC</span></p>
+    <p><strong>Revenue Recognition Signals:</strong> IREN is shifting from recognizing block rewards to a mix that includes amortization of $1.9B in prepayments and AI-cloud revenue recognition. Deferred revenue and prepayment recognition will remain critical watch-points. <span class="source-badge">SEC</span></p>
+    <p><strong>Accrual Quality:</strong> Persistent net income versus OCF distortions are a red flag in isolation, but here they are tied to complex derivative accounting and capital-structure mechanics rather than a clean case of pulling revenue forward. <span class="source-badge">SEC</span></p>
+    <p><strong>Audit and Disclosure Flags:</strong> No current material weakness was reported as of June 30, 2025, but the company also disclosed that a prior material weakness identified in the amended FY24 annual report was remediated as of June 30, 2025. <span class="source-badge">SEC</span></p>
+    <p><strong>Insider Signals in Context:</strong> A cluster of insider sales occurred in September 2025. While optics are poor, the report only supports the price range and the existence of tactical trimming; exact share counts are not reproduced in the supplied packet here. <span class="source-badge">SEC</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p><strong>Overall Accounting Confidence:</strong> <span class="neutral">Caution Warranted.</span> The core cash economics may be attractive, but the dense layer of non-cash derivative accounting still creates headline volatility and a high risk of superficial misreads. <span class="source-badge">SEC</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Management Credibility</div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="circle-grade">B-</div>
+        <div style="font-size:13px;">
+          Financing execution improved, prior control weakness was remediated, and disclosure is detailed. The penalty is complexity, dilution sensitivity, and heavy reliance on management-estimated project economics. <span class="source-badge">SEC</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cash Conversion Quality</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <div class="card-label">Q2 FY26</div>
+          <div class="card-value mono">$71.6M</div>
+          <div class="card-label">OCF vs <span class="mono">-$155.4M</span> net loss <span class="source-badge">SEC</span></div>
+        </div>
+        <div>
+          <div class="card-label">1H FY26</div>
+          <div class="card-value mono">$214.0M</div>
+          <div class="card-label">OCF vs <span class="mono">$229.2M</span> net income <span class="source-badge">SEC</span></div>
+        </div>
+      </div>
+      <div class="note">1H OCF / net income = 0.93x. <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Non-Cash Hit</div>
+      <div class="card-value mono negative">$251.0M</div>
+      <div class="card-label">$219.2M derivative and inducement items + $31.8M impairments <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px;">
+    <div class="card">
+      <div class="card-title">Bullish Signals</div>
+      <ul class="signal-list">
+        <li>Positive operating cash flow in both Q1 and Q2 FY26 despite noisy accounting. <span class="source-badge">SEC</span></li>
+        <li>Prior material weakness disclosed as remediated by June 30, 2025. <span class="source-badge">SEC</span></li>
+        <li>Large deferred revenue and customer prepayments support visibility. <span class="source-badge">SEC</span></li>
+        <li>Detailed disclosures separate unrealized financial-instrument effects from operating trends. <span class="source-badge">SEC</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Caution / Watch Items</div>
+      <ul class="signal-list">
+        <li>Q2 FY26 basic EPS was -$0.52, and GAAP optics remain unstable. <span class="source-badge">SEC</span></li>
+        <li>$219.2M of non-cash losses and inducement expense overwhelmed headline earnings. <span class="source-badge">SEC</span></li>
+        <li>ASIC displacement produced $31.8M of Q2 impairment and $48.0M for 1H FY26. <span class="source-badge">SEC</span></li>
+        <li>Insider-sale specifics require direct Form 4 support before stronger conclusions are drawn. <span class="source-badge unverified">UNVERIFIED</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">7. Forward Model &amp; Valuation Bridge</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><em>Model basis note:</em> All estimates are calendar-year alignments layered on top of the company’s fiscal structure.</p>
+    <p>The forward model can still be useful, but its basis needs to be described accurately. The 2026E, 2027E, and 2028E revenue figures are analyst assumptions. Management’s February 5, 2026 disclosure was for end-CY26 ARR and annualized run-rate revenue, not a formal guided recognized-revenue forecast for CY2027 or CY2028. The $3.40B revenue figure is therefore assumed and only partially anchored to management’s ARR target. <span class="source-badge">SEC</span></p>
+    <p>Management’s guidance-versus-consensus comparison also has to be narrowed. I can support management’s $3.4B ARR target by end-CY26 and the March 4 update to more than $3.7B annualized run-rate revenue tied to 150,000 GPUs, but any sell-side comparison requires a dated consensus source. The earlier ~$2.8B street figure is not verified in the supplied materials. <span class="source-badge">SEC</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p>The valuation bridge arithmetic is correct if the assumed 2027E EPS and FCF are accepted. The P/E bridge is $2.50 multiplied by 25x, which equals $62.50. The FCF-yield bridge implies $850M divided by 4.0%, or $21.25B of equity value, which is about $64.05 per share using 331.76M shares. Because EPS and FCF are assumed, those targets are assumption-driven rather than validated by management guidance or accessible consensus. Current-price framing should be explicitly dated to the March 7-8, 2026 range of roughly $36.7 to $36.8. <span class="source-badge">Calc</span> <span class="source-badge">SEC</span> <span class="source-badge">Yahoo</span> <span class="source-badge">Finance</span></p>
+    <p><strong>Narrative:</strong> The model still argues that the stock is being priced with a heavy execution and dilution discount. The revised version simply removes the false certainty around recognized-revenue guidance and around the claim that management has completely eliminated the need for equity capital. <span class="source-badge">SEC</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="num">2026E</th>
+          <th class="num">2027E</th>
+          <th class="num">2028E</th>
+          <th>Basis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Revenue</td><td class="num">$1.45B</td><td class="num">$3.40B</td><td class="num">$4.25B</td><td>Assumed / partially anchored to management ARR target, not guided recognized revenue <span class="source-badge">SEC</span></td></tr>
+        <tr><td>Gross Margin</td><td class="num">62.0%</td><td class="num">75.0%</td><td class="num">76.0%</td><td>Assumed mix shift toward AI Cloud</td></tr>
+        <tr><td>Operating Margin</td><td class="num">15.0%</td><td class="num">40.0%</td><td class="num">42.0%</td><td>Assumed operating leverage on owned facilities</td></tr>
+        <tr><td>EPS</td><td class="num">$0.75</td><td class="num">$2.50</td><td class="num">$3.35</td><td>Assumed; linked to management-estimated project economics</td></tr>
+        <tr><td>Free Cash Flow</td><td class="num negative">-$650M</td><td class="num positive">$850M</td><td class="num positive">$1.20B</td><td>Assumed capex harvest profile</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap" style="margin-top:18px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th>Metric</th>
+          <th class="num">Management Guidance</th>
+          <th class="num">Sell-Side Consensus</th>
+          <th class="num">Delta</th>
+          <th>Interpretation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FY27 framing</td>
+          <td>ARR / Rev</td>
+          <td class="num">$3.4B ARR target by end-CY26 <span class="source-badge">SEC</span></td>
+          <td class="num"><span class="source-badge unverified">UNVERIFIED</span></td>
+          <td class="num"><span class="source-badge unverified">UNVERIFIED</span></td>
+          <td>Any sell-side comparison requires a dated consensus source.</td>
+        </tr>
+        <tr>
+          <td>End-CY26 update</td>
+          <td>AI Cloud run-rate</td>
+          <td class="num">&gt;$3.7B annualized run-rate revenue <span class="source-badge">SEC</span></td>
+          <td class="num"><span class="source-badge unverified">UNVERIFIED</span></td>
+          <td class="num"><span class="source-badge unverified">UNVERIFIED</span></td>
+          <td>March 4 release raises the operating backdrop beyond the February 5 target.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap" style="margin-top:18px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Forecast Year</th>
+          <th class="num">Metric</th>
+          <th class="num">Multiple / Yield</th>
+          <th class="num">Implied Target</th>
+          <th class="num">Current Price</th>
+          <th class="num">Upside</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>P/E</td>
+          <td>2027E</td>
+          <td class="num">$2.50 EPS <span class="source-badge">Calc</span></td>
+          <td class="num">25x</td>
+          <td class="num positive">$62.50</td>
+          <td class="num">$36.78 <span class="source-badge">Yahoo</span></td>
+          <td class="num positive">+69.9% <span class="source-badge">Calc</span></td>
+        </tr>
+        <tr>
+          <td>FCF Yield</td>
+          <td>2027E</td>
+          <td class="num">$850M FCF <span class="source-badge">Calc</span></td>
+          <td class="num">4.0%</td>
+          <td class="num positive">$64.05</td>
+          <td class="num">$36.78 <span class="source-badge">Finance</span></td>
+          <td class="num positive">+74.1% <span class="source-badge">Calc</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px;">
+    <div class="chart-container"><canvas id="peBridgeChart"></canvas></div>
+    <div class="chart-container"><canvas id="fcfBridgeChart"></canvas></div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">8. Key Ratios &amp; Comparisons</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Relative valuation should be framed with discipline because most peer and historical-average fields in the original report were not directly sourced. The current, source-supported picture is that IREN screens optically expensive on trailing metrics, especially EV/EBITDA, but that says as much about transition accounting and depressed current earnings power as it does about terminal value. Unsupported PEG, 5-year company averages, peer averages, and forward EV/EBITDA should be removed or explicitly flagged unsupported. <span class="source-badge">Finnhub</span> <span class="source-badge">SEC</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p><strong>Synthesis:</strong> IREN’s relative-valuation posture is best summarized as expensive on trailing screens, assumption-driven on forward screens, and highly sensitive to whether the AI-cloud ramp lands on schedule. The single most important ratio to watch remains debt/equity because it captures how much balance-sheet risk is being layered on to reach the AI-cloud opportunity. <span class="source-badge">Finnhub</span> <span class="source-badge">SEC</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="num">Current Value</th>
+          <th class="num">5-yr Average</th>
+          <th class="num">Peer / Sector Average</th>
+          <th>Interpretation / Flag</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>P/E (TTM)</td><td class="num">34.9x <span class="source-badge">Finnhub</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Current value supported; average comps removed.</td></tr>
+        <tr><td>EV/Revenue (TTM)</td><td class="num">16.96x <span class="source-badge">Finnhub</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">High on legacy revenue base.</td></tr>
+        <tr><td>EV/EBITDA (TTM)</td><td class="num">492.6x <span class="source-badge">Finnhub</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">Trailing metric is distorted but still extreme.</td></tr>
+        <tr><td>P/S (TTM)</td><td class="num">16.19x <span class="source-badge">Finnhub</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">Expensive on current reported sales.</td></tr>
+        <tr><td>P/B</td><td class="num">4.85x <span class="source-badge">Finnhub</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Source-supported current multiple.</td></tr>
+        <tr><td>Debt / Equity</td><td class="num">1.53x <span class="source-badge">Finnhub</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">Most important leverage watch-point.</td></tr>
+        <tr><td>Current Ratio</td><td class="num">4.96x quarterly / 4.29x annual <span class="source-badge">SEC</span> <span class="source-badge">Finnhub</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="num"><span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Liquidity is stronger than the stale annual snapshot implied.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="note">Peer names referenced in the original report: CoreWeave (private proxy), TeraWulf (WULF), and Core Scientific (CORZ). Peer averages themselves are not reproduced because the supplied packet does not source them. <span class="source-badge unverified">UNVERIFIED</span></p>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">9. Additional Key Factors</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Insider &amp; Institutional Ownership:</strong> Institutions held about 41.0% and insiders about 3.0% based on the latest ownership data provided, but the “smart money validation” language should be removed because it is editorial rather than evidentiary. <span class="source-badge">Pipeline</span></p>
+    <p><strong>Short Interest:</strong> Short interest remains elevated at 13.1% of the float, or 41.9M shares. This supports the battleground-stock framing and preserves squeeze potential if execution lands. <span class="source-badge">Pipeline</span></p>
+    <p><strong>Liquidity:</strong> Beta is 4.37, reinforcing that this is a hyper-volatile asset. Average daily volume is described as robust, but the supplied packet does not provide a specific ADV figure. <span class="source-badge">Pipeline</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p><strong>Beta and Macro Exposure:</strong> IREN is less purely a Bitcoin miner than before, but it is not correct to say it is no longer a Bitcoin proxy at all. The March 4, 2026 ATM prospectus still lists Bitcoin-price volatility as a factor that can materially influence the stock. <span class="source-badge">SEC</span></p>
+    <p><strong>Earnings Surprise History:</strong> Recent history is dominated by optical headline noise. The 23% sequential revenue decline is real, but the earlier claim that Q2 FY26 “missed estimates” was not supported by a sourced consensus figure. <span class="source-badge">SEC</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2">
+    <div class="chart-container"><canvas id="ownershipChart"></canvas></div>
+    <div class="card">
+      <div class="card-title">Insider Activity</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Action</th>
+              <th class="num">Shares</th>
+              <th class="num">Price Range</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Daniel Roberts</td><td>Co-Chief Executive Officer</td><td>Sell</td><td class="num">N/A <span class="source-badge unverified">UNVERIFIED</span></td><td class="num">$23-$33 <span class="source-badge">SEC</span></td></tr>
+            <tr><td>William Roberts</td><td>Co-Chief Executive Officer</td><td>Sell</td><td class="num">N/A <span class="source-badge unverified">UNVERIFIED</span></td><td class="num">$23-$33 <span class="source-badge">SEC</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">The revised report supports the existence, timing, and price range of tactical trimming, but not exact share counts in the supplied packet. <span class="source-badge">SEC</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:18px;">
+    <div class="card">
+      <div class="card-title">Short Interest</div>
+      <div class="card-value mono">13.1%</div>
+      <div class="card-label">41.9M shares short <span class="source-badge">Pipeline</span></div>
+      <p style="margin-top:10px;font-size:13px;">Days-to-cover was not provided in the packet. <span class="source-badge unverified">UNVERIFIED</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Trading Liquidity</div>
+      <div class="card-value mono">4.37</div>
+      <div class="card-label">Beta <span class="source-badge">Pipeline</span></div>
+      <p style="margin-top:10px;font-size:13px;">ADV was described as robust but not numerically disclosed; institutional ownership: 41.0%, insiders: 3.0%. <span class="source-badge">Pipeline</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Sentiment Summary</div>
+      <div class="card-value mono">$39-$125</div>
+      <div class="card-label">Published target range with average around $79.46 <span class="source-badge">Yahoo</span></div>
+      <p style="margin-top:10px;font-size:13px;">Recent move centered on the 23% sequential revenue decline, the AI pivot, and the expanded ATM overhang. <span class="source-badge">SEC</span></p>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">10. Scenario Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The scenario framework can stay, but every probability, target price, and bridge assumption should be understood as an analyst scenario rather than company guidance. The operating backdrop also needs to reflect the March 4 disclosure of 150,000 GPUs and more than $3.7B of AI-cloud annualized run-rate potential by end-2026. <span class="source-badge">SEC</span> <span class="source-badge">Nasdaq</span> <span class="source-badge assumed">Assumed</span></p>
+    <p><strong>Bull case narrative:</strong> IREN executes cleanly, energizes the power pipeline without material grid delays, reaches the revised 150,000-GPU fleet objective, and the market values it as a scaled AI-infrastructure platform. Valuation bridge: 2027E EPS of $2.50 times a 30x multiple equals $75.00. Leading indicator: deployment cadence and GPU installation milestones consistently exceed plan. <span class="source-badge">Calc</span> <span class="source-badge assumed">Assumed</span></p>
+    <p><strong>Base case narrative:</strong> The Microsoft deal executes, but broader supply-chain and commissioning constraints push the revenue inflection later than bulls expect. Valuation bridge: 2027E EPS of $2.00 times a 25x multiple equals $50.00. Leading indicator: modest capex and schedule revisions during subsequent quarterly calls. <span class="source-badge">Calc</span> <span class="source-badge assumed">Assumed</span></p>
+    <p><strong>Bear case narrative:</strong> Deal economics underwhelm, grid and supply-chain bottlenecks delay energization, and dilution risk rises as the company taps equity more aggressively. Valuation bridge: book-value style downside around $15.00. Leading indicator: ATM usage for operating funding rather than opportunistic balance-sheet management. <span class="source-badge assumed">Assumed</span></p>
+    <p><strong>Probability-weighted expected value:</strong> $61.50. The math is correct even though the probabilities and targets are assumptions. <span class="source-badge">Calc</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-3">
+    <div class="card scenario-card bull">
+      <div class="card-title">Bull Case</div>
+      <div class="card-value positive mono">60%</div>
+      <div class="card-label">Target price: $75.00 | +103.9% <span class="source-badge">Calc</span></div>
+      <p style="margin-top:10px;font-size:13px;">Assumptions: clean execution, 150,000 GPUs by end-2026, AI-cloud run-rate scales into the March 4 backdrop. <span class="source-badge">SEC</span> <span class="source-badge assumed">Assumed</span></p>
+      <p style="font-size:13px;"><strong>Bridge:</strong> $2.50 EPS × 30x = $75.00 <span class="source-badge">Calc</span></p>
+      <p style="font-size:13px;"><strong>Leading indicator:</strong> GPU deployment cadence consistently ahead of plan.</p>
+    </div>
+    <div class="card scenario-card base">
+      <div class="card-title">Base Case</div>
+      <div class="card-value neutral mono">30%</div>
+      <div class="card-label">Target price: $50.00 | +35.9% <span class="source-badge">Calc</span></div>
+      <p style="margin-top:10px;font-size:13px;">Assumptions: supply-chain lag delays target timing by roughly two quarters and the multiple compresses modestly. <span class="source-badge assumed">Assumed</span></p>
+      <p style="font-size:13px;"><strong>Bridge:</strong> $2.00 EPS × 25x = $50.00 <span class="source-badge">Calc</span></p>
+      <p style="font-size:13px;"><strong>Leading indicator:</strong> Capex guidance revisions during Q3/Q4 earnings calls.</p>
+    </div>
+    <div class="card scenario-card bear">
+      <div class="card-title">Bear Case</div>
+      <div class="card-value negative mono">10%</div>
+      <div class="card-label">Target price: $15.00 | -59.2% <span class="source-badge">Calc</span></div>
+      <p style="margin-top:10px;font-size:13px;">Assumptions: deal economics disappoint, cash burn persists, and the ATM becomes a heavier funding source. <span class="source-badge assumed">Assumed</span></p>
+      <p style="font-size:13px;"><strong>Bridge:</strong> Downside toward hard book-value framing around $15.00.</p>
+      <p style="font-size:13px;"><strong>Leading indicator:</strong> ATM activation for operating funding.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px;">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div class="card-value mono positive">$61.50</div>
+    <div class="card-label">($75.00 × 60%) + ($50.00 × 30%) + ($15.00 × 10%) <span class="source-badge">Calc</span></div>
+    <div class="prob-bar-container">
+      <div class="prob-segment" style="width:60%;background:rgba(76,175,80,0.22);color:var(--green);">Bull</div>
+      <div class="prob-segment" style="width:30%;background:rgba(212,168,67,0.28);color:var(--gold);">Base</div>
+      <div class="prob-segment" style="width:10%;background:rgba(231,76,60,0.22);color:var(--red);">Bear</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:13px;">
+      <div>0.60 × $75.00 = <strong class="mono">$45.00</strong></div>
+      <div>0.30 × $50.00 = <strong class="mono">$15.00</strong></div>
+      <div>0.10 × $15.00 = <strong class="mono">$1.50</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">11. Risks &amp; Opportunities</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Top 3 Risks:</strong></p>
+    <ul>
+      <li><strong>Execution and Commissioning Delays (Severity: High | Likelihood: Medium):</strong> If substations or transmission lines face supply-chain bottlenecks, fixed financing costs and depreciation will hit before AI revenues scale. <span class="source-badge">SEC</span></li>
+      <li><strong>Dilutive Trapdoor (Severity: High | Likelihood: Medium):</strong> This risk had to be upgraded from the original report’s softer framing because the company expanded ATM capacity to $6.0B on March 4, 2026 and explicitly said additional capital sources would help fund incremental capex. <span class="source-badge">SEC</span></li>
+      <li><strong>Customer Concentration (Severity: High | Likelihood: Medium):</strong> The near-term AI thesis is still heavily concentrated in Microsoft. Any pullback, schedule slippage, or repricing pressure would have an outsized impact. <span class="source-badge">SEC</span></li>
+    </ul>
+    <p><strong>Top 3 Opportunities:</strong></p>
+    <ul>
+      <li><strong>Incremental monetization of secured power capacity (Magnitude: High | Likelihood: Medium):</strong> Management emphasized that the February 2026 $3.4B ARR target used only around 10% of the more than 4.5 GW secured power portfolio, leaving additional capacity available for future deployments if customer demand and capital remain supportive. <span class="source-badge">SEC</span></li>
+      <li><strong>AI Margin Expansion (Magnitude: High | Likelihood: High):</strong> If management’s project-margin framing proves directionally right, owned shells and power access could support very high incremental economics. <span class="source-badge">Earnings Call</span></li>
+      <li><strong>Data Center Refinancing (Magnitude: Medium | Likelihood: High):</strong> Once energized assets are stabilized, refinancing could recycle capital into the next wave of capacity additions. <span class="source-badge">SEC</span></li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Risk Matrix</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Risk</th><th class="num">Severity</th><th class="num">Likelihood</th></tr></thead>
+          <tbody>
+            <tr><td>Execution and commissioning delays</td><td class="num negative">High</td><td class="num neutral">Medium</td></tr>
+            <tr><td>Dilutive trapdoor / ATM usage</td><td class="num negative">High</td><td class="num neutral">Medium</td></tr>
+            <tr><td>Customer concentration in Microsoft</td><td class="num negative">High</td><td class="num neutral">Medium</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Opportunity Matrix</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Opportunity</th><th class="num">Magnitude</th><th class="num">Likelihood</th></tr></thead>
+          <tbody>
+            <tr><td>Monetize remaining secured power capacity</td><td class="num positive">High</td><td class="num neutral">Medium</td></tr>
+            <tr><td>AI margin expansion</td><td class="num positive">High</td><td class="num positive">High</td></tr>
+            <tr><td>Data-center refinancing</td><td class="num neutral">Medium</td><td class="num positive">High</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">12. Thesis Kill Criteria &amp; Catalyst Timeline</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>What would change my mind — Bullish thesis invalidated if:</strong></p>
+    <ul>
+      <li>Monthly GPU deployment cadence structurally falls below the required run rate needed to hit the end-of-2026 targets. Thresholds like the earlier “~50 MW/month” should be treated as analyst assumptions, not company guidance. <span class="source-badge">Calc</span> <span class="source-badge assumed">Assumed</span></li>
+      <li>ERCOT or other regulatory bottlenecks freeze key project timelines despite management’s current sequencing assumptions. <span class="source-badge assumed">Assumed</span></li>
+      <li>The company issues more equity through the ATM at a pace that signals operational funding stress. The earlier “&gt;$150M in a quarter” threshold is an analyst watch-item, not company guidance. <span class="source-badge">Calc</span> <span class="source-badge assumed">Assumed</span></li>
+    </ul>
+    <p><strong>What would change my mind — Bearish thesis invalidated if:</strong></p>
+    <ul>
+      <li>IREN reports its first quarter of structurally positive free cash flow driven by AI Cloud revenues. <span class="source-badge assumed">Assumed</span></li>
+      <li>The $6.0B ATM facility is closed or materially downsized, signaling higher confidence in non-equity funding. <span class="source-badge">SEC</span></li>
+    </ul>
+    <p><strong>Upcoming Catalyst Timeline:</strong> Q3 FY26 results are likely around mid-May 2026 based on historical cadence, but were not yet officially scheduled in the reviewed materials. The Oklahoma site is in development, with power ramp scheduled from 2028, and no sourced June 2026 groundbreaking date was found. Based on prior years, late August 2026 is a better estimate than September for the FY26 annual report. <span class="source-badge">IR</span> <span class="source-badge">SEC</span></p>
+    <p><strong>Data as of:</strong> March 8, 2026. Forward thresholds remain analyst assumptions rather than sourced company guidance. <span class="source-badge assumed">Assumed</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="card">
+    <div class="card-title">Catalyst Timeline</div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:var(--green);"></div>
+      <div class="timeline-content">
+        <div class="timeline-date">Mid-May 2026 (estimated)</div>
+        <div class="timeline-event"><strong>Q3 FY26 Results</strong> | First hard read on Microsoft revenue scaling into reported numbers</div>
+        <div class="timeline-impact">Impact: High | Favors: <span class="positive">Bull</span> if AI Cloud ramps cleanly. <span class="source-badge">IR</span></div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:#7f8c8d;"></div>
+      <div class="timeline-content">
+        <div class="timeline-date">2026-2028 development window</div>
+        <div class="timeline-event"><strong>Oklahoma Site Development</strong> | Site is in development; power ramp is scheduled from 2028</div>
+        <div class="timeline-impact">Impact: Medium | Favors: <span class="muted">Neutral</span> until specific milestones are sourced. <span class="source-badge">SEC</span></div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:var(--red);"></div>
+      <div class="timeline-content">
+        <div class="timeline-date">Ongoing</div>
+        <div class="timeline-event"><strong>ATM Usage / Capital Raises</strong> | Watch for pace of equity issuance after the March 4, 2026 $6.0B filing</div>
+        <div class="timeline-impact">Impact: High | Favors: <span class="negative">Bear</span> if used for operational funding. <span class="source-badge">SEC</span></div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-bottom:none;">
+      <div class="timeline-dot" style="background:#7f8c8d;"></div>
+      <div class="timeline-content">
+        <div class="timeline-date">Late August 2026 (estimated)</div>
+        <div class="timeline-event"><strong>FY26 Annual Report</strong> | Full-year accounting cleanup and updated capital-structure detail</div>
+        <div class="timeline-impact">Impact: Medium | Favors: <span class="muted">Neutral</span>. <span class="source-badge">IR</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--red);">Bullish Thesis Invalidated If</div>
+      <div class="kill-item"><div class="kill-check"></div><div>Deployment cadence falls materially below the required pace to reach end-2026 GPU targets. <span class="source-badge assumed">Assumed</span></div></div>
+      <div class="kill-item"><div class="kill-check"></div><div>Project delays structurally freeze Sweetwater or other key buildouts. <span class="source-badge assumed">Assumed</span></div></div>
+      <div class="kill-item"><div class="kill-check"></div><div>Equity issuance ramps in a way that implies the business is financing operations rather than opportunistic balance-sheet management. <span class="source-badge">SEC</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--green);">Bearish Thesis Invalidated If</div>
+      <div class="kill-item"><div class="kill-check"></div><div>IREN posts its first structurally positive AI-Cloud-driven free-cash-flow quarter. <span class="source-badge assumed">Assumed</span></div></div>
+      <div class="kill-item"><div class="kill-check"></div><div>The $6.0B ATM is closed or meaningfully reduced. <span class="source-badge">SEC</span></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">Revisions</h2>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="grid grid-4">
+      <div>
+        <div class="card-title">Verdict</div>
+        <div class="card-value negative">Major Revisions</div>
+      </div>
+      <div>
+        <div class="card-title">Total Corrections</div>
+        <div class="card-value mono">16</div>
+      </div>
+      <div>
+        <div class="card-title">Original Confidence</div>
+        <div class="card-value neutral">Low</div>
+      </div>
+      <div>
+        <div class="card-title">Overall Note</div>
+        <div style="font-size:13px;color:var(--muted);">Broad strategy right, several factual anchors stale or overstated.</div>
+      </div>
+    </div>
+    <p class="note">The supplied revision summary states 16 total corrections, while the detailed table below enumerates every listed revision item from the packet. This tab reproduces the full supplied revision table rather than compressing it. <span class="source-badge">SEC</span> <span class="source-badge">GlobeNewswire</span></p>
+  </div>
+
+  <div class="grid" style="gap:14px;">
+    <div class="revision-card">
+      <div class="rev-section">1. Executive Summary</div>
+      <div class="rev-type">Unsupported Claim / Stale Data</div>
+      <div class="rev-original">“Generational Strategic Pivot” and “CapEx Risk Neutralized” framed the transition as fully funded and broadly de-risked.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Strategic pivot is anchored by the $9.7B Microsoft contract, but funding is improved, not fully de-risked; the 95% coverage claim is limited to GPU-related capex for Horizons 1-4, and the March 4, 2026 $6.0B ATM plus extra capex for 50k+ GPUs keeps dilution risk alive. <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> Company disclosures are conditional and narrower than the original language suggested.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">1. Executive Summary / 2. Current Narrative &amp; Sentiment</div>
+      <div class="rev-type">Stale Data</div>
+      <div class="rev-original">Management target described as 140,000 GPUs and $3.4B ARR by end-2026.</div>
+      <div class="rev-revised"><strong>Revised:</strong> February 5 reiterated 140,000 GPUs and $3.4B ARR, but March 4 expanded the plan to 150,000 GPUs and over $3.7B AI-cloud annualized run-rate revenue by end-2026. <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> The March 4 release is in-sample for a March 8 report and materially changes the narrative.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">1. Executive Summary</div>
+      <div class="rev-type">Unsupported Claim</div>
+      <div class="rev-original">The market was said to be “completely ignoring” 85% locked-in project EBITDA margins and the “elimination” of dilution risk.</div>
+      <div class="rev-revised"><strong>Revised:</strong> The market is weighing AI-cloud upside against execution, capital intensity, and dilution risk; the ~85% project EBITDA margin is management-estimated and dilution risk remains live. <span class="source-badge">Earnings Call</span> <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> Neither the margin nor the dilution conclusion was supportable as stated.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">2. Current Narrative &amp; Sentiment</div>
+      <div class="rev-type">Missing Source / Stale Data</div>
+      <div class="rev-original">Q2 FY26 was described as a 23% sequential revenue drop that “missed estimates.”</div>
+      <div class="rev-revised"><strong>Revised:</strong> Revenue was $184.7M, down 23% sequentially from $240.3M, but the “missed estimates” statement was removed because no sourced consensus was provided. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+      <div class="rev-why"><strong>Why:</strong> The revenue decline is real; the estimate-miss claim was unsupported.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">2. Current Narrative &amp; Sentiment</div>
+      <div class="rev-type">Stale Data / Missing Source</div>
+      <div class="rev-original">Price targets were presented as $15 to $80, and the financing was said to remove the ATM overhang.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Published target range updated to roughly $39 to $125 with an average around $79.46, and the March 4 ATM filing is correctly described as expanding the overhang to $6.0B. <span class="source-badge">Yahoo</span> <span class="source-badge">Analyst coverage</span> <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> The prior range was stale and the ATM framing was directionally wrong.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">2. Current Narrative &amp; Sentiment</div>
+      <div class="rev-type">Missing Source / Unsupported Claim</div>
+      <div class="rev-original">Jim Chanos was quoted as saying the deal generated mid-single-digit pre-tax returns below cost of capital.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Kept the broader Chanos critique, but flagged the exact return-math claim as unsupported without a direct source. <span class="source-badge">News/X</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+      <div class="rev-why"><strong>Why:</strong> The broader criticism was verifiable; the specific return claim was not.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">3. Fundamental Analysis</div>
+      <div class="rev-type">Unsupported Claim / Internal Inconsistency</div>
+      <div class="rev-original">Management was described as having funded 95% of “the buildout” through prepayments and cheap debt rather than dilutive equity.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Narrowed the 95% claim to GPU-related capex for Horizons 1-4 tied to Microsoft and acknowledged December 2025 equity issuance plus prior ATM usage. <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> The original language generalized a contract-specific funding point into a whole-company funding conclusion.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">4. Balance Sheet Deep Dive</div>
+      <div class="rev-type">Stale Data / Numerical Error</div>
+      <div class="rev-original">Balance-sheet analysis used June 30, 2025 figures: $2.9B assets, current ratio 4.29, and $560M+ cash.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Latest filed numbers are $7.03B assets, $4.52B liabilities, $2.51B equity, $3.26B cash, and a 4.96x current ratio as of December 31, 2025. Convertible notes payable were already $3.685B. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+      <div class="rev-why"><strong>Why:</strong> The original report materially understated balance-sheet scale and leverage.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">5. Cash Flow Analysis</div>
+      <div class="rev-type">Numerical Error / Stale Data</div>
+      <div class="rev-original">FY25 FCF was labeled as current TTM FCF, and Q2 FY26 was said to show $229.2M of net income.</div>
+      <div class="rev-revised"><strong>Revised:</strong> FY25 FCF of -$327.6M is a fiscal-year figure, not current TTM; Q2 FY26 actually showed a net loss of $155.4M, operating loss of $116.4M, and OCF of $71.6M, while $229.2M net income refers to the six-month period. <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> The quarter-versus-six-month mix-up materially distorted cash-flow interpretation.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">6. Earnings Quality &amp; Accounting Red Flags</div>
+      <div class="rev-type">Numerical Error / Missing Nuance</div>
+      <div class="rev-original">Q2 FY26 non-cash items were cited as $219.4M and controls were described as having no material weaknesses flagged.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Tightened the figure to $219.2M and added that a prior material weakness from the amended FY24 report was remediated as of June 30, 2025. <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> The original statement missed important controls history.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">7. Forward Model &amp; Valuation Bridge</div>
+      <div class="rev-type">Internal Inconsistency / Missing Source</div>
+      <div class="rev-original">Revenue basis was labeled as “Guided ($3.4B ARR exit rate for ’26).”</div>
+      <div class="rev-revised"><strong>Revised:</strong> Basis changed to “Assumed / partially anchored to management ARR target, not guided recognized revenue.” <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> ARR exit rate is not the same thing as recognized revenue guidance.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">7. Forward Model &amp; Valuation Bridge</div>
+      <div class="rev-type">Missing Source</div>
+      <div class="rev-original">Sell-side consensus was presented as roughly $2.8B with a +$600M delta.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Consensus and delta were flagged unverified because the supplied packet did not support them. <span class="source-badge unverified">UNVERIFIED</span></div>
+      <div class="rev-why"><strong>Why:</strong> Only management’s own target could be verified.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">7. Forward Model &amp; Valuation Bridge</div>
+      <div class="rev-type">Missing Source / Internal Inconsistency</div>
+      <div class="rev-original">Valuation bridge targets were presented with too much certainty and a loosely dated current price.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Kept the bridge math, but explicitly dated the roughly $36.7-$36.8 current price and labeled target prices assumption-driven because EPS and FCF inputs are analyst assumptions. <span class="source-badge">Calc</span> <span class="source-badge">Yahoo</span> <span class="source-badge">Finance</span></div>
+      <div class="rev-why"><strong>Why:</strong> The arithmetic works; the forecast inputs still need humility.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">8. Key Ratios &amp; Comparisons</div>
+      <div class="rev-type">Missing Source / Unsupported Claim</div>
+      <div class="rev-original">PEG, 5-year averages, peer averages, and forward EV/EBITDA were presented without dated sourcing.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Kept only source-supported current metrics such as P/E, EV/Revenue, EV/EBITDA, P/S, P/B, Debt/Equity, and Current Ratio; removed or flagged unsupported comparison fields. <span class="source-badge">Finnhub</span> <span class="source-badge">SEC</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+      <div class="rev-why"><strong>Why:</strong> Comparison scaffolding was not traceable to the packet.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">9. Additional Key Factors</div>
+      <div class="rev-type">Unsupported Claim / Stale Data</div>
+      <div class="rev-original">Institutional ownership was framed as “smart money validation,” and IREN was said to be no longer a Bitcoin proxy.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Kept the 41.0% institutional and 3.0% insider ownership figures but removed the editorial “smart money” conclusion; softened the macro claim to “less purely” a Bitcoin miner because the March 4 ATM filing still cites Bitcoin-price volatility as a stock risk. <span class="source-badge">Pipeline</span> <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> Ownership data was fine; the conclusions were overstated.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">10. Scenario Analysis</div>
+      <div class="rev-type">Missing Source</div>
+      <div class="rev-original">Probabilities, targets, and assumptions were stated too factually and still used the 140,000-GPU backdrop.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Scenario probabilities and targets were retained as analyst assumptions and the backdrop was updated to 150,000 GPUs and &gt;$3.7B run-rate potential. The $61.50 expected value math remains correct. <span class="source-badge">SEC</span> <span class="source-badge">Nasdaq</span> <span class="source-badge">Calc</span></div>
+      <div class="rev-why"><strong>Why:</strong> The framework is valid, but it needed explicit assumption labeling and a current operating backdrop.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">11. Risks &amp; Opportunities</div>
+      <div class="rev-type">Unsupported Claim</div>
+      <div class="rev-original">A “Geopolitical Safe Haven Premium” was listed as a major opportunity.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Replaced with the more grounded opportunity of monetizing the portion of the 4.5+ GW secured power portfolio not embedded in the February 2026 ARR target. <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> The geopolitical-premium claim was speculative and not directly supported.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">12. Thesis Kill Criteria &amp; Catalyst Timeline</div>
+      <div class="rev-type">Missing Source / Stale Data</div>
+      <div class="rev-original">Kill thresholds like “~50 MW/month” and “&gt;$150M ATM in a quarter” were presented without assumption labeling, and the catalyst timeline included a June 2026 Oklahoma groundbreaking.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Analyst thresholds were labeled assumed; Q3 FY26 results shifted to likely mid-May 2026, Oklahoma was reframed as in development with power ramp from 2028, and the FY26 annual report timing moved toward late August. <span class="source-badge">Calc</span> <span class="source-badge">IR</span> <span class="source-badge">SEC</span></div>
+      <div class="rev-why"><strong>Why:</strong> The earlier dates and thresholds were too specific for the source set.</div>
+    </div>
+
+    <div class="revision-card">
+      <div class="rev-section">Throughout</div>
+      <div class="rev-type">Missing Source</div>
+      <div class="rev-original">Multiple factual claims across the report lacked source tags.</div>
+      <div class="rev-revised"><strong>Revised:</strong> Added explicit provenance tags across the dashboard, using SEC, Finnhub, Yahoo, Earnings Call, Calc, IR, Pipeline, News/X, and UNVERIFIED labels where appropriate.</div>
+      <div class="rev-why"><strong>Why:</strong> The original report did not consistently meet the required sourcing standard.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const tabContents = document.querySelectorAll('.tab-content');
+const tabBtns = document.querySelectorAll('.tab-btn');
+
+function switchTab(idx) {
+  tabContents.forEach((el) => el.classList.remove('active'));
+  tabBtns.forEach((el) => el.classList.remove('active'));
+  if (tabContents[idx]) tabContents[idx].classList.add('active');
+  if (tabBtns[idx]) tabBtns[idx].classList.add('active');
+  setTimeout(initCharts, 60);
+}
+
+const COLORS = {
+  gold: '#d4a843',
+  cream: '#e8e0d0',
+  muted: '#8a8a7a',
+  green: '#4caf50',
+  red: '#e74c3c',
+  yellow: '#f1c40f',
+  blue: '#5dade2',
+  border: 'rgba(42,42,42,0.6)',
+  card: '#141414'
+};
+
+const revenueEpsData = {
+  labels: ['Q1 FY26', 'Q2 FY26', '1H FY26', '2026E', '2027E', '2028E'],
+  revenueActual: [240.3, 184.7, 425.0, null, null, null],
+  revenueForecast: [null, null, null, 1450.0, 3400.0, 4250.0],
+  eps: [null, -0.52, 0.81, 0.75, 2.50, 3.35]
+};
+
+const marginTrendData = {
+  labels: ['FY25', '2026E', '2027E', '2028E'],
+  gross: [null, 62.0, 75.0, 76.0],
+  operating: [null, 15.0, 40.0, 42.0],
+  fcf: [-65.4, -44.8, 25.0, 28.2]
+};
+
+const fcfTrendData = {
+  labels: ['Q1 FY26', 'Q2 FY26', '1H FY26'],
+  ocf: [142.4, 71.6, 214.0],
+  capex: [-280.6, -826.7, -1107.3],
+  fcf: [-138.2, -755.1, -893.3]
+};
+
+const fcfMarginData = {
+  labels: ['FY25', 'Q1 FY26', 'Q2 FY26', '1H FY26', '2026E', '2027E', '2028E'],
+  values: [-65.4, -57.5, -408.8, -210.2, -44.8, 25.0, 28.2]
+};
+
+const valuationBridge = {
+  pe: [36.78, 25.72, 62.50],
+  fcf: [36.78, 27.27, 64.05]
+};
+
+const capitalAllocationData = {
+  labels: ['Buybacks', 'Dividends', 'CapEx', 'M&A', 'Retained'],
+  values: [0, 0, 1107.3, 0, 0]
+};
+
+const ownershipData = {
+  labels: ['Institutions 41.0%', 'Insiders 3.0%', 'Short Interest 13.1%', 'Other Float 42.9%'],
+  values: [41.0, 3.0, 13.1, 42.9]
+};
+
+Chart.defaults.color = COLORS.muted;
+Chart.defaults.borderColor = COLORS.border;
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
+
+const chartInstances = {};
+
+function initCharts() {
+  if (!chartInstances.revenueEps) {
+    const el = document.getElementById('revenueEpsChart');
+    if (el) {
+      chartInstances.revenueEps = new Chart(el, {
+        data: {
+          labels: revenueEpsData.labels,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Revenue Actual ($M)',
+              data: revenueEpsData.revenueActual,
+              backgroundColor: 'rgba(212,168,67,0.55)',
+              borderColor: COLORS.gold,
+              borderWidth: 1,
+              yAxisID: 'y'
+            },
+            {
+              type: 'bar',
+              label: 'Revenue Forecast ($M)',
+              data: revenueEpsData.revenueForecast,
+              backgroundColor: 'rgba(212,168,67,0.18)',
+              borderColor: COLORS.gold,
+              borderWidth: 1,
+              yAxisID: 'y'
+            },
+            {
+              type: 'line',
+              label: 'EPS',
+              data: revenueEpsData.eps,
+              borderColor: COLORS.green,
+              backgroundColor: 'transparent',
+              pointBackgroundColor: COLORS.green,
+              pointRadius: 4,
+              tension: 0.3,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { labels: { usePointStyle: true, padding: 14 } } },
+          scales: {
+            y: { title: { display: true, text: 'Revenue ($M)' } },
+            y1: { position: 'right', title: { display: true, text: 'EPS' }, grid: { display: false } }
+          }
+        }
+      });
+    }
+  }
+
+  if (!chartInstances.margin) {
+    const el = document.getElementById('marginChart');
+    if (el) {
+      chartInstances.margin = new Chart(el, {
+        type: 'line',
+        data: {
+          labels: marginTrendData.labels,
+          datasets: [
+            { label: 'Gross Margin %', data: marginTrendData.gross, borderColor: COLORS.gold, pointRadius: 4, tension: 0.3 },
+            { label: 'Operating Margin %', data: marginTrendData.operating, borderColor: COLORS.green, pointRadius: 4, tension: 0.3 },
+            { label: 'FCF Margin %', data: marginTrendData.fcf, borderColor: COLORS.blue, pointRadius: 4, tension: 0.3, borderDash: [5, 4] }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { usePointStyle: true, padding: 14 } } },
+          scales: { y: { title: { display: true, text: 'Margin (%)' } } }
+        }
+      });
+    }
+  }
+
+  if (!chartInstances.fcfTrend) {
+    const el = document.getElementById('fcfTrendChart');
+    if (el) {
+      chartInstances.fcfTrend = new Chart(el, {
+        data: {
+          labels: fcfTrendData.labels,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'OCF ($M)',
+              data: fcfTrendData.ocf,
+              backgroundColor: 'rgba(76,175,80,0.40)',
+              borderColor: COLORS.green,
+              borderWidth: 1,
+              stack: 'cash'
+            },
+            {
+              type: 'bar',
+              label: 'CapEx / Intangibles ($M)',
+              data: fcfTrendData.capex,
+              backgroundColor: 'rgba(231,76,60,0.40)',
+              borderColor: COLORS.red,
+              borderWidth: 1,
+              stack: 'cash'
+            },
+            {
+              type: 'line',
+              label: 'FCF ($M)',
+              data: fcfTrendData.fcf,
+              borderColor: COLORS.gold,
+              pointBackgroundColor: COLORS.gold,
+              pointRadius: 4,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { usePointStyle: true, padding: 14 } } },
+          scales: {
+            x: { stacked: true },
+            y: { title: { display: true, text: '$M' } }
+          }
+        }
+      });
+    }
+  }
+
+  if (!chartInstances.fcfMargin) {
+    const el = document.getElementById('fcfMarginChart');
+    if (el) {
+      chartInstances.fcfMargin = new Chart(el, {
+        type: 'line',
+        data: {
+          labels: fcfMarginData.labels,
+          datasets: [{
+            label: 'FCF Margin %',
+            data: fcfMarginData.values,
+            borderColor: COLORS.gold,
+            backgroundColor: 'rgba(212,168,67,0.10)',
+            fill: true,
+            pointRadius: 4,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { title: { display: true, text: 'FCF Margin (%)' } } }
+        }
+      });
+    }
+  }
+
+  if (!chartInstances.capAlloc) {
+    const el = document.getElementById('capitalAllocationChart');
+    if (el) {
+      chartInstances.capAlloc = new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: capitalAllocationData.labels,
+          datasets: [{
+            data: capitalAllocationData.values,
+            backgroundColor: [COLORS.muted, COLORS.yellow, COLORS.blue, COLORS.red, COLORS.green],
+            borderColor: COLORS.card,
+            borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { usePointStyle: true, padding: 12 } },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}M` } }
+          }
+        }
+      });
+    }
+  }
+
+  if (!chartInstances.peBridge) {
+    const el = document.getElementById('peBridgeChart');
+    if (el) {
+      chartInstances.peBridge = new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: ['Current', 'Upside', 'Target'],
+          datasets: [{
+            data: valuationBridge.pe,
+            backgroundColor: [COLORS.muted, 'rgba(76,175,80,0.40)', COLORS.gold],
+            borderColor: [COLORS.muted, COLORS.green, COLORS.gold],
+            borderWidth: 1
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+    }
+  }
+
+  if (!chartInstances.fcfBridge) {
+    const el = document.getElementById('fcfBridgeChart');
+    if (el) {
+      chartInstances.fcfBridge = new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: ['Current', 'Upside', 'Target'],
+          datasets: [{
+            data: valuationBridge.fcf,
+            backgroundColor: [COLORS.muted, 'rgba(93,173,226,0.40)', COLORS.blue],
+            borderColor: [COLORS.muted, COLORS.blue, COLORS.blue],
+            borderWidth: 1
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+    }
+  }
+
+  if (!chartInstances.ownership) {
+    const el = document.getElementById('ownershipChart');
+    if (el) {
+      chartInstances.ownership = new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: ownershipData.labels,
+          datasets: [{
+            data: ownershipData.values,
+            backgroundColor: [COLORS.gold, COLORS.green, COLORS.red, COLORS.blue],
+            borderColor: COLORS.card,
+            borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { usePointStyle: true, padding: 12 } } }
+        }
+      });
+    }
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(initCharts, 120);
+});
+</script>
+</body>
+</html>
