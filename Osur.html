@@ -88,9 +88,6 @@ a { color: var(--blue); }
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
 }
 .tab-btn:hover { color: var(--gold); background: rgba(212, 168, 67, 0.06); }
 .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(212, 168, 67, 0.08); }
@@ -101,30 +98,6 @@ a { color: var(--blue); }
   padding: 26px 30px 44px;
 }
 .tab-content.active { display: block; }
-body:has(.tab-content:target) .tab-content.active { display: none; }
-.tab-content:target { display: block; }
-body:has(.tab-content:target) .tab-btn.active {
-  color: var(--muted);
-  border-bottom-color: transparent;
-  background: transparent;
-}
-body:has(#tab-0:target) .tab-btn[href="#tab-0"],
-body:has(#tab-1:target) .tab-btn[href="#tab-1"],
-body:has(#tab-2:target) .tab-btn[href="#tab-2"],
-body:has(#tab-3:target) .tab-btn[href="#tab-3"],
-body:has(#tab-4:target) .tab-btn[href="#tab-4"],
-body:has(#tab-5:target) .tab-btn[href="#tab-5"],
-body:has(#tab-6:target) .tab-btn[href="#tab-6"],
-body:has(#tab-7:target) .tab-btn[href="#tab-7"],
-body:has(#tab-8:target) .tab-btn[href="#tab-8"],
-body:has(#tab-9:target) .tab-btn[href="#tab-9"],
-body:has(#tab-10:target) .tab-btn[href="#tab-10"],
-body:has(#tab-11:target) .tab-btn[href="#tab-11"],
-body:has(#tab-12:target) .tab-btn[href="#tab-12"] {
-  color: var(--gold);
-  border-bottom-color: var(--gold);
-  background: rgba(212, 168, 67, 0.08);
-}
 .section-header {
   font-size: 1.28rem;
   color: var(--gold);
@@ -526,22 +499,22 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
 </header>
 
 <div class="tab-bar">
-  <a class="tab-btn active" href="#tab-0" data-tab-index="0">1. Executive</a>
-  <a class="tab-btn" href="#tab-1" data-tab-index="1">2. Narrative</a>
-  <a class="tab-btn" href="#tab-2" data-tab-index="2">3. Fundamentals</a>
-  <a class="tab-btn" href="#tab-3" data-tab-index="3">4. Balance Sheet</a>
-  <a class="tab-btn" href="#tab-4" data-tab-index="4">5. Cash Flow</a>
-  <a class="tab-btn" href="#tab-5" data-tab-index="5">6. Earnings Quality</a>
-  <a class="tab-btn" href="#tab-6" data-tab-index="6">7. Forward Model</a>
-  <a class="tab-btn" href="#tab-7" data-tab-index="7">8. Key Ratios</a>
-  <a class="tab-btn" href="#tab-8" data-tab-index="8">9. Ownership</a>
-  <a class="tab-btn" href="#tab-9" data-tab-index="9">10. Scenarios</a>
-  <a class="tab-btn" href="#tab-10" data-tab-index="10">11. Risks</a>
-  <a class="tab-btn" href="#tab-11" data-tab-index="11">12. Catalysts</a>
-  <a class="tab-btn" href="#tab-12" data-tab-index="12">Revisions</a>
+  <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+  <button class="tab-btn" onclick="switchTab(1)">2. Narrative</button>
+  <button class="tab-btn" onclick="switchTab(2)">3. Fundamentals</button>
+  <button class="tab-btn" onclick="switchTab(3)">4. Balance Sheet</button>
+  <button class="tab-btn" onclick="switchTab(4)">5. Cash Flow</button>
+  <button class="tab-btn" onclick="switchTab(5)">6. Earnings Quality</button>
+  <button class="tab-btn" onclick="switchTab(6)">7. Forward Model</button>
+  <button class="tab-btn" onclick="switchTab(7)">8. Key Ratios</button>
+  <button class="tab-btn" onclick="switchTab(8)">9. Ownership</button>
+  <button class="tab-btn" onclick="switchTab(9)">10. Scenarios</button>
+  <button class="tab-btn" onclick="switchTab(10)">11. Risks</button>
+  <button class="tab-btn" onclick="switchTab(11)">12. Catalysts</button>
+  <button class="tab-btn" onclick="switchTab(12)">Revisions</button>
 </div>
 
-<div class="tab-content active" id="tab-0">
+<div class="tab-content active">
   <h2 class="section-header">Executive Summary</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -621,7 +594,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-1">
+<div class="tab-content">
   <h2 class="section-header">Current Narrative &amp; Sentiment</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -652,7 +625,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-2">
+<div class="tab-content">
   <h2 class="section-header">Fundamental Analysis</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -745,7 +718,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-3">
+<div class="tab-content">
   <h2 class="section-header">Balance Sheet Deep Dive</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -795,7 +768,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-4">
+<div class="tab-content">
   <h2 class="section-header">Cash Flow Analysis</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -824,7 +797,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-5">
+<div class="tab-content">
   <h2 class="section-header">Earnings Quality &amp; Accounting Red Flags</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -890,7 +863,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-6">
+<div class="tab-content">
   <h2 class="section-header">Forward Model &amp; Valuation Bridge</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -1059,7 +1032,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-7">
+<div class="tab-content">
   <h2 class="section-header">Key Ratios &amp; Comparisons</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -1122,7 +1095,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-8">
+<div class="tab-content">
   <h2 class="section-header">Additional Key Factors</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -1211,7 +1184,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-9">
+<div class="tab-content">
   <h2 class="section-header">Scenario Analysis</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -1296,7 +1269,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-10">
+<div class="tab-content">
   <h2 class="section-header">Risks &amp; Opportunities</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -1361,7 +1334,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-11">
+<div class="tab-content">
   <h2 class="section-header">Thesis Kill Criteria &amp; Catalyst Timeline</h2>
   <div class="analysis-prose">
     <div class="analysis-label">Full Analysis</div>
@@ -1452,7 +1425,7 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
   </div>
 </div>
 
-<div class="tab-content" id="tab-12">
+<div class="tab-content">
   <h2 class="section-header">Revision Summary</h2>
   <div class="grid grid-3" style="margin-bottom:18px;">
     <div class="card">
@@ -1490,41 +1463,13 @@ tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
 const tabContents = document.querySelectorAll('.tab-content');
 const tabBtns = document.querySelectorAll('.tab-btn');
 
-function setActiveTab(idx) {
+function switchTab(idx) {
   tabContents.forEach((el) => el.classList.remove('active'));
   tabBtns.forEach((el) => el.classList.remove('active'));
   if (tabContents[idx]) tabContents[idx].classList.add('active');
   if (tabBtns[idx]) tabBtns[idx].classList.add('active');
   setTimeout(() => initCharts(idx), 50);
 }
-
-function switchTab(idx) {
-  setActiveTab(idx);
-  if (window.location.hash !== `#tab-${idx}`) {
-    window.location.hash = `tab-${idx}`;
-  }
-}
-
-window.switchTab = switchTab;
-
-tabBtns.forEach((btn, idx) => {
-  btn.addEventListener('click', (event) => {
-    event.preventDefault();
-    switchTab(idx);
-  });
-});
-
-function getTabIndexFromHash(hash) {
-  const match = /^#tab-(\d+)$/.exec(hash || '');
-  if (!match) return null;
-  const idx = Number(match[1]);
-  return Number.isInteger(idx) && idx >= 0 && idx < tabContents.length ? idx : null;
-}
-
-window.addEventListener('hashchange', () => {
-  const idx = getTabIndexFromHash(window.location.hash);
-  if (idx !== null) setActiveTab(idx);
-});
 
 const COLORS = {
   gold: '#d4a843',
@@ -1988,12 +1933,7 @@ function renderRevisions() {
 }
 
 renderRevisions();
-const initialTabIdx = getTabIndexFromHash(window.location.hash);
-if (initialTabIdx !== null) {
-  setActiveTab(initialTabIdx);
-} else {
-  setActiveTab(0);
-}
+setTimeout(() => initCharts(0), 100);
 </script>
 </body>
 </html>
