@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$PLUG - Plug Power Inc. | Equity Research Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;
+  --card-bg:#141414;
+  --border:#2a2a2a;
+  --gold:#d4a843;
+  --text:#e8e0d0;
+  --muted:#8a8a7a;
+  --green:#4caf50;
+  --red:#e74c3c;
+  --yellow:#f1c40f;
+  --blue:#5dade2;
+  --radius:12px;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --mono:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6}
+h1,h2,h3,h4{color:var(--gold)}
+a{color:var(--gold)}
+.header{background:var(--card-bg);border-bottom:1px solid var(--border);padding:20px 28px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.header-left h1{font-size:1.5rem;font-weight:700}
+.subtitle{font-size:.88rem;color:var(--muted);margin-top:4px}
+.header-right{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:12px;min-width:min(100%,560px)}
+.header-badge{background:#111;border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.header-badge .lbl{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.header-badge .val{font-size:1.06rem;font-weight:700;font-family:var(--mono);margin-top:4px}
+.tab-bar{display:flex;overflow-x:auto;background:#111;border-bottom:1px solid var(--border);scrollbar-width:thin}
+.tab-btn{border:none;background:transparent;color:var(--muted);padding:10px 12px;font-size:12px;white-space:nowrap;cursor:pointer;border-bottom:2px solid transparent;transition:.2s}
+.tab-btn:hover{color:var(--gold);background:#171717}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);background:#1a1a14;font-weight:700}
+.tab-content{display:none;max-width:1440px;margin:0 auto;padding:28px 28px 48px}
+.tab-content.active{display:block}
+.section-header{font-size:1.28rem;font-weight:700;margin-bottom:18px}
+.analysis-prose{background:#101010;border:1px solid #1c1c1c;border-radius:12px;padding:22px 24px;font-size:.95rem;color:#ddd6c7}
+.analysis-prose p{margin-bottom:14px}
+.analysis-prose ul{margin:10px 0 14px 20px}
+.analysis-prose li{margin-bottom:8px}
+.analysis-prose table{margin-top:14px}
+.analysis-label{display:inline-block;background:var(--gold);color:#0a0a0a;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px}
+.section-divider{border:none;border-top:1px solid var(--border);margin:28px 0}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:18px}
+.card-title{color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:10px}
+.card-value{font-size:1.75rem;font-weight:700;font-family:var(--mono)}
+.card-label{font-size:12px;color:var(--muted);margin-top:5px}
+.grid-2,.grid-3,.grid-4{display:grid;gap:18px}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.metric-strip{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.metric-item{flex:1 1 135px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:14px}
+.metric-item .card-value{font-size:1.15rem}
+.thesis-box{background:rgba(212,168,67,.07);border:1px solid rgba(212,168,67,.34);border-radius:12px;padding:22px 24px;margin-bottom:18px}
+.scenario-card{background:var(--card-bg);border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:12px;padding:20px 22px}
+.scenario-card.bull{border-left-color:var(--green)}
+.scenario-card.base{border-left-color:var(--gold)}
+.scenario-card.bear{border-left-color:var(--red)}
+.timeline-item{display:flex;gap:16px;align-items:flex-start;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.timeline-dot{width:14px;height:14px;border-radius:999px;flex-shrink:0;margin-top:6px}
+.timeline-dot.red{background:var(--red)}
+.timeline-dot.green{background:var(--green)}
+.timeline-dot.grey{background:#777}
+.kill-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.checkbox{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:3px}
+.revision-card{background:rgba(231,76,60,.06);border:1px solid rgba(231,76,60,.22);border-radius:12px;padding:20px 22px}
+.revision-card + .revision-card{margin-top:16px}
+.rev-section{font-size:14px;font-weight:700;color:var(--gold)}
+.rev-type{display:inline-block;background:var(--red);color:#fff;border-radius:4px;padding:3px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin:8px 0 10px}
+.rev-original{background:rgba(255,255,255,.03);border-radius:8px;padding:10px 12px;color:var(--muted);text-decoration:line-through;font-size:13px}
+.rev-revised{background:rgba(76,175,80,.06);border-radius:8px;padding:10px 12px;color:var(--green);font-size:13px;margin-top:10px}
+.rev-why{font-size:12px;color:var(--muted);margin-top:10px}
+.source-badge{display:inline-block;background:var(--gold);color:#0a0a0a;border-radius:4px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:.05em;vertical-align:middle;margin:0 2px}
+.source-badge.unverified{background:var(--red);color:#fff}
+.badge{display:inline-block;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;border:1px solid transparent}
+.badge-green{color:var(--green);border-color:rgba(76,175,80,.35);background:rgba(76,175,80,.10)}
+.badge-red{color:var(--red);border-color:rgba(231,76,60,.35);background:rgba(231,76,60,.10)}
+.badge-yellow{color:var(--yellow);border-color:rgba(241,196,15,.35);background:rgba(241,196,15,.10)}
+.badge-blue{color:var(--blue);border-color:rgba(93,173,226,.35);background:rgba(93,173,226,.10)}
+.badge-gold{color:var(--gold);border-color:rgba(212,168,67,.35);background:rgba(212,168,67,.10)}
+.positive{color:var(--green)}
+.negative{color:var(--red)}
+.neutral{color:var(--yellow)}
+.info{color:var(--blue)}
+.mono{font-family:var(--mono)}
+.num{text-align:right;font-family:var(--mono)}
+.chart-box{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px}
+.chart-box canvas{max-height:330px}
+.prob-bar-container{display:flex;height:28px;border-radius:999px;overflow:hidden;background:#0f0f0f;border:1px solid var(--border);margin-top:12px}
+.prob-seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#0a0a0a}
+.legend-row{display:flex;flex-wrap:wrap;gap:10px}
+.two-col-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.signal-list div{margin-bottom:8px;font-size:13px}
+.grade-wrap{display:flex;align-items:center;gap:16px}
+.grade-circle{width:70px;height:70px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;font-family:var(--mono);border:2px solid var(--yellow);color:var(--yellow);background:rgba(241,196,15,.08)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:rgba(212,168,67,.14);color:var(--gold);padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+.mini-note{font-size:11px;color:var(--muted);margin-top:8px}
+.footer-note{font-size:12px;color:var(--muted);margin-top:14px}
+@media (max-width: 980px){
+  .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid-3{grid-template-columns:1fr}
+  .grid-2,.two-col-list{grid-template-columns:1fr}
+  .header-right{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0;width:100%}
+}
+@media (max-width: 768px){
+  .tab-content{padding:18px 16px 32px}
+  .header{padding:18px 16px}
+  .tab-btn{font-size:11px;padding:9px 10px}
+  .metric-strip{flex-direction:column}
+  .grid-4{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>$PLUG - Plug Power Inc.</h1>
+    <div class="subtitle">Interactive Equity Research Dashboard | Data as of March 15, 2026 | Revised presentation of the supplied report</div>
+    <div class="legend-row" style="margin-top:10px">
+      <span class="badge badge-blue">USA Equity</span>
+      <span class="badge badge-gold">Latest Trade: Friday, March 13, 17:15:00 PDT <span class="source-badge">Finnhub</span></span>
+      <span class="badge badge-yellow">Expected Move: -2% to 0% <span class="source-badge">Calc</span> <span class="source-badge">Finnhub</span></span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-badge"><div class="lbl">Current Price</div><div class="val">$2.15</div></div>
+    <div class="header-badge"><div class="lbl">Daily Change</div><div class="val negative">-$0.05 (-2.27%)</div></div>
+    <div class="header-badge"><div class="lbl">Market Cap</div><div class="val">$2.69B</div></div>
+    <div class="header-badge"><div class="lbl">Target Price</div><div class="val">$2.15</div></div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+  <button class="tab-btn" onclick="switchTab(1)">2. Narrative</button>
+  <button class="tab-btn" onclick="switchTab(2)">3. Fundamentals</button>
+  <button class="tab-btn" onclick="switchTab(3)">4. Balance Sheet</button>
+  <button class="tab-btn" onclick="switchTab(4)">5. Cash Flow</button>
+  <button class="tab-btn" onclick="switchTab(5)">6. Earnings Quality</button>
+  <button class="tab-btn" onclick="switchTab(6)">7. Forward Model</button>
+  <button class="tab-btn" onclick="switchTab(7)">8. Key Ratios</button>
+  <button class="tab-btn" onclick="switchTab(8)">9. Ownership</button>
+  <button class="tab-btn" onclick="switchTab(9)">10. Scenarios</button>
+  <button class="tab-btn" onclick="switchTab(10)">11. Risks</button>
+  <button class="tab-btn" onclick="switchTab(11)">12. Catalysts</button>
+  <button class="tab-btn" onclick="switchTab(12)">Revisions</button>
+</div>
+
+<div class="tab-content active">
+  <h2 class="section-header">1. Executive Summary</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <ul>
+      <li><strong>PLUG is improving operationally, but it is still not financially de-risked.</strong> Q4 2025 delivered <strong>$225.2M revenue (+17.6% YoY)</strong> and the company’s <strong>first positive quarterly gross margin (2.4%)</strong>, which matters because it shows the turnaround is not purely narrative anymore. <span class="source-badge">SEC</span></li>
+      <li><strong>Liquidity remains the central debate.</strong> Plug ended 2025 with <strong>$368.5M unrestricted cash</strong>, burned <strong>$535.8M of operating cash</strong> during the year, and is relying on <strong>more than $275M of planned asset monetizations</strong> to bridge 2026. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></li>
+      <li><strong>Management’s 2026 guide is directionally positive but still loose.</strong> New CEO Jose Luis Crespo guided to <strong>2026 revenue growth “directionally comparable” to 2025</strong>, while reiterating targets of <strong>positive EBITDAS in Q4 2026</strong>, <strong>positive operating income by end-2027</strong>, and <strong>full profitability by end-2028</strong>. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></li>
+      <li><strong>The stock is now a high-beta turnaround/speculation vehicle, not a clean fundamental compounder.</strong> Short interest remains extremely high at <strong>23.6% of float</strong> based on the short-interest data you supplied, so swing setups can be violent both ways. <span class="source-badge">Calc</span></li>
+      <li><strong>Consensus is cautious, not enthusiastic.</strong> Street ratings cluster around Hold/Neutral, with average price targets around <strong>$2.738-$2.89</strong>, and recent changes have mostly been trims or downgrades rather than broad upgrades. <span class="source-badge">Yahoo</span></li>
+    </ul>
+    <p><strong>Conviction:</strong> <strong>Medium</strong> for swing | <strong>Low</strong> for position</p>
+    <p><strong>Quick rating:</strong> <strong>Hold</strong>. <strong>Expected move: roughly -2% to 0% over 12 months</strong>, based on the Section 7 bridge range of about <strong>$2.10-$2.15/share</strong> versus a current price of about <strong>$2.15</strong>. <span class="source-badge">Calc</span> <span class="source-badge">Finnhub</span></p>
+    <p><strong>Most important thing to know right now:</strong> Plug finally showed a real margin inflection, but until asset sales close and cash burn falls sharply, equity upside remains capped by financing risk. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="thesis-box">
+    <div class="card-title">Investment Thesis</div>
+    <p style="margin-bottom:10px"><strong>Margin inflection is real:</strong> Q4 2025 revenue reached <span class="mono">$225.2M</span> and gross margin flipped positive to <span class="mono">2.4%</span>. <span class="source-badge">SEC</span></p>
+    <p style="margin-bottom:10px"><strong>Liquidity is still the gate:</strong> unrestricted cash ended 2025 at <span class="mono">$368.5M</span> versus <span class="mono">$535.8M</span> of annual operating-cash burn, so the <span class="mono">&gt;$275M</span> monetization program matters immediately. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></p>
+    <p style="margin-bottom:10px"><strong>Turnaround milestones exist but are long-dated:</strong> positive EBITDAS in Q4 2026, positive operating income by end-2027, and full profitability by end-2028. <span class="source-badge">SEC</span></p>
+    <p><strong>Base-case upside is capped:</strong> the Section 7 bridge supports only about <span class="mono">$2.10-$2.15/share</span> against a <span class="mono">$2.15</span> current price. <span class="source-badge">Calc</span> <span class="source-badge">Finnhub</span></p>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+    <span class="badge badge-yellow">Rating: Hold</span>
+    <span class="badge badge-yellow">Conviction: Medium Swing</span>
+    <span class="badge badge-red">Conviction: Low Position</span>
+    <span class="badge badge-blue">Expected Value: $2.20/share</span>
+  </div>
+
+  <div class="metric-strip">
+    <div class="metric-item"><div class="card-label">Current Price</div><div class="card-value">$2.15</div></div>
+    <div class="metric-item"><div class="card-label">Market Cap</div><div class="card-value">$2.69B</div></div>
+    <div class="metric-item"><div class="card-label">P/E (TTM)</div><div class="card-value">N/M</div></div>
+    <div class="metric-item"><div class="card-label">P/E (Forward)</div><div class="card-value">N/M</div></div>
+    <div class="metric-item"><div class="card-label">EV/EBITDA</div><div class="card-value">N/M</div></div>
+    <div class="metric-item"><div class="card-label">FCF Yield</div><div class="card-value negative">-24%</div></div>
+    <div class="metric-item"><div class="card-label">Dividend Yield</div><div class="card-value">0.00%</div></div>
+    <div class="metric-item"><div class="card-label">Target Price</div><div class="card-value">$2.15</div></div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Thesis Pillar 1</div>
+      <p>Operational progress is now visible: revenue recovered to <span class="mono">$710M</span> in FY2025 and Q4 gross margin turned positive. <span class="source-badge">SEC</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Thesis Pillar 2</div>
+      <p>The valuation case still runs through financing risk because burn remains heavy relative to unrestricted liquidity. <span class="source-badge">SEC</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Thesis Pillar 3</div>
+      <p>Consensus is cautious and short interest is elevated, so PLUG behaves more like a high-beta turnaround trade than a de-risked compounder. <span class="source-badge">Yahoo</span> <span class="source-badge">Calc</span></p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:8px">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div class="grid-4" style="margin-bottom:8px">
+      <div><strong class="positive">Bull</strong><div class="mono">25% x $3.50 = $0.875</div></div>
+      <div><strong class="neutral">Base</strong><div class="mono">50% x $2.15 = $1.075</div></div>
+      <div><strong class="negative">Bear</strong><div class="mono">25% x $1.00 = $0.250</div></div>
+      <div><strong class="info">Total</strong><div class="mono">$2.20/share</div></div>
+    </div>
+    <div class="prob-bar-container">
+      <div class="prob-seg" style="width:25%;background:var(--green)">Bull 25%</div>
+      <div class="prob-seg" style="width:50%;background:var(--gold)">Base 50%</div>
+      <div class="prob-seg" style="width:25%;background:var(--red)">Bear 25%</div>
+    </div>
+    <div class="footer-note">Targets: Bull <span class="mono">$3.50</span> | Base <span class="mono">$2.15</span> | Bear <span class="mono">$1.00</span> <span class="source-badge">Calc</span></div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">2. Current Narrative &amp; Sentiment</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The current PLUG narrative has two competing halves. The bullish side says the company finally proved its model can generate positive gross margin, installed a more operational CEO, cut cash burn, and opened a potentially interesting AI/data-center power angle. The bearish side says none of that matters unless Plug can survive long enough without another painful dilution cycle. Both sides have evidence. Plug’s March 2 release showed <strong>Q4 revenue of $225.2M</strong>, <strong>full-year 2025 revenue of about $710M</strong>, <strong>Q4 gross margin of 2.4%</strong>, and a much smaller cash burn than 2024. Management also reiterated a multi-year profitability path and said 2026 revenue growth should be roughly in line with 2025’s pace. However, the report should explicitly note that the supplied quarterly pipeline table does <strong>not</strong> reconcile cleanly to the FY2025 total, so readers understand there is a source-reconciliation issue rather than a settled single dataset. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+    <p>On the sell-side, sentiment is cautious. One public analyst snapshot shows <strong>17 analysts</strong> with <strong>5 Sell / 8 Hold / 2 Buy / 2 Strong Buy</strong> and an average target of <strong>$2.89</strong>. Another public snapshot shows a <strong>Neutral</strong> stance with an average 12-month target of about <strong>$2.738</strong> and a target range of about <strong>$0.75 to $7.00</strong>. The exact public buy/hold/sell breakout in that second snapshot should be treated as <strong>[UNVERIFIED]</strong> because the visible analyst-count breakdown is internally inconsistent. Recent calls skew mixed-to-negative: <strong>BMO cut to $1 Underperform</strong>, <strong>Jefferies cut to $1.80 Hold</strong>, <strong>TD Cowen downgraded to Hold</strong>, while <strong>Wells Fargo raised to $2</strong> and <strong>HC Wainwright stayed bullish at $7</strong>. <span class="source-badge">Yahoo</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p>Consensus numbers are modestly constructive on revenue but still skeptical on earnings. Public estimate snapshots point to roughly <strong>$803M FY2026 revenue</strong> and <strong>about -$0.30 to -$0.31 FY2026 EPS</strong>. Revision direction is mixed, with public estimate trackers showing <strong>more downward than upward EPS revisions over the last 90 days</strong>. <span class="source-badge">Yahoo</span></p>
+    <p><strong>Contrarian signal check:</strong> the strongest differentiated bear argument is not “hydrogen is dead”; it is that Plug may be entering a <strong>survival phase disguised as a turnaround</strong>. The core logic is that positive Q4 gross margin and the new-CEO reset are real, but the abandoned New York/STAMP buildout, suspended DOE-loan path, and dependence on asset monetization imply the company is prioritizing liquidity preservation over growth execution. That argument is stronger than generic anti-hydrogen skepticism because it is grounded in Plug’s announced February 26, 2026 Stream Data Centers agreement, its <strong>$275M</strong> infrastructure-optimization/liquidity initiative, and management’s March 2, 2026 liquidity commentary. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Headline Numbers</div>
+      <div class="card-value">$225.2M</div>
+      <div class="card-label">Q4 revenue <span class="source-badge">SEC</span></div>
+      <div class="card-value positive" style="margin-top:12px">2.4%</div>
+      <div class="card-label">Q4 gross margin <span class="source-badge">SEC</span></div>
+      <div class="card-value" style="margin-top:12px">$710M</div>
+      <div class="card-label">FY2025 revenue with reconciliation caveat <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Market Sentiment</div>
+      <p><strong>Street posture:</strong> Hold / Neutral clustering.</p>
+      <p><strong>Target range:</strong> <span class="mono">$0.75-$7.00</span> with average targets around <span class="mono">$2.738-$2.89</span>. <span class="source-badge">Yahoo</span></p>
+      <p><strong>Recent calls:</strong> downgrades and trims dominate, offset by selective bullish outliers.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Bear Thesis Summary</div>
+      <p>The differentiated bear case is not anti-hydrogen ideology. It is the idea that PLUG is preserving liquidity before it proves durable profitability.</p>
+      <p style="margin-top:8px">Key pressure points: abandoned buildout, suspended DOE-loan path, and monetization dependence. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></p>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">3. Fundamental Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Plug Power is an integrated hydrogen platform company. It sells <strong>equipment and related infrastructure</strong>, provides <strong>service</strong> on deployed fuel-cell systems and infrastructure, and sells <strong>fuel</strong> to customers; it also participates in electrolyzer and hydrogen-production projects. End markets include material handling, industrial applications, and broader energy/power markets. Revenue is therefore a mix of product sales, service revenue, and hydrogen/fuel revenue rather than a clean recurring SaaS-like stream. Customer concentration remains material: a 10-K snippet indicates <strong>Walmart represented 24.2% of 2025 revenue</strong>. <span class="source-badge">SEC</span></p>
+    <p>Using the SEC-derived data you supplied, revenue moved from <strong>$502M in 2021</strong> to <strong>$710M in 2025</strong>, which is roughly a <strong>9% 4-year CAGR</strong>. That history is bumpier than the headline growth story implies: revenue peaked at <strong>$891M in 2023</strong>, fell to <strong>$629M in 2024</strong>, then partially recovered in 2025. EPS CAGR is not meaningful because earnings stayed deeply negative throughout the period. Forward estimates are better on sales than profit: public consensus snapshots point to roughly <strong>$803M revenue in 2026</strong> and around <strong>$967M in 2027</strong>, while EPS is still expected to remain negative through at least 2027. <span class="source-badge">SEC</span> <span class="source-badge">Yahoo</span></p>
+    <p>Profitability remains the core weakness. On trailing metrics, Plug’s <strong>gross margin is about -34%</strong>, <strong>operating margin about -211%</strong>, <strong>ROA about -51%</strong>, and <strong>ROE about -110%</strong>. Those are not “temporarily subscale” numbers; they are crisis-level industrial economics. The only reason the stock is still investable at all is that Q4 finally printed <strong>positive gross margin</strong>, and management’s cost program appears to be working at the unit level. <span class="source-badge">SEC</span></p>
+    <p>Moat quality is limited. Plug has some <strong>scale and installed-base advantages</strong> in material handling and a broader hydrogen stack than many small peers, but it lacks obvious pricing power and switching costs are moderate rather than high. The best near-term competitive asset is not a classic moat; it is customer familiarity plus existing site deployments with large users such as Amazon and Walmart, which may support refresh cycles and incremental site growth. <span class="source-badge">SEC</span></p>
+    <p>Management quality has been mixed historically and looks somewhat improved now. Jose Luis Crespo became CEO on <strong>March 2, 2026</strong> after more than a decade with Plug, replacing Andy Marsh as CEO while Marsh became executive chairman. The tone of recent communication is more operational and less promotional than before, but the track record still includes repeated missed profitability timelines, strategic resets, and heavy dilution. Insider alignment exists, but it is not overwhelming. Jose Luis Crespo did buy stock in December 2025 based on the insider data you supplied, which is constructive, but it does not erase the much larger capital-allocation record. <span class="source-badge">SEC</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">Revenue &amp; EPS</div>
+      <canvas id="chart-revenue-eps"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">Margin Trends</div>
+      <canvas id="chart-margin-trends"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Growth Rates Table</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th class="num">Revenue</th>
+          <th class="num">Growth %</th>
+          <th class="num">Gross Margin</th>
+          <th class="num">Operating Margin</th>
+          <th class="num">EPS</th>
+          <th class="num">FCF</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>2021A</td><td class="num">$502M</td><td class="num">-</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td></tr>
+        <tr><td>2023A</td><td class="num">$891M</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td class="num negative">-$1.8B</td></tr>
+        <tr><td>2024A</td><td class="num">$629M</td><td class="num negative">-29.4%</td><td class="num">N/A</td><td class="num">N/A</td><td class="num">N/A</td><td class="num negative">-$1.0B</td></tr>
+        <tr><td>2025A</td><td class="num">$710M</td><td class="num positive">+12.9%</td><td class="num negative">-34.1%</td><td class="num negative">-211.1%</td><td class="num">N/A</td><td class="num negative">-$647M</td></tr>
+        <tr><td>2026E</td><td class="num">$800M</td><td class="num positive">+12.7%</td><td class="num positive">1%</td><td class="num negative">-22%</td><td class="num negative">-$0.31</td><td class="num negative">-$275M</td></tr>
+        <tr><td>2027E</td><td class="num">$965M</td><td class="num positive">+20.6%</td><td class="num positive">9%</td><td class="num negative">-6%</td><td class="num negative">-$0.21</td><td class="num negative">-$50M</td></tr>
+        <tr><td>2028E</td><td class="num">$1.15B</td><td class="num positive">+19.2%</td><td class="num positive">16%</td><td class="num positive">3%</td><td class="num positive">$0.06</td><td class="num positive">$75M</td></tr>
+      </tbody>
+    </table>
+    <div class="mini-note">Historical values use only figures explicitly stated in the supplied report; growth and forward margin / FCF fields are derived where the report provides the inputs. <span class="source-badge">SEC</span> <span class="source-badge">Yahoo</span> <span class="source-badge">Calc</span></div>
+  </div>
+
+  <div class="grid-4">
+    <div class="card"><div class="card-title">Q4 Revenue</div><div class="card-value">$225.2M</div><div class="card-label"><span class="positive">+17.6% YoY</span> <span class="source-badge">SEC</span></div></div>
+    <div class="card"><div class="card-title">Q4 GAAP EPS</div><div class="card-value negative">-$0.63</div><div class="card-label">Adjusted EPS was -$0.06 <span class="source-badge">SEC</span></div></div>
+    <div class="card"><div class="card-title">Q4 Op. Margin Signal</div><div class="card-value neutral">Inflecting</div><div class="card-label">Positive gross margin is the key precursor <span class="source-badge">SEC</span></div></div>
+    <div class="card"><div class="card-title">Segment / Customer Note</div><div class="card-value info">24.2%</div><div class="card-label">Walmart share of 2025 revenue <span class="source-badge">SEC</span></div></div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">4. Balance Sheet Deep Dive</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Asset quality improved mechanically in 2025, but mostly because the company already recognized so much pain. At <strong>December 31, 2025</strong>, Plug had <strong>$2.59B of total assets</strong>, <strong>$1.00B of equity</strong>, <strong>$29.2M of net intangibles</strong>, and <strong>no reported goodwill</strong> on the year-end balance sheet. That means intangibles were only about <strong>1.1% of assets</strong> and <strong>2.9% of equity</strong> by year-end 2025. The catch is historical: the SEC-derived balance-sheet data you supplied shows goodwill of <strong>$248.6M in 2022</strong> and <strong>$0 by 2023</strong>, which implies a major goodwill impairment/write-down over the last three years. Q4 2025 also included roughly <strong>$763M of charges</strong>, predominantly non-cash impairments and capital-related charges. <span class="source-badge">SEC</span></p>
+    <p>Debt is manageable only if you define it narrowly. At year-end 2025, Plug showed about <strong>$431.0M of noncurrent convertible debt</strong>, <strong>$2.6M of current convertible debt</strong>, and minimal plain-vanilla long-term debt. But the broader financing stack is heavier: there were also <strong>$268.0M of finance obligations</strong>, <strong>$265.1M of operating lease liabilities</strong>, and <strong>$28.6M of finance lease liabilities</strong> on the balance sheet. In late 2025, Plug also issued <strong>$431.25M of 6.75% convertible senior notes due 2033</strong>. <span class="source-badge">SEC</span></p>
+    <p>The near-term maturity picture is still meaningful. Current liabilities included about <strong>$70.4M of current operating lease liabilities</strong>, <strong>$10.9M of current finance lease liabilities</strong>, <strong>$76.2M of current finance obligations</strong>, and small current debt/current convertible balances. Public disclosures around the Yorkville financing indicate significant scheduled payments were pushed out, but 2026-2027 still matter. The precise full debt ladder is not cleanly disclosed in the sources I reviewed, so I would not claim false precision beyond saying 2026 remains a material funding year while the big 6.75% converts do not mature until <strong>2033</strong>. <span class="source-badge">SEC</span></p>
+    <p>On covenant/credit risk, I did <strong>not</strong> find an S&amp;P or Moody’s issuer rating in the sources reviewed. That alone is informative: this is not a conventional investment-grade or even broadly rated industrial credit. Liquidity is the real credit metric. Plug ended 2025 with <strong>$368.5M unrestricted cash</strong>, <strong>$186.7M restricted current cash</strong>, and <strong>$438.7M restricted long-term cash</strong>. The company’s <strong>current ratio was about 2.31</strong> and <strong>quick ratio about 1.46</strong>. Using 2025 operating cash burn of <strong>$535.8M</strong>, unrestricted cash alone represented only about <strong>8 months of runway</strong> without the planned asset sales; on a free-cash-flow basis, runway is even shorter. <span class="source-badge">SEC</span></p>
+    <p>Off-balance-sheet and contingent items also matter. Plug had a small <strong>VIE exposure</strong> at year-end, with <strong>$51.8M of VIE assets</strong> and <strong>$1.3M of VIE liabilities</strong>, and it disclosed about <strong>$107.6M of unconditional purchase obligations</strong> extending from 2026 through 2028. <span class="source-badge">SEC</span></p>
+    <p><strong>Net-net assessment:</strong> <strong>Risk</strong>, not strength. The balance sheet is survivable if monetizations close and burn falls fast; otherwise it is still a financing problem.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Liquidity</div>
+      <div class="card-value">$368.5M</div>
+      <div class="card-label">Unrestricted cash</div>
+      <div class="card-value" style="font-size:1.2rem;margin-top:12px">2.31x</div>
+      <div class="card-label">Current ratio</div>
+      <div class="card-value" style="font-size:1.2rem;margin-top:12px">1.46x</div>
+      <div class="card-label">Quick ratio <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Leverage</div>
+      <div class="card-value">$2.59B</div>
+      <div class="card-label">Total assets</div>
+      <div class="card-value" style="font-size:1.2rem;margin-top:12px">$1.00B</div>
+      <div class="card-label">Equity</div>
+      <div class="card-value negative" style="font-size:1.2rem;margin-top:12px">~0.64-0.75x</div>
+      <div class="card-label">Debt / Equity range; interest coverage negative <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Asset Quality</div>
+      <div class="card-value">$0</div>
+      <div class="card-label">Reported goodwill at year-end 2025</div>
+      <div class="card-value" style="font-size:1.2rem;margin-top:12px">0.0%</div>
+      <div class="card-label">Goodwill / assets and goodwill / equity</div>
+      <div class="card-value negative" style="font-size:1.2rem;margin-top:12px">$763M</div>
+      <div class="card-label">Q4 2025 charges, mainly non-cash impairments <span class="source-badge">SEC</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">5. Cash Flow Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Cash flow is where the PLUG bear case keeps winning, even after the Q4 operational improvement. Using the SEC-derived figures you supplied, operating cash flow was roughly <strong>-$536M in 2025</strong>, <strong>-$729M in 2024</strong>, <strong>-$1.1B in 2023</strong>, and <strong>-$829M in 2022</strong>. Free cash flow was about <strong>-$647M in 2025</strong>, <strong>-$1.0B in 2024</strong>, and <strong>-$1.8B in 2023</strong>. That is improvement, but from a very bad starting point. On today’s roughly <strong>$2.69B market cap</strong>, 2025 FCF yield is approximately <strong>-24%</strong>, which tells you the equity is being valued on turnaround optionality, not cash generation. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+    <p>Capex intensity is finally moving the right way. Based on the data you provided, capex fell from <strong>$665M in 2023</strong> to <strong>$287M in 2024</strong> and <strong>$111M in 2025</strong>. That took capex as a percent of revenue from roughly <strong>75%</strong> in 2023 to <strong>46%</strong> in 2024 and <strong>16%</strong> in 2025. This matters because one of Plug’s clearest strategic pivots is from self-build hydrogen infrastructure toward a more asset-light, liquidity-preserving posture. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></p>
+    <p>Cash-flow quality is still weak. Over 2023-2025, cumulative net loss was far larger than cumulative operating cash burn, which partly reflects non-cash impairments but still shows how hard it is to convert “improving P&amp;L optics” into actual cash. Working capital remains a drag. Using year-end balances from the SEC data you supplied, approximate <strong>DSO</strong> improved materially to about <strong>69 days</strong> in 2025 from roughly <strong>90-100 days</strong> in 2023-2024, but <strong>inventory days</strong> remained extremely high at about <strong>200 days</strong>, and the cash conversion cycle still looks long at roughly <strong>200+ days</strong>. That is better than 2023, but it is still not healthy for an industrial turnaround. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></p>
+    <p>Capital allocation has been poor. Plug pays <strong>no dividend</strong> and has effectively <strong>no buyback support</strong>; dilution has been the dominant capital action. Shares outstanding rose sharply into early 2026, but the exact <strong>934M to 1.394B / +49%</strong> bridge should not be quoted without a primary-source share-count table or a clearly dated third-party share-stat source. <span class="source-badge unverified">UNVERIFIED</span> Debt management was tactical rather than value-creative: the company extended runway through convert issuance and debt restructuring, but equity holders absorbed the cost in dilution and a heavier capital structure. <span class="source-badge">SEC</span></p>
+    <p>On M&amp;A, the historical record looks mixed at best and likely value-destructive. The business built large goodwill/intangible balances in earlier years and later wrote much of that down. That is usually the fingerprint of over-optimistic capital deployment rather than value-creating acquisition discipline. <span class="source-badge">SEC</span></p>
+    <p><strong>Sustainability verdict:</strong> Plug still <strong>cannot</strong> comfortably fund growth capex and operations from internally generated cash. The turnaround is still reliant on external financing, asset sales, or both.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">FCF Trend</div>
+      <canvas id="chart-fcf-trend"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">FCF Margin Trend</div>
+      <canvas id="chart-fcf-margin"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">FY2025 Cash Flow Waterfall</div>
+      <canvas id="chart-waterfall"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">Capital Allocation Doughnut</div>
+      <canvas id="chart-cap-allocation"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">6. Earnings Quality &amp; Accounting Red Flags</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>PLUG’s accounting picture is better described as <strong>improving but still caution-worthy</strong> than as clean. The most obvious issue is the <strong>GAAP vs. non-GAAP gap</strong>. For Q4 2025, Plug reported <strong>GAAP EPS of -$0.63</strong> but <strong>adjusted EPS of -$0.06</strong>. That is a <strong>$0.57/share spread</strong> in a single quarter, driven largely by impairments and capital-related charges. The company explicitly tied Q4 to roughly <strong>$763M of charges</strong>, predominantly non-cash. Some of those adjustments are legitimate for analytical purposes, but when a company’s “real improvement” depends on excluding huge recurring restructuring/impairment events, investors should stay skeptical. <span class="source-badge">SEC</span></p>
+    <p>The second issue is frequency. Plug has a long history of big “one-time” items, including impairments, capital raises, warrant impacts, and strategic resets. I do <strong>not</strong> have a quarter-by-quarter count for the last 20 quarters from primary sources in front of me, so I won’t fake precision, but the pattern is clear enough to say these items have been <strong>recurring-in-disguise</strong>, not truly isolated.</p>
+    <p>Revenue-recognition signals are mixed. At year-end 2025, Plug had about <strong>$129.4M of contract assets</strong> and only about <strong>$100.9M of deferred revenue</strong>, versus roughly <strong>$118.0M</strong> and <strong>$202.6M</strong> respectively a year earlier. Revenue rose in 2025, but deferred revenue fell sharply while contract assets increased modestly. That is not automatically aggressive accounting, yet it is a yellow flag because it suggests revenue is becoming less cash-backed and more dependent on project timing and receivable/contract-asset conversion. <span class="source-badge">SEC</span></p>
+    <p>Accrual quality is also weak. Over the last three years, net losses and operating cash losses diverged widely. Some of that divergence is explained by non-cash write-downs, but from an investor’s perspective the message is the same: reported earnings still do not map cleanly into cash outcomes. I did not calculate a Sloan accrual ratio because the accessible source set did not give me a reliable, comparable investing-cash-flow series across all periods.</p>
+    <p>On audit/disclosure, I did not surface a recent auditor change, qualified opinion, or explicit going-concern language in the sources reviewed. I also did not find enough evidence here to claim a current material weakness in controls. <strong>[UNVERIFIED]</strong> Remove any broader historical-amendment/restatement claim unless the specific amended filings or restatements being referenced are cited. <span class="source-badge">SEC</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p>Insider trading does not scream confidence. The user-supplied data shows a constructive <strong>Jose Luis Crespo open-market purchase</strong> in December 2025, but it also shows repeated executive sales by Benjamin Haycraft around late 2025 and early 2026. That is mixed, not a clean insider buy signal. <span class="source-badge">SEC</span></p>
+    <p><strong>Overall accounting confidence:</strong> <strong>Caution Warranted.</strong> The Q4 cleanup may have improved future comparability, but the company still has a history of large adjustments, poor cash conversion, and strategic/accounting resets.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Management Credibility</div>
+      <div class="grade-wrap">
+        <div class="grade-circle">C</div>
+        <p>Communication looks more operational under the new CEO, but large adjustment history, poor cash conversion, and mixed insider signaling keep confidence below average.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cash Conversion Quality</div>
+      <div class="grid-2" style="gap:10px">
+        <div>
+          <div class="card-label">FY2025 OCF</div>
+          <div class="card-value negative" style="font-size:1.2rem">-$535.8M</div>
+        </div>
+        <div>
+          <div class="card-label">FY2025 Net Income</div>
+          <div class="card-value" style="font-size:1.2rem">Not quoted</div>
+        </div>
+      </div>
+      <div class="mini-note">The report explicitly states cumulative net loss exceeded cumulative operating-cash burn over 2023-2025, but it does not provide a single clean FY2025 net-income figure in the accessible text. <span class="source-badge">SEC</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Signals</div>
+      <div class="two-col-list">
+        <div class="signal-list">
+          <div class="positive">+ Q4 cleanup may improve future comparability</div>
+          <div class="positive">+ No recent auditor change or qualified opinion surfaced</div>
+          <div class="positive">+ Crespo open-market buy is constructive</div>
+        </div>
+        <div class="signal-list">
+          <div class="negative">- GAAP vs non-GAAP spread was $0.57/share in Q4</div>
+          <div class="neutral">- Deferred revenue fell while contract assets rose</div>
+          <div class="neutral">- Historical restatement claim removed unless cited</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">7. Forward Model &amp; Valuation Bridge</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Plug’s direct management guidance is still mostly qualitative. Management’s primary anchors are: <strong>2026 revenue growth directionally comparable to 2025</strong>, <strong>positive EBITDAS in Q4 2026</strong>, <strong>positive operating income by end-2027</strong>, and <strong>full profitability by end-2028</strong>. Public consensus gives a better near-term numerical anchor, especially for <strong>FY2026 revenue near $803M</strong> and <strong>FY2026 EPS around -$0.30 to -$0.31</strong>. <span class="source-badge">SEC</span> <span class="source-badge">Yahoo</span></p>
+    <table>
+      <thead>
+        <tr><th>Metric</th><th class="num">2026E</th><th class="num">2027E</th><th class="num">2028E</th><th>Basis</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Revenue</td><td class="num"><strong>$800M</strong></td><td class="num"><strong>$965M</strong></td><td class="num"><strong>$1.15B</strong></td><td>2026 guided/consensus; 2027 consensus/inferred; 2028 assumed</td></tr>
+        <tr><td>Gross Margin</td><td class="num"><strong>1%</strong></td><td class="num"><strong>9%</strong></td><td class="num"><strong>16%</strong></td><td>Inferred from Q4 2025 inflection + management profitability path</td></tr>
+        <tr><td>Operating Margin</td><td class="num"><strong>-22%</strong></td><td class="num"><strong>-6%</strong></td><td class="num"><strong>3%</strong></td><td>Inferred from end-2027 operating-income target</td></tr>
+        <tr><td>EPS</td><td class="num"><strong>-$0.31</strong></td><td class="num"><strong>-$0.21</strong></td><td class="num"><strong>$0.06</strong></td><td>2026-27 consensus; 2028 assumed</td></tr>
+        <tr><td>Free Cash Flow</td><td class="num"><strong>-$275M</strong></td><td class="num"><strong>-$50M</strong></td><td class="num"><strong>$75M</strong></td><td>Assumed from lower capex + margin improvement</td></tr>
+      </tbody>
+    </table>
+    <p>The table above blends management guidance, public consensus, and my assumptions. The biggest modeling uncertainty is <strong>2028</strong>; that year is necessarily assumption-heavy because management has only given milestone language, not a full long-range P&amp;L.</p>
+    <table>
+      <thead>
+        <tr><th>Period</th><th>Metric</th><th>Management Guidance</th><th>Sell-Side Consensus</th><th>Delta</th><th>Interpretation</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>FY2026</td><td>Revenue</td><td>Growth “directionally comparable” to 2025</td><td><strong>~$802.6M</strong></td><td>Essentially inline</td><td><strong>Inline</strong></td></tr>
+        <tr><td>FY2026</td><td>EPS</td><td>No explicit guide</td><td><strong>~-$0.30 to -$0.31</strong></td><td>N/A</td><td>No direct compare</td></tr>
+        <tr><td>FY2027</td><td>EPS</td><td>Positive operating income by end-2027</td><td><strong>~-$0.21</strong></td><td>Milestone later than full-year profit</td><td>Conservative consensus</td></tr>
+      </tbody>
+    </table>
+    <p>Guidance and consensus snapshots come from Plug IR and public analyst-estimate pages. <span class="source-badge">SEC</span> <span class="source-badge">Yahoo</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p>Because Plug remains loss-making in 2026-2027, a <strong>near-term P/E bridge is not meaningful</strong>. The only defensible valuation bridge is to use <strong>2028E</strong>, when management itself says full profitability should exist.</p>
+    <table>
+      <thead>
+        <tr><th>Valuation Method</th><th>Forecast Year Used</th><th>Forecast Metric</th><th>Target Multiple / FCF Yield</th><th class="num">Implied Target Price</th><th class="num">Current Price</th><th class="num">Upside / Downside</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>P/E</td><td><strong>2028E</strong></td><td><strong>EPS = $0.06</strong></td><td><strong>35x</strong></td><td class="num"><strong>$2.10</strong></td><td class="num"><strong>$2.15</strong></td><td class="num negative"><strong>-2%</strong></td></tr>
+        <tr><td>FCF Yield</td><td><strong>2028E</strong></td><td><strong>FCF = $75M</strong></td><td><strong>2.5% equity FCF yield</strong></td><td class="num"><strong>$2.15</strong></td><td class="num"><strong>$2.15</strong></td><td class="num neutral"><strong>0%</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Bridge math:</strong></p>
+    <ul>
+      <li><strong>P/E:</strong> $0.06 × 35 = <strong>$2.10/share</strong>.</li>
+      <li><strong>FCF yield:</strong> $75M / 2.5% = <strong>$3.0B equity value</strong>; divided by roughly <strong>1.394B shares</strong> = <strong>about $2.15/share</strong>. The share count uses year-end 2025 diluted shares outstanding as a conservative base. <span class="source-badge">SEC</span></li>
+    </ul>
+    <p>So what drives valuation from here? Not a multiple re-rating yet. The stock needs <strong>earnings revision first</strong>, then maybe some multiple expansion. Right now the base-case math says the market is already pricing a decent chunk of the 2028 turnaround. That is why I do <strong>not</strong> see a big justified expected move in the base case.</p>
+    <p><strong>Bottom line:</strong> based on the forward model, current valuation looks <strong>roughly fair for a speculative turnaround</strong>, but not obviously cheap.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="card">
+    <div class="card-title">Forward Model Table</div>
+    <table>
+      <thead><tr><th>Metric</th><th class="num">2026E</th><th class="num">2027E</th><th class="num">2028E</th><th>Basis</th></tr></thead>
+      <tbody>
+        <tr><td>Revenue</td><td class="num">$800M</td><td class="num">$965M</td><td class="num">$1.15B</td><td>Guidance + consensus + assumed scale path</td></tr>
+        <tr><td>Gross Margin</td><td class="num">1%</td><td class="num">9%</td><td class="num">16%</td><td>Inflected from Q4 2025 positive gross margin</td></tr>
+        <tr><td>Operating Margin</td><td class="num">-22%</td><td class="num">-6%</td><td class="num">3%</td><td>Bridged to end-2027 positive operating income target</td></tr>
+        <tr><td>EPS</td><td class="num">-$0.31</td><td class="num">-$0.21</td><td class="num">$0.06</td><td>Consensus for 2026-2027; 2028 assumed</td></tr>
+        <tr><td>FCF</td><td class="num">-$275M</td><td class="num">-$50M</td><td class="num">$75M</td><td>Lower capex + margin improvement</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Management vs. Consensus</div>
+    <table>
+      <thead><tr><th>Metric</th><th>Management Guidance</th><th>Consensus</th><th>Delta</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>FY2026 Revenue</td><td>Growth directionally comparable to 2025 <span class="source-badge">SEC</span></td><td>~$802.6M <span class="source-badge unverified">UNVERIFIED</span></td><td>Inline</td><td>Consensus already reflects moderate top-line recovery</td></tr>
+        <tr><td>FY2026 EPS</td><td>No explicit guide</td><td>~-$0.30 to -$0.31 <span class="source-badge unverified">UNVERIFIED</span></td><td>N/A</td><td>No direct management compare</td></tr>
+        <tr><td>FY2027 EPS</td><td>Positive operating income by end-2027 <span class="source-badge">SEC</span></td><td>~-$0.21 <span class="source-badge unverified">UNVERIFIED</span></td><td>Milestone later than full-year profitability</td><td>Consensus remains skeptical</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Valuation Bridge</div>
+    <table>
+      <thead><tr><th>Method</th><th>Forecast Year</th><th>Metric</th><th>Multiple / Yield</th><th class="num">Implied Target</th><th class="num">Current Price</th><th class="num">Upside</th></tr></thead>
+      <tbody>
+        <tr><td>P/E</td><td>2028E</td><td>EPS = $0.06</td><td>35x</td><td class="num">$2.10</td><td class="num">$2.15</td><td class="num negative">-2%</td></tr>
+        <tr><td>FCF Yield</td><td>2028E</td><td>FCF = $75M</td><td>2.5%</td><td class="num">$2.15</td><td class="num">$2.15</td><td class="num neutral">0%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">P/E Method Bridge</div>
+      <canvas id="chart-pe-bridge"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">FCF Yield Method Bridge</div>
+      <canvas id="chart-fcf-bridge"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">8. Key Ratios &amp; Comparisons</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Peers used:</strong> <strong>Bloom Energy (BE), Ballard Power Systems (BLDP), FuelCell Energy (FCEL), Air Products (APD as a broader hydrogen/industrial gas reference).</strong></p>
+    <p>Relative to its own history, PLUG is no longer priced at peak-hype multiples. Relative to peers, it is <strong>not obviously expensive on sales</strong>, but direct peer-specific numeric comparison cells should be treated as <strong>[UNVERIFIED]</strong> unless each BE / BLDP / FCEL / APD figure is separately sourced and date-stamped. The single most important ratio to watch is <strong>gross margin</strong>: if Plug can string together multiple positive-gross-margin quarters, the entire financing narrative changes. <span class="source-badge">Calc</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="card">
+    <div class="card-title">Comparison Table</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="num">Current Value</th>
+          <th class="num">5-Yr Average</th>
+          <th>Peer / Sector Average</th>
+          <th>Interpretation / Flag</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>P/E (TTM)</td><td class="num">N/M (negative)</td><td class="num">N/M</td><td>Sector positive for mature names</td><td class="negative">Earnings still unusable</td></tr>
+        <tr><td>P/E (Forward)</td><td class="num">N/M (negative)</td><td class="num">N/M</td><td>Varies widely</td><td class="negative">2026 still loss-making</td></tr>
+        <tr><td>PEG Ratio</td><td class="num">N/M</td><td class="num">N/M</td><td>N/M for loss-makers</td><td class="neutral">Not useful</td></tr>
+        <tr><td>EV/EBITDA</td><td class="num">N/M (negative EBITDA)</td><td class="num">N/M</td><td>Peer numeric cells removed <span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">Bad relative quality</td></tr>
+        <tr><td>P/S</td><td class="num">4.22x</td><td class="num">Higher in prior hype years</td><td>Peer numeric cells removed <span class="source-badge unverified">UNVERIFIED</span></td><td class="positive">Not expensive on sales alone</td></tr>
+        <tr><td>P/B</td><td class="num">3.06x</td><td class="num">Above current tangible quality</td><td>Peer numeric cells removed <span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">Premium to book despite weak returns</td></tr>
+        <tr><td>P/FCF</td><td class="num">N/M</td><td class="num">N/M</td><td>Mostly N/M among unprofitable peers</td><td class="negative">Still cash-burning</td></tr>
+        <tr><td>Debt / Equity</td><td class="num">~0.64-0.75x</td><td class="num">Lower pre-2025</td><td>Higher than pristine balance sheets</td><td class="negative">Leverage now matters</td></tr>
+        <tr><td>Net Debt / EBITDA</td><td class="num">N/M</td><td class="num">N/M</td><td>N/M for loss-makers</td><td class="negative">EBITDA too negative</td></tr>
+        <tr><td>Current Ratio</td><td class="num">2.31x</td><td class="num">4.38x</td><td>Qualitative peer comparison only <span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Adequate, but well below its own history</td></tr>
+        <tr><td>Quick Ratio</td><td class="num">1.46x</td><td class="num">3.50x</td><td>Generally above 1x is usable</td><td class="neutral">Usable, not comfortable</td></tr>
+        <tr><td>Interest Coverage</td><td class="num">Negative</td><td class="num">Negative</td><td>Peer numeric cells removed <span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">Another red flag</td></tr>
+        <tr><td>Gross Margin</td><td class="num">-34.1%</td><td class="num">-50.5%</td><td>Peer numeric cells removed <span class="source-badge unverified">UNVERIFIED</span></td><td class="neutral">Improved, still poor</td></tr>
+        <tr><td>Operating Margin</td><td class="num">-211.1%</td><td class="num">-174.0%</td><td>Peer numeric cells removed <span class="source-badge unverified">UNVERIFIED</span></td><td class="negative">Very weak even versus peers</td></tr>
+        <tr><td>Asset Turnover</td><td class="num">0.224x</td><td class="num">Low</td><td>Industrial peers typically higher</td><td class="negative">Weak asset productivity</td></tr>
+        <tr><td>ROIC</td><td class="num">~ -74.6%</td><td class="num">Deeply negative</td><td>Peer group mostly negative, but less extreme</td><td class="negative">Value destruction</td></tr>
+      </tbody>
+    </table>
+    <div class="mini-note">Peer names referenced in the report: BE, BLDP, FCEL, and APD. Company averages for current ratio and quick ratio are corrected to <span class="mono">4.38x</span> and <span class="mono">3.50x</span>. <span class="source-badge">Calc</span></div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">9. Additional Key Factors</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Ownership figures should be explicitly date-stamped and labeled vendor-dependent. The supplied pipeline snapshot shows insiders at <strong>4.5%</strong> and institutions at <strong>50.7%</strong> as of <strong>2026-03-15</strong>, but live third-party pages reviewed on March 15 show materially lower insider ownership of roughly <strong>0.56%-0.61%</strong> and institutional ownership closer to roughly <strong>43%-48%</strong>. Top holders in the supplied snapshot include <strong>Vanguard (9.3%)</strong> and <strong>BlackRock (8.4%)</strong>, which reflects index/fund ownership more than active conviction. Insider trading is mixed: the cleanest positive signal is <strong>Jose Luis Crespo’s December 2025 open-market purchase</strong>, but there were also repeated executive sales by Benjamin Haycraft. <span class="source-badge">Yahoo</span> <span class="source-badge">Calc</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+    <p>Short interest is a major factor. Based on the short-interest data you provided, PLUG had about <strong>327.3M shares short</strong>, or <strong>23.6% of float</strong>, with <strong>3.41 days to cover</strong> as of February 26, 2026. That is high enough to create violent squeezes around earnings, financing news, or asset-sale closes, but not high enough by itself to rescue a broken thesis. For swing trading, that matters a lot more than for long-horizon investing. <span class="source-badge">Calc</span></p>
+    <p>Liquidity is excellent for trading. Average daily volume in the financial snapshots is roughly <strong>99M-102M shares/day</strong>; at a stock price around <strong>$2.15</strong>, that is roughly <strong>$210M+</strong> of daily dollar volume. Float is huge at over <strong>1.33B shares</strong>, so this is not a thin small-cap despite the low price. <span class="source-badge">Finnhub</span> <span class="source-badge">Calc</span></p>
+    <p>Macro exposure is high. PLUG’s beta is about <strong>1.99</strong>, and the stock is sensitive to <strong>rates</strong>, <strong>clean-energy policy</strong>, <strong>hydrogen economics</strong>, and increasingly <strong>power-market/data-center narratives</strong>. Bloomberg reporting around Plug’s potential <strong>PJM-related backup-power opportunity</strong> adds a possible upside narrative, while Reuters coverage supports the broader <strong>PJM / data-center power-demand backdrop</strong> rather than a Plug-specific contract win. <span class="source-badge">Yahoo</span></p>
+    <p>Q4 2025 was the strongest recent report in the accessible live sources because revenue topped consensus and adjusted EPS beat normalized consensus, but the broader Q1-Q3 “mixed / weak” surprise-history summary should be removed unless it is backed by a clean quarter-by-quarter estimates source. <span class="source-badge">Yahoo</span></p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">Institutional Ownership Snapshot</div>
+      <canvas id="chart-ownership"></canvas>
+      <div class="mini-note">Uses the supplied pipeline snapshot, with the live vendor discrepancy disclosed above. <span class="source-badge">Calc</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Insider Activity</div>
+      <table>
+        <thead><tr><th>Name</th><th>Role</th><th>Action</th><th class="num">Shares</th><th>Price Range / Timing</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>Jose Luis Crespo</td><td>CEO</td><td class="positive">Buy</td><td class="num">Not specified</td><td>December 2025 open-market purchase</td><td><span class="source-badge">SEC</span></td></tr>
+          <tr><td>Benjamin Haycraft</td><td>Executive</td><td class="negative">Sell</td><td class="num">Repeated sales</td><td>Late 2025 to early 2026</td><td><span class="source-badge">SEC</span></td></tr>
+        </tbody>
+      </table>
+      <div class="mini-note">The supplied report does not provide exact share counts or transaction prices for these insider rows. <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Short Interest</div>
+      <div class="card-value">23.6%</div>
+      <div class="card-label">Of float | 327.3M shares short | 3.41 days to cover <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Trading Liquidity</div>
+      <div class="card-value">99M-102M</div>
+      <div class="card-label">ADV shares/day | Float &gt; 1.33B | Beta 1.99 <span class="source-badge">Finnhub</span> <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sentiment Summary</div>
+      <div class="card-value">Hold / Neutral</div>
+      <div class="card-label">Targets around $2.738-$2.89 | Recent move -2.27% <span class="source-badge">Yahoo</span> <span class="source-badge">Finnhub</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">10. Scenario Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The scenario tree below is built to stay consistent with Section 7’s operating model. Because near-term earnings are still negative, the scenario valuation relies mainly on <strong>2028E profitability/FCF outcomes</strong> rather than 2026 P/E.</p>
+    <table>
+      <thead><tr><th>Scenario</th><th class="num">Probability</th><th>Key Assumptions</th><th class="num">Target Price</th><th class="num">Upside / Downside from Current</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Bull</strong></td><td class="num"><strong>25%</strong></td><td>Asset sales close on time; gross margin stays positive through 2026; material-handling refreshes and data-center/power opportunities accelerate; 2028E EPS reaches <strong>$0.10</strong></td><td class="num"><strong>$3.50</strong></td><td class="num positive"><strong>+63%</strong></td></tr>
+        <tr><td><strong>Base</strong></td><td class="num"><strong>50%</strong></td><td>Revenue tracks near consensus; margin improvement continues but slowly; no immediate liquidity crisis, but no clean re-rating; 2028E EPS <strong>$0.06</strong> / FCF <strong>$75M</strong></td><td class="num"><strong>$2.15</strong></td><td class="num neutral"><strong>0%</strong></td></tr>
+        <tr><td><strong>Bear</strong></td><td class="num"><strong>25%</strong></td><td>Monetizations slip, burn stays high, dilution returns, 2028 profitability slips again; valuation falls toward financing/book support</td><td class="num"><strong>$1.00</strong></td><td class="num negative"><strong>-53%</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Bull case narrative:</strong> What has to go right is straightforward. The <strong>first Stream/Gateway transaction</strong> and the rest of the <strong>&gt;$275M monetization plan</strong> need to close, Q2-Q4 2026 need to prove Q4 2025 gross margin was not a one-quarter fluke, and the market has to believe that positive EBITDAS in Q4 2026 is achievable. In that setup, Plug becomes a turnaround with improving credibility instead of a serial capital raiser. The upside would come from both better earnings and a willingness to capitalize 2028 earnings at a speculative-growth multiple. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></p>
+    <p><strong>Base case narrative:</strong> The most likely path is more mundane. Revenue grows roughly in line with consensus, gross margin improves from deeply negative to modestly positive, cash burn shrinks but does not disappear quickly, and the stock remains trapped between improving operations and financing skepticism. In that state, Plug survives and slowly progresses, but investors are not willing to pay much more than today’s price because the turnaround is already partly priced.</p>
+    <p><strong>Bear case narrative:</strong> The bear case is not “hydrogen disappears”; it is that execution slips again before funding is secure. If asset sales are delayed, if working capital remains heavy, or if positive gross margin reverses, the market will quickly focus on dilution risk. That scenario could also be worsened by legal overhangs, another strategic pivot, or the failure of the AI/data-center power narrative to produce real orders. <span class="source-badge">Yahoo</span></p>
+    <p><strong>Probability-weighted expected value:</strong><br>(25% × $3.50) + (50% × $2.15) + (25% × $1.00) = <strong>$2.20/share</strong></p>
+    <p><strong>Scenario valuation bridges:</strong></p>
+    <ul>
+      <li><strong>Bull:</strong> <strong>2028E EPS $0.10 × 35x P/E = $3.50</strong></li>
+      <li><strong>Base:</strong> <strong>2028E EPS $0.06 × 35x = $2.10</strong>, cross-checked by <strong>2028E FCF $75M at 2.5% yield = about $2.15/share</strong></li>
+      <li><strong>Bear:</strong> profits/FCF stay elusive, so valuation compresses toward distressed equity/book support around <strong>$1.00/share</strong></li>
+    </ul>
+    <p><strong>Leading indicators to monitor:</strong></p>
+    <ul>
+      <li><strong>Bull more likely if:</strong> quarterly gross margin stays <strong>positive for 2+ consecutive quarters</strong></li>
+      <li><strong>Base more likely if:</strong> unrestricted cash stays above <strong>$250M</strong> while burn keeps narrowing</li>
+      <li><strong>Bear more likely if:</strong> management needs another large equity/convert raise before gross margin and cash burn clearly improve</li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-3">
+    <div class="scenario-card bull">
+      <div class="card-title">Bull Case</div>
+      <div class="card-value">$3.50</div>
+      <div class="card-label">25% probability | +63%</div>
+      <p style="margin-top:10px">Asset sales close on time, gross margin stays positive, and data-center/power wins accelerate.</p>
+      <p class="mini-note">Bridge: 2028E EPS $0.10 × 35x</p>
+      <p class="mini-note">Leading indicator: 2+ consecutive positive gross-margin quarters</p>
+    </div>
+    <div class="scenario-card base">
+      <div class="card-title">Base Case</div>
+      <div class="card-value">$2.15</div>
+      <div class="card-label">50% probability | 0%</div>
+      <p style="margin-top:10px">Revenue tracks consensus, margins improve slowly, and financing skepticism offsets operational progress.</p>
+      <p class="mini-note">Bridge: $2.10 P/E cross-checks to ~$2.15 on 2.5% FCF yield</p>
+      <p class="mini-note">Leading indicator: unrestricted cash remains above $250M while burn narrows</p>
+    </div>
+    <div class="scenario-card bear">
+      <div class="card-title">Bear Case</div>
+      <div class="card-value">$1.00</div>
+      <div class="card-label">25% probability | -53%</div>
+      <p style="margin-top:10px">Monetizations slip, burn stays high, and dilution returns before the turnaround is proven.</p>
+      <p class="mini-note">Bridge: distressed equity / book support</p>
+      <p class="mini-note">Leading indicator: another large equity or convert raise before cash burn clearly improves</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <p><span class="positive">25% × $3.50 = $0.875</span> | <span class="neutral">50% × $2.15 = $1.075</span> | <span class="negative">25% × $1.00 = $0.250</span> | <strong>$2.20/share</strong></p>
+    <div class="prob-bar-container">
+      <div class="prob-seg" style="width:25%;background:var(--green)">Bull</div>
+      <div class="prob-seg" style="width:50%;background:var(--gold)">Base</div>
+      <div class="prob-seg" style="width:25%;background:var(--red)">Bear</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">11. Risks &amp; Opportunities</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Top Risks</strong></p>
+    <ul>
+      <li><strong>Liquidity / dilution risk - Severity: High | Likelihood: High</strong><br>If monetizations slip or burn stays elevated, equity holders likely absorb more dilution.</li>
+      <li><strong>Execution risk - Severity: High | Likelihood: High</strong><br>One positive gross-margin quarter does not prove sustained profitability.</li>
+      <li><strong>Customer concentration - Severity: Medium | Likelihood: Medium</strong><br>Large-customer pauses or repricing pressure can materially affect results. <span class="source-badge">SEC</span></li>
+      <li><strong>Narrative overreach risk - Severity: Medium | Likelihood: Medium</strong><br>Early-stage AI/data-center power enthusiasm could outrun actual bookings. <span class="source-badge">Yahoo</span></li>
+    </ul>
+    <p><strong>Top Opportunities</strong></p>
+    <ul>
+      <li><strong>Sustained positive gross margin - Magnitude: High | Likelihood: Medium</strong><br>This is the single biggest unlock for valuation and financing confidence.</li>
+      <li><strong>Asset monetization closes as planned - Magnitude: High | Likelihood: Medium</strong><br>That would materially de-risk 2026 liquidity. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></li>
+      <li><strong>Material-handling refresh cycle returns - Magnitude: Medium | Likelihood: Medium</strong><br>Existing installed-base growth is more credible than blue-sky hydrogen TAM.</li>
+      <li><strong>Electrolyzer / power-market wins - Magnitude: Medium | Likelihood: Low-Medium</strong><br>Real power contracts could revive the growth story beyond survival mode. <span class="source-badge">Yahoo</span></li>
+    </ul>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Risk Matrix</div>
+      <table>
+        <thead><tr><th>Risk</th><th>Severity</th><th>Likelihood</th></tr></thead>
+        <tbody>
+          <tr><td>Liquidity / dilution</td><td class="negative">High</td><td class="negative">High</td></tr>
+          <tr><td>Execution</td><td class="negative">High</td><td class="negative">High</td></tr>
+          <tr><td>Customer concentration</td><td class="neutral">Medium</td><td class="neutral">Medium</td></tr>
+          <tr><td>Narrative overreach</td><td class="neutral">Medium</td><td class="neutral">Medium</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Opportunity Matrix</div>
+      <table>
+        <thead><tr><th>Opportunity</th><th>Magnitude</th><th>Likelihood</th></tr></thead>
+        <tbody>
+          <tr><td>Sustained positive gross margin</td><td class="positive">High</td><td class="neutral">Medium</td></tr>
+          <tr><td>Asset monetization closes as planned</td><td class="positive">High</td><td class="neutral">Medium</td></tr>
+          <tr><td>Material-handling refresh cycle</td><td class="neutral">Medium</td><td class="neutral">Medium</td></tr>
+          <tr><td>Electrolyzer / power-market wins</td><td class="neutral">Medium</td><td class="neutral">Low-Medium</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">12. Thesis Kill Criteria &amp; Catalyst Timeline</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>What would change my mind - Bullish thesis invalidated if:</strong></p>
+    <ul>
+      <li><strong>Gross margin falls back below 0% for two consecutive quarters</strong></li>
+      <li><strong>Unrestricted cash falls below $200M without fully closed monetization proceeds</strong></li>
+      <li><strong>Management misses the positive EBITDAS-in-Q4-2026 milestone</strong></li>
+    </ul>
+    <p><strong>What would change my mind - Bearish thesis invalidated if:</strong></p>
+    <ul>
+      <li><strong>Plug posts three consecutive quarters of positive gross margin with sharply improved cash burn</strong></li>
+      <li><strong>2026 liquidity is fully bridged without another meaningfully dilutive capital raise</strong></li>
+    </ul>
+    <p><strong>Upcoming Catalyst Timeline:</strong></p>
+    <table>
+      <thead><tr><th>Date (Est.)</th><th>Event</th><th>Potential Impact</th><th>Favors Bull / Bear / Neutral</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Apr. 3, 2026</strong></td><td>Securities class-action lead plaintiff deadline</td><td>Legal/noise overhang; usually sentiment, not core value</td><td>Bear</td></tr>
+        <tr><td><strong>~mid-Apr. 2026 company target / H1 2026 program window</strong></td><td>Expected close of the first Stream/Gateway transaction</td><td>Major liquidity validation if completed on time</td><td>Bull</td></tr>
+        <tr><td><strong>Estimated May 11-13, 2026</strong></td><td>Q1 2026 earnings</td><td>Tests whether Q4 margin improvement is repeatable</td><td>Bull/Bear</td></tr>
+        <tr><td><strong>2H 2026 / Q4 2026</strong></td><td>Management target for positive EBITDAS</td><td>Key credibility milestone</td><td>Bull/Bear</td></tr>
+      </tbody>
+    </table>
+    <p>Legal and monetization timing are publicly flagged; the Q1 date is based on public earnings-calendar snapshots and may move slightly. <span class="source-badge">SEC</span> <span class="source-badge">Yahoo</span></p>
+    <p><strong>Data as of:</strong> <strong>March 15, 2026.</strong><br><strong>Limitations:</strong> Some debt-maturity detail, full covenant language, and quarter-by-quarter non-GAAP adjustment history were not fully available in the accessible source set, so I avoided unsupported precision. Public analyst-consensus pages also differ slightly by provider, so I used ranges where appropriate.</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Kill Criteria</div>
+      <div style="margin-bottom:16px"><strong class="positive">Bullish Thesis Invalidated If:</strong></div>
+      <div class="kill-item"><span class="checkbox"></span><span>Gross margin falls back below 0% for two consecutive quarters</span></div>
+      <div class="kill-item"><span class="checkbox"></span><span>Unrestricted cash falls below $200M without fully closed monetization proceeds</span></div>
+      <div class="kill-item"><span class="checkbox"></span><span>Management misses the positive EBITDAS-in-Q4-2026 milestone</span></div>
+      <div style="margin:18px 0 10px"><strong class="negative">Bearish Thesis Invalidated If:</strong></div>
+      <div class="kill-item"><span class="checkbox"></span><span>Plug posts three consecutive quarters of positive gross margin with sharply improved cash burn</span></div>
+      <div class="kill-item"><span class="checkbox"></span><span>2026 liquidity is fully bridged without another meaningfully dilutive capital raise</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Catalyst Timeline</div>
+      <div class="timeline-item">
+        <span class="timeline-dot red"></span>
+        <div><strong>Apr. 3, 2026</strong><br>Securities class-action lead plaintiff deadline<br><span class="mini-note">Impact: legal/noise overhang | Bear</span></div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-dot green"></span>
+        <div><strong>~mid-Apr. 2026 company target / H1 2026 program window</strong><br>Expected close of the first Stream/Gateway transaction<br><span class="mini-note">Impact: liquidity validation | Bull</span></div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-dot grey"></span>
+        <div><strong>Estimated May 11-13, 2026</strong><br>Q1 2026 earnings; provider estimates vary and company has not confirmed<br><span class="mini-note">Impact: repeatability test | Bull/Bear</span></div>
+      </div>
+      <div class="timeline-item" style="border-bottom:none">
+        <span class="timeline-dot green"></span>
+        <div><strong>2H 2026 / Q4 2026</strong><br>Management target for positive EBITDAS<br><span class="mini-note">Impact: credibility milestone | Bull/Bear</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">Revisions</h2>
+
+  <div class="card">
+    <div class="card-title">Revision Summary</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <span class="badge badge-red">Verdict: Major Revisions</span>
+      <span class="badge badge-gold">Total Corrections: 14</span>
+      <span class="badge badge-yellow">Original Confidence: Medium</span>
+    </div>
+    <p style="margin-bottom:10px">The report’s core thesis is broadly right: Plug did report Q4 2025 revenue of <span class="mono">$225.2M</span>, positive Q4 gross margin of <span class="mono">2.4%</span>, unrestricted cash of <span class="mono">$368.5M</span> at year-end 2025, <span class="mono">$535.8M</span> of 2025 operating-cash burn, and a management roadmap targeting positive EBITDAS in Q4 2026, positive operating income by the end of 2027, and full profitability by the end of 2028. Current price and market cap also check out around <span class="mono">$2.15</span> and <span class="mono">$2.69B</span>. <span class="source-badge">SEC</span> <span class="source-badge">Finnhub</span></p>
+    <p>The report still needs major revision because it uses a future-dated source that post-dates the report itself, the Executive Summary’s expected-move math does not match the Section 7 bridge, some ownership and analyst-breakdown figures conflict with live vendor pages, two 5-year ratio averages are miscomputed, several peer-comparison lines are under-sourced, and the report does not follow the requested source-tag format. <span class="source-badge">SEC</span> <span class="source-badge">Yahoo</span> <span class="source-badge">Calc</span> <span class="source-badge unverified">UNVERIFIED</span></p>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Sections 2, 5, 10, 11, 12</div>
+    <div class="rev-type">Stale Data / Missing Source</div>
+    <div class="rev-original">That argument is stronger than generic anti-hydrogen skepticism because it is grounded in Plug’s own strategic reversals and financing actions.</div>
+    <div class="rev-revised">That argument is stronger than generic anti-hydrogen skepticism because it is grounded in Plug’s announced February 26, 2026 Stream Data Centers agreement, its $275M infrastructure-optimization/liquidity initiative, and management’s March 2, 2026 liquidity commentary. <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></div>
+    <div class="rev-why">The original citation post-dated the March 15, 2026 report. The underlying point is still supportable, but only with contemporaneous company sources.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">1. Executive Summary</div>
+    <div class="rev-type">Internal Inconsistency / Numerical Error</div>
+    <div class="rev-original">Quick rating: Hold. Expected move: roughly 0% to +5% over 12 months, supported by the blended 2028E P/E and FCF-yield bridge in Section 7, which lands near $2.10-$2.20/share versus a current price of about $2.15.</div>
+    <div class="rev-revised">Quick rating: Hold. Expected move: roughly -2% to 0% over 12 months, based on the Section 7 bridge range of about $2.10-$2.15/share versus a current price of about $2.15. <span class="source-badge">Calc</span> <span class="source-badge">Finnhub</span></div>
+    <div class="rev-why">Section 7 implies about -2.3% to 0%, not 0% to +5%.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">9. Additional Key Factors</div>
+    <div class="rev-type">Stale Data / Other</div>
+    <div class="rev-original">Ownership is meaningful but not especially comforting. Using the ownership data you supplied, insiders own about 4.5%, institutions about 50.7%, and institutions hold just over 53% of float.</div>
+    <div class="rev-revised">Ownership figures should be explicitly date-stamped and labeled vendor-dependent. The supplied pipeline snapshot shows insiders at 4.5% and institutions at 50.7% as of 2026-03-15, but live third-party pages reviewed on March 15 show materially lower insider ownership of roughly 0.56%-0.61% and institutional ownership closer to roughly 43%-48%. <span class="source-badge">Yahoo</span> <span class="source-badge">Calc</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+    <div class="rev-why">Live vendor pages materially disagree with the supplied snapshot, so the figures cannot be treated as one settled ownership truth.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">2. Current Narrative &amp; Sentiment</div>
+    <div class="rev-type">Other</div>
+    <div class="rev-original">Plug’s March 2 release showed Q4 revenue of $225.2M, full-year 2025 revenue of about $710M, Q4 gross margin of 2.4%, and a much smaller cash burn than 2024.</div>
+    <div class="rev-revised">Plug’s March 2 release showed Q4 revenue of $225.2M, full-year 2025 revenue of about $710M, Q4 gross margin of 2.4%, and a much smaller cash burn than 2024. However, the report should explicitly note that the supplied quarterly pipeline table does not reconcile cleanly to the FY2025 total, so readers understand there is a source-reconciliation issue rather than a settled single dataset. <span class="source-badge">SEC</span> <span class="source-badge">Calc</span></div>
+    <div class="rev-why">The release supports the Q4 and FY2025 numbers, but the supplied quarterly table does not sum cleanly to the same annual total.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Global / Source Governance</div>
+    <div class="rev-type">Missing Source</div>
+    <div class="rev-original">The report uses hyperlink footnotes such as numeric source links and secondary summaries even where primary company sources or SEC-linked sources exist.</div>
+    <div class="rev-revised">Replace numeric hyperlink footnotes with the required provenance labels on factual claims: SEC, Finnhub, Yahoo, Grok, Gemini, Earnings Call, and Calc. Unsupported or untraceable claims should be marked UNVERIFIED. Where possible, move guidance, company-specific operational claims, insider trades, and legal deadlines to primary company / SEC-linked sources, using secondary aggregation pages only for clearly labeled consensus and market snapshots. <span class="source-badge">SEC</span> <span class="source-badge">Yahoo</span></div>
+    <div class="rev-why">The prompt required explicit source-tag formatting and stronger source hierarchy than the original report provided.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">2. Current Narrative &amp; Sentiment</div>
+    <div class="rev-type">Unsupported Claim / Numerical Error</div>
+    <div class="rev-original">Investing.com shows a similar Neutral stance, with 5 Buy / 13 Hold / 3 Sell, an average target of $2.74, and a range of $1 to $7.</div>
+    <div class="rev-revised">A public analyst snapshot shows a Neutral stance with an average 12-month target of about $2.738 and a target range of about $0.75 to $7.00. The exact public buy/hold/sell breakout should be treated as UNVERIFIED because the visible analyst-count breakdown is internally inconsistent. <span class="source-badge">Yahoo</span> <span class="source-badge unverified">UNVERIFIED</span></div>
+    <div class="rev-why">The public snippet shows the low estimate at $0.75, and its visible analyst-count breakout does not reconcile cleanly.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">5. Cash Flow Analysis</div>
+    <div class="rev-type">Missing Source / Other</div>
+    <div class="rev-original">Shares outstanding rose from about 934M at year-end 2024 to roughly 1.394B at year-end 2025, an increase of about 49%.</div>
+    <div class="rev-revised">Shares outstanding rose sharply into early 2026, but the exact 934M to 1.394B / +49% bridge should not be quoted without a primary-source share-count table or a clearly dated third-party share-stat source. <span class="source-badge unverified">UNVERIFIED</span></div>
+    <div class="rev-why">The original report did not establish the 2024 base with a primary source, so the exact percentage change was over-precise.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">6. Earnings Quality &amp; Accounting Red Flags</div>
+    <div class="rev-type">Unsupported Claim</div>
+    <div class="rev-original">I did, however, see a pattern of historical amendments/restatements in older years in public filing trails, which fits the broader messy accounting history narrative.</div>
+    <div class="rev-revised">UNVERIFIED: Remove this sentence unless you cite the specific amended filings or restatements being referenced. <span class="source-badge unverified">UNVERIFIED</span></div>
+    <div class="rev-why">The accessible live sources reviewed did not support the statement as written.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">8. Key Ratios &amp; Comparisons</div>
+    <div class="rev-type">Numerical Error</div>
+    <div class="rev-original">Current Ratio 2.31x | ~5.8x (2021-25 avg); Quick Ratio 1.46x | ~4.6x (same caveat)</div>
+    <div class="rev-revised">Current Ratio 2.31x | 4.38x (2021-25 avg); Quick Ratio 1.46x | 3.50x (2021-25 avg). <span class="source-badge">Calc</span></div>
+    <div class="rev-why">Averaging the supplied 2021-2025 values gives 4.382x and 3.502x, not 5.8x and 4.6x.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">8. Key Ratios &amp; Comparisons</div>
+    <div class="rev-type">Unsupported Claim / Missing Source</div>
+    <div class="rev-original">Peer cells quoted specific BE, BLDP, and FCEL valuation and margin figures without direct sources.</div>
+    <div class="rev-revised">Remove the peer-specific numeric comparison cells unless each BE / BLDP / FCEL / APD figure is sourced and date-stamped. Keep the qualitative takeaway only, or add explicit peer-source citations for each number. <span class="source-badge unverified">UNVERIFIED</span></div>
+    <div class="rev-why">The cited article did not substantiate the peer valuation and margin numbers shown in the table.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">9. Additional Key Factors</div>
+    <div class="rev-type">Missing Source / Unsupported Claim</div>
+    <div class="rev-original">Bloomberg and Reuters reporting around potential PJM-related backup-power opportunities adds a possible upside narrative.</div>
+    <div class="rev-revised">Bloomberg reporting around Plug’s potential PJM-related backup-power opportunity adds a possible upside narrative, while Reuters coverage supports the broader PJM / data-center power-demand backdrop rather than a Plug-specific contract win. <span class="source-badge">Yahoo</span></div>
+    <div class="rev-why">The original sentence overstated Reuters as a Plug-specific validator.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">9. Additional Key Factors</div>
+    <div class="rev-type">Missing Source</div>
+    <div class="rev-original">Earnings surprise history is mixed. Q1 2025 was weak, Q2 and Q3 were mixed quarters, and Q4 2025 was the strongest recent report because the gross-margin flip changed the qualitative narrative.</div>
+    <div class="rev-revised">Q4 2025 was the strongest recent report in the accessible live sources because revenue topped consensus and adjusted EPS beat normalized consensus, but the broader Q1-Q3 mixed / weak surprise-history summary should be removed unless it is backed by a clean quarter-by-quarter estimates source. <span class="source-badge">Yahoo</span></div>
+    <div class="rev-why">The cited live sources supported the Q4 beat, but not the broader multi-quarter narrative.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">12. Thesis Kill Criteria &amp; Catalyst Timeline</div>
+    <div class="rev-type">Stale Data / Other</div>
+    <div class="rev-original">By Jun. 30, 2026 | Expected close of first Gateway/STAMP monetization transaction; ~May 13, 2026 | Q1 2026 earnings</div>
+    <div class="rev-revised">~mid-Apr. 2026 company target / H1 2026 program window | Expected close of the first Stream/Gateway transaction; Estimated May 11-13, 2026 | Q1 2026 earnings (provider estimates vary; company has not yet confirmed). <span class="source-badge">SEC</span> <span class="source-badge">Yahoo</span></div>
+    <div class="rev-why">The March 2 release targeted the first monetization close within six weeks, while public earnings-calendar providers disagree on the Q1 date.</div>
+  </div>
+
+  <div class="revision-card">
+    <div class="rev-section">Stock Market Information Block</div>
+    <div class="rev-type">Numerical Error</div>
+    <div class="rev-original">The price is 2.15 USD currently with a change of -0.05 USD (-0.02%) from the previous close.</div>
+    <div class="rev-revised">The price is 2.15 USD currently with a change of -0.05 USD (-2.27%) from the previous close. <span class="source-badge">Finnhub</span> <span class="source-badge">Calc</span></div>
+    <div class="rev-why">$0.05 down from a roughly $2.20 prior close is about -2.27%, not -0.02%.</div>
+  </div>
+</div>
+
+<script>
+const colors = {
+  bg: '#0a0a0a',
+  card: '#141414',
+  border: '#2a2a2a',
+  gold: '#d4a843',
+  text: '#e8e0d0',
+  muted: '#8a8a7a',
+  green: '#4caf50',
+  red: '#e74c3c',
+  yellow: '#f1c40f',
+  blue: '#5dade2'
+};
+
+const chartData = {
+  revenueEps: {
+    labels: ['2021A','2023A','2024A','2025A','2026E','2027E','2028E'],
+    revenue: [502, 891, 629, 710, 800, 965, 1150],
+    eps: [null, null, null, null, -0.31, -0.21, 0.06]
+  },
+  margins: {
+    labels: ['2025A','2026E','2027E','2028E'],
+    gross: [-34.1, 1.0, 9.0, 16.0],
+    operating: [-211.1, -22.0, -6.0, 3.0],
+    fcf: [-91.1, -34.4, -5.2, 6.5]
+  },
+  cashFlow: {
+    labels: ['2023A','2024A','2025A'],
+    ocf: [-1100, -729, -535.8],
+    capex: [-665, -287, -111],
+    fcf: [-1800, -1000, -647],
+    fcfMargin: [-202.0, -159.0, -91.1]
+  },
+  ownership: {
+    labels: ['Vanguard 9.3%','BlackRock 8.4%','Other Institutions 33.0%','Other Holders 49.3%'],
+    values: [9.3, 8.4, 33.0, 49.3]
+  }
+};
+
+const charts = {};
+
+function baseOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: colors.text,
+          font: { size: 11 }
+        }
+      },
+      tooltip: {
+        backgroundColor: '#111',
+        borderColor: colors.border,
+        borderWidth: 1,
+        titleColor: colors.text,
+        bodyColor: colors.text
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: colors.muted },
+        grid: { color: 'rgba(255,255,255,0.04)' }
+      },
+      y: {
+        ticks: { color: colors.muted },
+        grid: { color: 'rgba(255,255,255,0.06)' }
+      }
+    }
+  };
+}
+
+function moneyLabel(value, suffix = 'M') {
+  if (value === null || value === undefined) return '';
+  return '$' + value + suffix;
+}
+
+function initTabCharts(idx) {
+  if (idx === 2 && !charts.revenueEps) {
+    const revCtx = document.getElementById('chart-revenue-eps');
+    const marginCtx = document.getElementById('chart-margin-trends');
+    charts.revenueEps = new Chart(revCtx, {
+      type: 'bar',
+      data: {
+        labels: chartData.revenueEps.labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Revenue ($M)',
+            data: chartData.revenueEps.revenue,
+            backgroundColor: chartData.revenueEps.labels.map((label) => label.includes('E') ? 'rgba(212,168,67,0.45)' : 'rgba(93,173,226,0.75)'),
+            borderColor: chartData.revenueEps.labels.map((label) => label.includes('E') ? colors.gold : colors.blue),
+            borderWidth: 1,
+            yAxisID: 'y'
+          },
+          {
+            type: 'line',
+            label: 'EPS',
+            data: chartData.revenueEps.eps,
+            borderColor: colors.green,
+            backgroundColor: colors.green,
+            tension: 0.3,
+            spanGaps: false,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        ...baseOptions(),
+        scales: {
+          x: { ticks: { color: colors.muted }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: {
+            position: 'left',
+            ticks: { color: colors.muted, callback: (v) => '$' + v + 'M' },
+            grid: { color: 'rgba(255,255,255,0.06)' }
+          },
+          y1: {
+            position: 'right',
+            ticks: { color: colors.muted, callback: (v) => '$' + Number(v).toFixed(2) },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+    charts.margins = new Chart(marginCtx, {
+      type: 'line',
+      data: {
+        labels: chartData.margins.labels,
+        datasets: [
+          { label: 'Gross Margin %', data: chartData.margins.gross, borderColor: colors.gold, backgroundColor: colors.gold, tension: 0.3 },
+          { label: 'Operating Margin %', data: chartData.margins.operating, borderColor: colors.red, backgroundColor: colors.red, tension: 0.3 },
+          { label: 'FCF Margin %', data: chartData.margins.fcf, borderColor: colors.green, backgroundColor: colors.green, tension: 0.3 }
+        ]
+      },
+      options: {
+        ...baseOptions(),
+        scales: {
+          x: { ticks: { color: colors.muted }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: colors.muted, callback: (v) => v + '%' }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        }
+      }
+    });
+  }
+
+  if (idx === 4 && !charts.fcfTrend) {
+    const fcfCtx = document.getElementById('chart-fcf-trend');
+    const marginCtx = document.getElementById('chart-fcf-margin');
+    const waterfallCtx = document.getElementById('chart-waterfall');
+    const allocCtx = document.getElementById('chart-cap-allocation');
+    charts.fcfTrend = new Chart(fcfCtx, {
+      type: 'bar',
+      data: {
+        labels: chartData.cashFlow.labels,
+        datasets: [
+          { label: 'Operating Cash Flow ($M)', data: chartData.cashFlow.ocf, backgroundColor: 'rgba(93,173,226,0.75)' },
+          { label: 'CapEx ($M)', data: chartData.cashFlow.capex, backgroundColor: 'rgba(212,168,67,0.75)' },
+          { type: 'line', label: 'Free Cash Flow ($M)', data: chartData.cashFlow.fcf, borderColor: colors.green, backgroundColor: colors.green, tension: 0.25 }
+        ]
+      },
+      options: {
+        ...baseOptions(),
+        scales: {
+          x: { ticks: { color: colors.muted }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: colors.muted, callback: (v) => '$' + v + 'M' }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        }
+      }
+    });
+    charts.fcfMargin = new Chart(marginCtx, {
+      type: 'line',
+      data: {
+        labels: chartData.cashFlow.labels,
+        datasets: [{
+          label: 'FCF Margin %',
+          data: chartData.cashFlow.fcfMargin,
+          borderColor: colors.green,
+          backgroundColor: 'rgba(76,175,80,0.22)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        ...baseOptions(),
+        scales: {
+          x: { ticks: { color: colors.muted }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: colors.muted, callback: (v) => v + '%' }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        }
+      }
+    });
+    charts.waterfall = new Chart(waterfallCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Operating Cash Flow','CapEx','Free Cash Flow'],
+        datasets: [{
+          label: 'FY2025 ($M)',
+          data: [-535.8, -111, -647],
+          backgroundColor: [colors.blue, colors.gold, colors.red]
+        }]
+      },
+      options: {
+        ...baseOptions(),
+        indexAxis: 'y',
+        scales: {
+          x: { ticks: { color: colors.muted, callback: (v) => '$' + v + 'M' }, grid: { color: 'rgba(255,255,255,0.06)' } },
+          y: { ticks: { color: colors.muted }, grid: { color: 'rgba(255,255,255,0.04)' } }
+        }
+      }
+    });
+    charts.capAllocation = new Chart(allocCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Buybacks','Dividends','CapEx','M&A','Retained / Other Burn'],
+        datasets: [{
+          data: [0.1, 0.1, 111, 0.1, 535.8],
+          backgroundColor: [colors.blue, colors.yellow, colors.gold, '#666666', colors.red],
+          borderColor: '#141414',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        ...baseOptions(),
+        scales: {}
+      }
+    });
+  }
+
+  if (idx === 6 && !charts.peBridge) {
+    const peCtx = document.getElementById('chart-pe-bridge');
+    const fcfCtx = document.getElementById('chart-fcf-bridge');
+    charts.peBridge = new Chart(peCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Current','Target'],
+        datasets: [{
+          label: 'Share Price',
+          data: [2.15, 2.10],
+          backgroundColor: [colors.blue, colors.red]
+        }]
+      },
+      options: {
+        ...baseOptions(),
+        scales: {
+          x: { ticks: { color: colors.muted }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: colors.muted, callback: (v) => '$' + Number(v).toFixed(2) }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        }
+      }
+    });
+    charts.fcfBridge = new Chart(fcfCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Current','Target'],
+        datasets: [{
+          label: 'Share Price',
+          data: [2.15, 2.15],
+          backgroundColor: [colors.blue, colors.gold]
+        }]
+      },
+      options: {
+        ...baseOptions(),
+        scales: {
+          x: { ticks: { color: colors.muted }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: colors.muted, callback: (v) => '$' + Number(v).toFixed(2) }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        }
+      }
+    });
+  }
+
+  if (idx === 8 && !charts.ownership) {
+    const ownCtx = document.getElementById('chart-ownership');
+    charts.ownership = new Chart(ownCtx, {
+      type: 'doughnut',
+      data: {
+        labels: chartData.ownership.labels,
+        datasets: [{
+          data: chartData.ownership.values,
+          backgroundColor: [colors.gold, colors.blue, colors.green, '#3b3b3b'],
+          borderColor: '#141414',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        ...baseOptions(),
+        scales: {}
+      }
+    });
+  }
+}
+
+function switchTab(idx) {
+  const tabs = document.querySelectorAll('.tab-content');
+  const buttons = document.querySelectorAll('.tab-btn');
+  tabs.forEach((tab) => tab.classList.remove('active'));
+  buttons.forEach((button) => button.classList.remove('active'));
+  tabs[idx].classList.add('active');
+  buttons[idx].classList.add('active');
+  initTabCharts(idx);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTabCharts(0);
+});
+</script>
+</body>
+</html>
