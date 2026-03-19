@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$CF - CF Industries Holdings, Inc. | Equity Research Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;
+  --card-bg:#141414;
+  --border:#2a2a2a;
+  --gold:#d4a843;
+  --text:#e8e0d0;
+  --muted:#8a8a7a;
+  --green:#4caf50;
+  --red:#e74c3c;
+  --yellow:#f1c40f;
+  --blue:#5dade2;
+  --mono:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --radius:12px;
+  --shadow:0 18px 40px rgba(0,0,0,.28);
+}
+body{
+  background:
+    radial-gradient(circle at top right, rgba(212,168,67,.14), transparent 28%),
+    radial-gradient(circle at top left, rgba(93,173,226,.09), transparent 24%),
+    linear-gradient(180deg, #0b0b0b 0%, #090909 100%);
+  color:var(--text);
+  font-family:var(--sans);
+  line-height:1.6
+}
+.mono,.num{font-family:var(--mono)}
+.positive{color:var(--green)}
+.negative{color:var(--red)}
+.neutral{color:var(--yellow)}
+.info{color:var(--blue)}
+.muted{color:var(--muted)}
+.header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:rgba(20,20,20,.96);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:18px 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap
+}
+.header-left h1{font-size:1.5rem;color:var(--gold);font-weight:700}
+.header-left .subtitle{font-size:.86rem;color:var(--muted)}
+.header-right{display:flex;gap:14px;flex-wrap:wrap}
+.header-badge{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));border:1px solid var(--border);border-radius:10px;padding:7px 14px;text-align:center;min-width:110px;box-shadow:var(--shadow)}
+.header-badge .val{font-size:1.05rem;font-weight:700;font-family:var(--mono)}
+.header-badge .lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:.55px;color:var(--muted);margin-top:2px}
+.tab-bar{display:flex;overflow-x:auto;background:#111;border-bottom:2px solid var(--border);padding:0 10px;scrollbar-width:thin;scrollbar-color:var(--border) #111}
+.tab-btn{flex-shrink:0;padding:10px 11px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab-btn:hover{color:var(--gold);background:#181818}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);background:#1a1a14;font-weight:600}
+.tab-content{display:none;max-width:1450px;margin:0 auto;padding:26px 30px 46px}
+.tab-content.active{display:block}
+.section-header{color:var(--gold);font-size:1.3rem;font-weight:700;margin:0 0 18px}
+.section-divider{border:none;border-top:1px solid var(--border);margin:30px 0}
+.card{background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,.005));border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.card-title{color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px}
+.card-value{font-size:28px;font-weight:700;color:var(--text);font-family:var(--mono)}
+.card-label{font-size:12px;color:var(--muted);margin-top:5px}
+.grid-2,.grid-3,.grid-4{display:grid;gap:18px;margin-bottom:18px}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.metric-strip{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:22px}
+.metric-item{flex:1;min-width:120px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:10px;padding:13px 14px;box-shadow:var(--shadow)}
+.metric-item .card-value{font-size:18px}
+.analysis-prose{background:rgba(255,255,255,.02);border:1px solid #1f1f1f;border-radius:12px;padding:22px 24px;color:#d3ccbb;line-height:1.75;box-shadow:var(--shadow)}
+.analysis-prose p,.analysis-prose ul,.analysis-prose table{margin-bottom:14px}
+.analysis-prose ul{padding-left:20px}
+.analysis-prose li{margin-bottom:7px}
+.analysis-prose strong{color:var(--text)}
+.analysis-label{display:inline-block;background:var(--gold);color:#0a0a0a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:3px 10px;border-radius:999px;margin-bottom:14px}
+.thesis-box{background:linear-gradient(135deg, rgba(212,168,67,.14), rgba(212,168,67,.04));border:1px solid rgba(212,168,67,.35);border-radius:var(--radius);padding:22px 24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.scenario-card{background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,.005));border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)}
+.scenario-card.bull{border-left-color:var(--green)}
+.scenario-card.base{border-left-color:var(--gold)}
+.scenario-card.bear{border-left-color:var(--red)}
+.timeline-item{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.timeline-item:last-child{border-bottom:none}
+.timeline-dot{width:14px;height:14px;border-radius:50%;margin-top:6px;flex-shrink:0}
+.timeline-dot.green{background:var(--green)}
+.timeline-dot.red{background:var(--red)}
+.timeline-dot.grey{background:var(--muted)}
+.kill-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.kill-item .checkbox{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:3px}
+.revision-card{background:rgba(231,76,60,.07);border:1px solid rgba(231,76,60,.28);border-radius:var(--radius);padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.source-badge{display:inline-block;background:var(--gold);color:#0a0a0a;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:3px;vertical-align:middle;letter-spacing:.3px;margin-left:4px}
+.source-badge.unverified{background:var(--red);color:#fff}
+.badge{display:inline-block;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:700;border:1px solid transparent}
+.badge-green{background:rgba(76,175,80,.15);color:var(--green);border-color:rgba(76,175,80,.28)}
+.badge-red{background:rgba(231,76,60,.15);color:var(--red);border-color:rgba(231,76,60,.28)}
+.badge-yellow{background:rgba(241,196,15,.15);color:var(--yellow);border-color:rgba(241,196,15,.28)}
+.badge-gold{background:rgba(212,168,67,.15);color:var(--gold);border-color:rgba(212,168,67,.28)}
+.badge-blue{background:rgba(93,173,226,.15);color:var(--blue);border-color:rgba(93,173,226,.28)}
+.prob-bar-container{display:flex;height:28px;border-radius:6px;overflow:hidden;margin:12px 0}
+.prob-bar-container .seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#0a0a0a}
+.chart-box{background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,.005));border:1px solid var(--border);border-radius:var(--radius);padding:18px 18px 10px;margin-bottom:18px;box-shadow:var(--shadow)}
+.chart-box canvas{max-height:360px}
+.two-col-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.signal-list{list-style:none;padding-left:0}
+.signal-list li{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.signal-list li:last-child{border-bottom:none}
+.grade-circle{width:74px;height:74px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;font-family:var(--mono);background:rgba(76,175,80,.12);border:2px solid rgba(76,175,80,.28);color:var(--green)}
+.callout-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.keyline{height:1px;background:var(--border);margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{background:rgba(212,168,67,.15);color:var(--gold);padding:10px 12px;text-align:left;font-size:11px;letter-spacing:.75px;text-transform:uppercase;border-bottom:2px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.num{text-align:right}
+.small{font-size:12px}
+.pillars p,.analysis-prose .small-table{font-size:13px}
+.interpret-good{color:var(--green);font-weight:600}
+.interpret-warn{color:var(--yellow);font-weight:600}
+.interpret-bad{color:var(--red);font-weight:600}
+@media(max-width:980px){
+  .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:768px){
+  .grid-2,.grid-3,.grid-4,.two-col-list{grid-template-columns:1fr}
+  .header{padding:14px 16px}
+  .tab-content{padding:18px 14px 34px}
+  .tab-btn{padding:8px 9px;font-size:10.5px}
+  .metric-strip{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>$CF - CF Industries Holdings, Inc.</h1>
+    <div class="subtitle">Equity Research Dashboard | Data as of March 19, 2026</div>
+  </div>
+  <div class="header-right">
+    <div class="header-badge"><div class="val">$125.56</div><div class="lbl">Current Price</div></div>
+    <div class="header-badge"><div class="val" style="color:#f1c40f">HOLD</div><div class="lbl">Quick Rating</div></div>
+    <div class="header-badge"><div class="val" style="color:#d4a843">Medium</div><div class="lbl">Conviction</div></div>
+    <div class="header-badge"><div class="val" style="color:#d4a843">~$126</div><div class="lbl">Fair Value</div></div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+  <button class="tab-btn" onclick="switchTab(1)">2. Narrative</button>
+  <button class="tab-btn" onclick="switchTab(2)">3. Fundamentals</button>
+  <button class="tab-btn" onclick="switchTab(3)">4. Balance Sheet</button>
+  <button class="tab-btn" onclick="switchTab(4)">5. Cash Flow</button>
+  <button class="tab-btn" onclick="switchTab(5)">6. Earnings Quality</button>
+  <button class="tab-btn" onclick="switchTab(6)">7. Forward Model</button>
+  <button class="tab-btn" onclick="switchTab(7)">8. Key Ratios</button>
+  <button class="tab-btn" onclick="switchTab(8)">9. Ownership</button>
+  <button class="tab-btn" onclick="switchTab(9)">10. Scenarios</button>
+  <button class="tab-btn" onclick="switchTab(10)">11. Risks</button>
+  <button class="tab-btn" onclick="switchTab(11)">12. Catalysts</button>
+  <button class="tab-btn" onclick="switchTab(12)">Revisions</button>
+</div>
+
+<div class="tab-content active">
+  <h2 class="section-header">1. Executive Summary</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <ul>
+      <li>Low-cost North American nitrogen producer with durable natural gas feedstock advantage versus high-cost European/Asian peers.</li>
+      <li>Low-carbon ammonia pivot delivering real premiums ($20-$25/ton) and 2026 contracts, plus Donaldsonville CCS operational and Blue Point JV on track.</li>
+      <li>Robust free-cash-flow generation funds aggressive share repurchases (10%+ shares retired in 2025) and stable dividend.</li>
+      <li>Near-term tailwind from Middle East/Hormuz supply shocks and China export curbs lifting urea/ammonia prices, but analysts view the rally as largely priced in.</li>
+      <li>Balance sheet fortress (net debt low, liquidity strong) and clean accounting support resilience in cyclical downturns.</li>
+      <li>Valuation reasonable on TTM/forward multiples versus history and peers, but commodity normalization risk caps upside.</li>
+    </ul>
+    <p><strong>Conviction level: Medium for swing | Medium for position.</strong></p>
+    <p><strong>Quick rating: Hold</strong> (no defensible expected-move % as the Section 7 valuation bridge shows current price is fairly valued on consensus 2026E EPS at normalized multiples; no material re-rating or earnings-gap forecast).</p>
+    <p>The single most important thing an investor needs to know right now is that CF's structural cost edge and low-carbon monetization are real, but the 24% March rally on geopolitical supply shocks is viewed by sell-side analysts as largely exhausted, with recent downgrades highlighting normalization risk.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="thesis-box">
+    <div class="card-title">Investment Thesis</div>
+    <p style="margin-bottom:9px"><strong>Cost advantage:</strong> Low-cost North American natural gas feedstock versus higher-cost European/Asian peers <span class="source-badge">SEC</span></p>
+    <p style="margin-bottom:9px"><strong>Low-carbon monetization:</strong> $20-$25/ton premiums, 2026 contracts, Donaldsonville CCS operational, Blue Point JV on track <span class="source-badge">Earnings Call</span></p>
+    <p style="margin-bottom:9px"><strong>Shareholder returns:</strong> 10%+ shares retired in 2025 while maintaining the dividend <span class="source-badge">SEC</span></p>
+    <p><strong>Constraint:</strong> Commodity normalization risk caps upside after the 24% March rally <span class="source-badge unverified">UNVERIFIED</span></p>
+  </div>
+  <div class="callout-row">
+    <span class="badge badge-gold">Conviction: Medium (Swing)</span>
+    <span class="badge badge-gold">Conviction: Medium (Position)</span>
+    <span class="badge badge-yellow">Rating: Hold</span>
+    <span class="badge badge-blue">Expected Move: Not Defensible</span>
+  </div>
+  <div class="metric-strip">
+    <div class="metric-item"><div class="card-label">Current Price</div><div class="card-value">$125.56</div></div>
+    <div class="metric-item"><div class="card-label">Market Cap</div><div class="card-value">~$19.4B</div></div>
+    <div class="metric-item"><div class="card-label">P/E (TTM)</div><div class="card-value">14.0x</div></div>
+    <div class="metric-item"><div class="card-label">P/E (Forward)</div><div class="card-value">13.5x</div></div>
+    <div class="metric-item"><div class="card-label">EV/EBITDA</div><div class="card-value">6.4x</div></div>
+    <div class="metric-item"><div class="card-label">FCF Yield</div><div class="card-value">~9%</div></div>
+    <div class="metric-item"><div class="card-label">Dividend Yield</div><div class="card-value">~1.6%</div></div>
+    <div class="metric-item"><div class="card-label">Target Price</div><div class="card-value">~$126</div></div>
+  </div>
+  <div class="grid-3 pillars">
+    <div class="card">
+      <div class="card-title">Pillar 1</div>
+      <p>Structural feedstock and logistics advantages make CF one of the lowest-cost nitrogen producers globally, especially during supply disruptions.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Pillar 2</div>
+      <p>Low-carbon ammonia premiums and contracted CCS-linked economics create a structural earnings layer that is not purely spot-price driven.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Pillar 3</div>
+      <p>Strong free cash flow supports buybacks, dividends, and project funding without stressing the balance sheet.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:10px">
+      <div><span class="positive">Bull 30%</span> x <span class="mono">$155</span> = <span class="mono">$46.50</span></div>
+      <div><span class="neutral">Base 45%</span> x <span class="mono">$115</span> = <span class="mono">$51.75</span></div>
+      <div><span class="negative">Bear 25%</span> x <span class="mono">$85</span> = <span class="mono">$21.25</span></div>
+      <div style="font-weight:700;color:var(--gold)" class="mono">$118.00 <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="prob-bar-container">
+      <div class="seg" style="width:30%;background:var(--green)">Bull</div>
+      <div class="seg" style="width:45%;background:var(--gold)">Base</div>
+      <div class="seg" style="width:25%;background:var(--red)">Bear</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+      <span>$155</span><span>$115</span><span>$85</span>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">2. Current Narrative &amp; Sentiment</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The dominant storyline is a classic commodity supply-shock rally: escalated Middle East conflict (Strait of Hormuz disruptions, QatarEnergy attacks) and renewed China export restrictions have driven urea prices up sharply (reports cite +30-77% since late 2025), spotlighting CF's North American low-cost natural-gas advantage. The stock hit a record $137.44 intra-day before pulling back to ~$126 amid profit-taking and analyst caution.</p>
+    <p>Last earnings (Q4/FY2025 reported mid-Feb 2026): Revenue $7.08B (+19% YoY), diluted EPS $8.97, FCF ~$1.8B. Management did not issue numeric revenue/EPS guidance but anchored on 9.5 million tons gross ammonia production for 2026 (down from 10.1 million tons actual 2025 due to the Yazoo City outage until late 2026) and CapEx ~$950 million (CF share), while remaining constructive on global nitrogen tightness and low-carbon premiums already under contract.</p>
+    <p>Wall Street consensus (19 analysts): Hold rating (approximately 5 Buy / 11 Hold / 3 Sell). Mean price target ~$102 (range $72-$150), implying ~19% downside from $126. Recent revisions mixed: Mizuho downgraded to Underperform ($100 PT, up from $95) on March 18 citing rally exhaustion; BofA kept Underperform but raised PT to $103; BMO raised to Outperform $140; EPS estimates revised upward in the last 30 days (2026E now ~$9.35 per Yahoo).</p>
+    <p>Market sentiment tone is mixed-retail/X bullish on geopolitics and cost moat, but institutional commentary cautious on temporary pricing and regulatory scrutiny (DOJ probe, Sen. Hawley letters).</p>
+    <p><strong>Contrarian Signal Check:</strong> With consensus tilting cautious post-rally, the strongest differentiated bull argument (circulating on X and Seeking Alpha in the last 30 days) is that CF benefits disproportionately versus peers (MOS, NTR) because its nitrogen-heavy mix captures urea spikes more cleanly, while low-carbon contracts and domestic logistics create a structural rather than purely cyclical edge. Core logic: even if global prices normalize, CF's North American cost curve position plus monetized CCS premiums (~$100M+ annual run-rate potential) support higher normalized earnings and a re-rating, not captured in sell-side models anchored on temporary geo shocks.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Q4 / FY2025 Headlines</div>
+      <div class="card-value">$7.08B</div>
+      <div class="card-label">Revenue (+19% YoY), diluted EPS $8.97, FCF ~$1.8B <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Market Sentiment</div>
+      <div class="card-value neutral">Mixed</div>
+      <div class="card-label">Retail/X bullish; institutions cautious on temporary pricing and regulation <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bear Thesis Summary</div>
+      <div class="card-value negative">Normalization</div>
+      <div class="card-label">Rally viewed as largely priced in after record $137.44 spike and pullback to ~$126 <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Price Shock</div>
+      <p>Urea price reports cite +30-77% since late 2025 as Hormuz and China disruptions lifted nitrogen pricing. <span class="source-badge unverified">UNVERIFIED</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Consensus Setup</div>
+      <p>19 analysts sit at approximately 5 Buy / 11 Hold / 3 Sell with a mean target near $102 and a $72-$150 range. <span class="source-badge unverified">UNVERIFIED</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Contrarian Signal</div>
+      <p>The differentiated bull view is that low-carbon premiums and domestic logistics create a structural edge that sell-side models still underweight. <span class="source-badge unverified">UNVERIFIED</span></p>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">3. Fundamental Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>CF Industries is the largest North American nitrogen producer, manufacturing ammonia, urea, UAN, and ammonium nitrate primarily for agricultural (fertilizer) and industrial uses. Revenue model: ~70-80% agricultural end-markets, with the balance industrial (including emerging low-carbon ammonia). Geographic mix is predominantly North America (~60-70% of sales by volume), with meaningful exports to Brazil, India, Europe, and Asia. Revenue is ~90% product sales (spot and contract) with a small but growing contribution from low-carbon premiums and 45Q tax credits; minimal recurring service revenue.</p>
+    <p>Historical 3-5 year revenue CAGR ~11.4% (volatile: +71% in 2022 on price spike, -41% in 2023, -10% in 2024, +19% in 2025). EPS CAGR ~43.5% over 5 years but -18% over 3 years reflecting cycle. Forward estimates (consensus): 2026 revenue ~$6.64B (-6% YoY on volume drag), 2027 ~$6.45B; EPS 2026E $9.35, 2027E $7.66.</p>
+    <p>Profitability trends (TTM/annual): Gross margin 38.5% (2025), 34.6% (2024), 38.4% (2023); operating margin 32.4% (2025), 29.4% (2024), 33.6% (2023); net margin ~20.5%. Margins peaked in 2022 (&gt;50% gross) on extreme pricing and have normalized but remain elevated versus pre-2021 levels. ROE TTM 30%, ROA 10.5%, ROIC ~18.4%-all strong versus history.</p>
+    <p>Competitive moat is solid: lowest-cost position on the global nitrogen cost curve thanks to access to cheap North American natural gas ($3/MMBtu range vs. $11+ in Europe), vertically integrated production, and an unmatched U.S. distribution/logistics network (rail, river terminals, storage) that enables rapid placement during tight markets. Pricing power is cyclical but enhanced by low-carbon differentiation (certified low-carbon ammonia already commanding premiums and 2026 contracts). Switching costs for farmers are moderate; network effects and scale advantages are meaningful in export markets. MD&amp;A in the 10-K and earnings transcripts repeatedly highlight this positioning versus higher-cost global peers and note low inventories plus logistics tightness as supportive factors.</p>
+    <p>Management quality is above average. New CEO Chris Bohn (transitioned Jan 2026) and the team have strong operational execution track record-Donaldsonville CCS started on time, Blue Point JV remains on budget/timeline, and capital allocation has been shareholder-friendly (aggressive buybacks, disciplined growth spend). Insider ownership ~0.4% but alignment via heavy repurchases and incentive plans. Tenure in key commercial/operations roles is long; no major red flags in allocation history. Overall, a high-quality operator in a cyclical industry.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">Revenue &amp; EPS</div>
+      <canvas id="revenueEpsChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">Margin Trends</div>
+      <canvas id="marginChart"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Growth Rates Table</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th class="num">Revenue</th>
+          <th class="num">Growth %</th>
+          <th class="num">Gross Margin</th>
+          <th class="num">Op. Margin</th>
+          <th class="num">EPS</th>
+          <th class="num">FCF</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>2022A</td><td class="num">$11.20B</td><td class="num">+71%</td><td class="num">&gt;50%</td><td class="num">N/D</td><td class="num">N/D</td><td class="num">$3.4B</td></tr>
+        <tr><td>2023A</td><td class="num">$6.61B</td><td class="num">-41%</td><td class="num">38.4%</td><td class="num">33.6%</td><td class="num">N/D</td><td class="num">N/D</td></tr>
+        <tr><td>2024A</td><td class="num">$5.95B</td><td class="num">-10%</td><td class="num">34.6%</td><td class="num">29.4%</td><td class="num">N/D</td><td class="num">$1.8B</td></tr>
+        <tr><td>2025A</td><td class="num">$7.08B</td><td class="num">+19%</td><td class="num">38.5%</td><td class="num">32.4%</td><td class="num">$8.97</td><td class="num">$1.8B</td></tr>
+        <tr><td>2026E</td><td class="num">$6.64B</td><td class="num">-6%</td><td class="num">37-39%</td><td class="num">29-31%</td><td class="num">$9.35</td><td class="num">$1.70B</td></tr>
+        <tr><td>2027E</td><td class="num">$6.45B</td><td class="num">-3%</td><td class="num">36-38%</td><td class="num">28-30%</td><td class="num">$7.66</td><td class="num">$1.60B</td></tr>
+        <tr><td>2028E</td><td class="num">$6.50B</td><td class="num">+1%</td><td class="num">36-38%</td><td class="num">28-30%</td><td class="num">$8.00</td><td class="num">$1.65B</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-title">Revenue</div>
+      <div class="card-value">$7.08B</div>
+      <div class="card-label">FY2025 revenue, +19% YoY <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">GAAP EPS</div>
+      <div class="card-value">$8.97</div>
+      <div class="card-label">Diluted EPS for FY2025 <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Operating Margin</div>
+      <div class="card-value">32.4%</div>
+      <div class="card-label">2025 operating margin <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Segment / Volume Setup</div>
+      <div class="card-value">9.5M</div>
+      <div class="card-label">2026 gross ammonia production guide versus 10.1M actual 2025 <span class="source-badge">Earnings Call</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">4. Balance Sheet Deep Dive</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Asset quality:</strong> Goodwill $2.5B (18% of $14.1B total assets) and intangibles $0.47B (~3%). Combined intangibles/goodwill represent ~21% of assets and ~38% of equity. No major goodwill impairments in the last 3 years; only minor specific asset impairments noted ($51M electrolyzer pilot abandonment and Yazoo-related in 2025 10-K footnotes).</p>
+    <p><strong>Debt structure:</strong> Total debt ~$3.25B (primarily long-term notes), net debt low given cash position (~$2B+). Weighted average cost of debt remains low (historical fixed-rate issuance). Fixed vs. floating mix overwhelmingly fixed. Debt maturity schedule: no significant near-term maturities after recent refinancing; notes now staggered to 2034, 2035, 2043+ (per 10-K and Q4 transcript).</p>
+    <p><strong>Covenant and credit risk:</strong> Implied investment-grade profile (S&amp;P/BBB historical; not explicitly restated but supported by low leverage and strong liquidity). No restrictive covenants noted that would constrain buybacks or growth. Net debt/EBITDA well below typical thresholds (~1-2x).</p>
+    <p><strong>Off-balance-sheet exposure:</strong> Operating leases are capitalized post-ASC 842 (immaterial). Pension/OPEB obligations minimal and funded. Blue Point JV is a consolidated VIE (full consolidation in financials). Other unconsolidated JVs (e.g., PLNL) are small. Material guarantees or contingencies are standard (environmental, litigation) but not outsized per 10-K footnotes.</p>
+    <p><strong>Liquidity position:</strong> Cash + short-term investments support strong current ratio 3.37 and quick ratio 2.93. Undrawn revolver capacity ~$750M (standard facility). At current run-rate, liquidity covers many months of any temporary cash burn; company is solidly free-cash-flow positive.</p>
+    <p><strong>Net-net assessment:</strong> The balance sheet is a clear source of strength-low leverage, long-dated fixed-rate debt, fortress liquidity, and no legacy liabilities provide flexibility through commodity cycles and funding for growth/low-carbon projects.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Liquidity</div>
+      <div class="card-value">$2B+</div>
+      <div class="card-label">Cash + short-term investments</div>
+      <div class="keyline"></div>
+      <div class="small">Current ratio <span class="mono">3.37</span> | Quick ratio <span class="mono">2.93</span> | Revolver <span class="mono">~$750M</span> <span class="source-badge">SEC</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Leverage</div>
+      <div class="card-value">$3.25B</div>
+      <div class="card-label">Total debt, primarily long-term notes</div>
+      <div class="keyline"></div>
+      <div class="small">Assets <span class="mono">$14.1B</span> | Equity <span class="mono">~$7.8B</span> | D/E <span class="mono">0.41</span> | Interest coverage <span class="mono">41.7x</span> <span class="source-badge">Calc</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Asset Quality</div>
+      <div class="card-value">$2.5B</div>
+      <div class="card-label">Goodwill, with intangibles at $0.47B</div>
+      <div class="keyline"></div>
+      <div class="small">Goodwill/assets <span class="mono">18%</span> | Goodwill/equity <span class="mono">~32%</span> | Combined intangible share <span class="mono">~21%</span> | Impairments <span class="mono">$51M</span> pilot + Yazoo-related <span class="source-badge">SEC</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">5. Cash Flow Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Operating cash flow (OCF) and free cash flow (FCF) have been exceptionally strong: 2025 OCF $2.8B, FCF $1.8B (vs. $2.3B OCF/$1.8B FCF in 2024 and peak $3.9B/$3.4B in 2022). YoY trends show resilience despite lower realized prices in some periods. FCF margin TTM ~25-30%.</p>
+    <p>FCF yield at current ~$126 price and $1.8B run-rate FCF is ~9%, very attractive. Capex as % of revenue rose to 13.4% in 2025 (growth spend on Blue Point) from 4-9% historically; sustaining capex remains ~$550M. FCF conversion (FCF/Net Income) consistently &gt;80-100%.</p>
+    <p>Cash flow quality is high: OCF generally tracks or exceeds net income with minimal divergence; no growing gap flagged. Cash conversion cycle is favorable for the industry (fast inventory turns ~12.5x, receivables ~17x). Working capital swings occur seasonally but do not distort OCF materially.</p>
+    <p><strong>Uses of cash and capital allocation scorecard:</strong></p>
+    <ul>
+      <li><strong>Buybacks:</strong> $1.3B+ spent in 2025 alone (plus prior years), retiring ~10% of shares outstanding-shares have meaningfully shrunk, not just offset dilution. Average repurchase prices historically below current levels (accretive).</li>
+      <li><strong>Dividends:</strong> Indicated annual $2.00/share, current yield ~1.6%, payout ratio 22% of earnings and low % of FCF. 5-year dividend CAGR ~11%, consecutive increases maintained.</li>
+      <li><strong>Debt management:</strong> Net debt stable to slightly lower over 3 years with refinancing extending maturities.</li>
+      <li><strong>M&amp;A track record:</strong> Limited recent activity; Blue Point JV is growth-oriented and on-budget. No major value-destructive deals or goodwill write-downs.</li>
+    </ul>
+    <p><strong>Sustainability verdict:</strong> The company comfortably funds dividends, buybacks, and capex entirely from internal FCF generation, with excess capacity for further returns or acceleration of low-carbon projects-no reliance on debt or equity issuance.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">FCF Trend</div>
+      <canvas id="fcfTrendChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">FCF Margin Trend</div>
+      <canvas id="fcfMarginChart"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">FY2025 Cash Flow Waterfall</div>
+      <canvas id="waterfallChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">Capital Allocation Mix</div>
+      <canvas id="capitalAllocationChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">6. Earnings Quality &amp; Accounting Red Flags</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>GAAP vs. Non-GAAP spread:</strong> Typical for the industry-adjusted EPS excludes non-cash items such as unrealized derivatives, certain impairments, and restructuring. Gap is moderate and not widening; primary adjustments include stock-based comp (~$45M), amortization, and occasional one-time charges (e.g., Yazoo/electrolyzer impairments).</p>
+    <p><strong>"One-time" charge frequency:</strong> Infrequent; 2025 included $76M total impairments (Yazoo-related + $51M electrolyzer pilot abandonment) but these are not recurring quarterly occurrences (&lt;50% of quarters).</p>
+    <p><strong>Revenue recognition signals:</strong> No recent changes in methodology disclosed. Deferred revenue and contract assets move in line with production/sales cycles; no unusual pull-forwards or outpacing growth patterns noted.</p>
+    <p><strong>Accrual quality:</strong> Net income to OCF relationship is strong and persistent (OCF &gt;= net income over 3 years); no aggressive accrual patterns. Sloan Accrual Ratio not calculable precisely from summary data but directionally low given cash conversion.</p>
+    <p><strong>Audit and disclosure flags:</strong> No auditor changes, qualified opinions, or going-concern language in recent filings. No material weaknesses in internal controls (SOX 302/404 clean). No frequent amendments or restatements.</p>
+    <p><strong>Insider signals in context:</strong> Heavy selling in March 2026 (e.g., retiring ex-CEO W. Anthony Will and other officers at $100-$136 levels) coincides with the rally; however, filings and commentary attribute much to retirement, RSU vesting/forfeitures, and routine grants-not operational "talk vs. action" mismatch. New CEO has no sales.</p>
+    <p><strong>Overall accounting confidence: Clean.</strong> Adjustments are standard for a commodity/chemical company, cash flows validate earnings, and disclosures are transparent around impairments, insurance recoveries, and low-carbon economics. No red flags warranting caution.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Management Credibility</div>
+      <div style="display:flex;gap:18px;align-items:center">
+        <div class="grade-circle">A-</div>
+        <div>
+          <p>Disclosures are clean, impairments are transparent, and no auditor, control, or restatement issues were identified. <span class="source-badge">SEC</span></p>
+          <p class="small muted">Overall accounting confidence in the report is explicitly "Clean."</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cash Conversion Quality</div>
+      <div class="grid-2" style="margin-bottom:0">
+        <div>
+          <div class="card-value">$2.8B</div>
+          <div class="card-label">Operating cash flow (2025) <span class="source-badge">SEC</span></div>
+        </div>
+        <div>
+          <div class="card-value">~$1.45B</div>
+          <div class="card-label">Net income implied by ~20.5% net margin on $7.08B revenue <span class="source-badge">Calc</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="two-col-list">
+    <div class="card">
+      <div class="card-title">Bullish Signals</div>
+      <ul class="signal-list">
+        <li><span class="positive">[+]</span> OCF has met or exceeded net income over 3 years.</li>
+        <li><span class="positive">[+]</span> No auditor changes, qualified opinions, or going-concern language.</li>
+        <li><span class="positive">[+]</span> SOX 302/404 controls are clean with no material weaknesses.</li>
+        <li><span class="positive">[+]</span> Revenue recognition methodology shows no recent changes or pull-forward signals.</li>
+        <li><span class="positive">[+]</span> One-time charges are infrequent rather than recurring quarterly behavior.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Caution / Watch Items</div>
+      <ul class="signal-list">
+        <li><span class="neutral">[!]</span> March 2026 insider selling was heavy, even if context points to retirement and vesting.</li>
+        <li><span class="neutral">[!]</span> Adjusted EPS excludes non-cash items, amortization, and occasional impairments.</li>
+        <li><span class="neutral">[!]</span> 2025 impairments totaled $76M, including the $51M electrolyzer pilot abandonment.</li>
+        <li><span class="neutral">[!]</span> Commodity cyclicality can still make quarterly earnings optics noisy despite clean accounting.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">7. Forward Model &amp; Valuation Bridge</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The forward model is anchored primarily on management production guidance (9.5 million tons gross ammonia for 2026) and constructive commentary on nitrogen market tightness/low-carbon premiums already contracted, supplemented by sell-side consensus where numeric guidance is absent.</p>
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>2026E</th>
+          <th>2027E</th>
+          <th>2028E</th>
+          <th>Basis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Revenue</td><td>$6.64B</td><td>$6.45B</td><td>$6.50B</td><td>Consensus (Yahoo); 2026 inferred from volume + pricing normalization</td></tr>
+        <tr><td>Gross Margin</td><td>37-39%</td><td>36-38%</td><td>36-38%</td><td>Historical trend + low-carbon premium uplift (assumed)</td></tr>
+        <tr><td>Operating Margin</td><td>29-31%</td><td>28-30%</td><td>28-30%</td><td>Consensus trajectory + cost discipline</td></tr>
+        <tr><td>EPS</td><td>$9.35</td><td>$7.66</td><td>$8.00</td><td>Consensus (Yahoo 2026/2027); 2028 inferred</td></tr>
+        <tr><td>Free Cash Flow</td><td>$1.70B</td><td>$1.60B</td><td>$1.65B</td><td>Consensus trajectory + CapEx ramp</td></tr>
+      </tbody>
+    </table>
+    <p>Management provides no direct revenue/EPS guidance (only production/CapEx); the above revenue/EPS lines are therefore consensus-driven or inferred from historical margins, volume guidance, and low-carbon commentary. Margins assume modest compression from Yazoo drag offset by premiums/tightness.</p>
+    <p><strong>Management guidance vs. sell-side consensus (2026 period):</strong></p>
+    <p>Management tone is more constructive on sustained tightness and premiums than the cautious sell-side view; consensus revenue down ~6% reflects expected normalization, while management production guide implies potential upside if prices hold. Delta: Inline-to-slightly above on pricing assumptions per transcript language.</p>
+    <p><strong>Valuation bridge</strong> (using 2026E EPS as primary forecast year per consensus availability):</p>
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th>Valuation Method</th>
+          <th>Forecast Year</th>
+          <th>Forecast Metric</th>
+          <th>Target Multiple / FCF Yield</th>
+          <th>Implied Target Price</th>
+          <th>Current Price</th>
+          <th>Upside / Downside</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>P/E</td><td>2026E</td><td>$9.35 EPS</td><td>13.5x (current forward multiple)</td><td>~$126</td><td>$125.56</td><td>~0% (fair)</td></tr>
+        <tr><td>FCF Yield</td><td>2026E</td><td>$1.70B FCF</td><td>8.0% yield (historical attractive level)</td><td>~$133 (mkt cap ~$20.5B)</td><td>$125.56</td><td>+6%</td></tr>
+      </tbody>
+    </table>
+    <p>Upside/downside is driven mainly by multiple stability (no major re-rating assumed) and modest earnings normalization rather than explosive revision. Current valuation (~13.5x 2026E EPS, ~6.4x EV/EBITDA) appears justified by the forward model-neither deeply cheap nor expensive assuming nitrogen prices moderate but low-carbon layer persists.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="card">
+    <div class="card-title">Forward Model Table</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="num">2026E</th>
+          <th class="num">2027E</th>
+          <th class="num">2028E</th>
+          <th>Basis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Revenue</td><td class="num">$6.64B</td><td class="num">$6.45B</td><td class="num">$6.50B</td><td>Consensus / inferred normalization <span class="source-badge unverified">UNVERIFIED</span></td></tr>
+        <tr><td>Gross Margin</td><td class="num">37-39%</td><td class="num">36-38%</td><td class="num">36-38%</td><td>Historical trend + premium uplift</td></tr>
+        <tr><td>Operating Margin</td><td class="num">29-31%</td><td class="num">28-30%</td><td class="num">28-30%</td><td>Consensus trajectory + cost discipline</td></tr>
+        <tr><td>EPS</td><td class="num">$9.35</td><td class="num">$7.66</td><td class="num">$8.00</td><td>Consensus / inferred <span class="source-badge unverified">UNVERIFIED</span></td></tr>
+        <tr><td>Free Cash Flow</td><td class="num">$1.70B</td><td class="num">$1.60B</td><td class="num">$1.65B</td><td>CapEx ramp and margin assumptions</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Management vs. Consensus</div>
+      <table>
+        <thead>
+          <tr><th>Line Item</th><th>Management</th><th>Consensus</th><th>Delta</th><th>Interpretation</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Production</td><td>9.5M gross ammonia tons</td><td>N/A</td><td>Management anchor only</td><td>Volume basis from transcript <span class="source-badge">Earnings Call</span></td></tr>
+          <tr><td>CapEx</td><td>~$950M</td><td>N/A</td><td>Management anchor only</td><td>Higher investment year <span class="source-badge">Earnings Call</span></td></tr>
+          <tr><td>Revenue</td><td>No numeric guide</td><td>$6.64B</td><td>Normalization down ~6%</td><td>Sell-side cautious <span class="source-badge unverified">UNVERIFIED</span></td></tr>
+          <tr><td>EPS</td><td>No numeric guide</td><td>$9.35</td><td>Consensus only</td><td>Possible upside if prices hold <span class="source-badge unverified">UNVERIFIED</span></td></tr>
+          <tr><td>Market tone</td><td>Constructive on tightness/premiums</td><td>Cautious on normalization</td><td>Inline-to-slightly above</td><td>Transcript tone more constructive</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Valuation Bridge</div>
+      <table>
+        <thead>
+          <tr><th>Method</th><th>Year</th><th>Metric</th><th>Multiple / Yield</th><th>Implied Target</th><th>Current</th><th>Upside</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>P/E</td><td>2026E</td><td>$9.35 EPS</td><td>13.5x</td><td>$126</td><td>$125.56</td><td>~0%</td></tr>
+          <tr><td>FCF Yield</td><td>2026E</td><td>$1.70B FCF</td><td>8.0%</td><td>$133</td><td>$125.56</td><td>+6%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">P/E Method Bridge</div>
+      <canvas id="peBridgeChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">FCF Yield Method Bridge</div>
+      <canvas id="fcfBridgeChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">8. Key Ratios &amp; Comparisons</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Peers used: Mosaic Co. (MOS), Nutrien Ltd. (NTR)-direct nitrogen/phosphate competitors.</p>
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Current Value</th>
+          <th>5-yr Company Avg</th>
+          <th>Peer/Sector Avg</th>
+          <th>Interpretation / Flag</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>P/E (TTM)</td><td>14.0x</td><td>~12-15x</td><td>15-18x</td><td>Cheap vs. peers</td></tr>
+        <tr><td>P/E (Forward)</td><td>13.5x</td><td>N/A</td><td>14-16x</td><td>In-line</td></tr>
+        <tr><td>PEG Ratio</td><td>0.42</td><td>N/A</td><td>1.0+</td><td>Attractive (growth embedded)</td></tr>
+        <tr><td>EV/EBITDA</td><td>6.4x</td><td>~8.5x</td><td>7.5-9x</td><td>Discount (flag)</td></tr>
+        <tr><td>P/S</td><td>2.7x</td><td>~2.5x</td><td>2.8-3.2x</td><td>Fair</td></tr>
+        <tr><td>P/B</td><td>4.0x</td><td>~2.5x</td><td>3-4x</td><td>Premium on equity strength</td></tr>
+        <tr><td>P/FCF</td><td>10.8x</td><td>~9-11x</td><td>12-15x</td><td>Attractive yield</td></tr>
+        <tr><td>Debt/Equity</td><td>0.41</td><td>0.4-0.7</td><td>0.5-0.8</td><td>Conservative</td></tr>
+        <tr><td>Net Debt/EBITDA</td><td>~1.0x</td><td>1-2x</td><td>1.5-2.5x</td><td>Strong (flag)</td></tr>
+        <tr><td>Current Ratio</td><td>3.37</td><td>~3.0</td><td>2.0-2.5</td><td>Fortress liquidity</td></tr>
+        <tr><td>Quick Ratio</td><td>2.93</td><td>~2.7</td><td>1.5-2.0</td><td>Excellent</td></tr>
+        <tr><td>Interest Coverage</td><td>41.7x</td><td>High</td><td>15-25x</td><td>Exceptional</td></tr>
+        <tr><td>Gross Margin</td><td>38.5%</td><td>40.1%</td><td>30-35%</td><td>Superior moat</td></tr>
+        <tr><td>Operating Margin</td><td>32.4%</td><td>33.9%</td><td>20-25%</td><td>Superior</td></tr>
+        <tr><td>Asset Turnover</td><td>0.51</td><td>0.5</td><td>0.4-0.6</td><td>In-line</td></tr>
+        <tr><td>ROIC</td><td>18.4%</td><td>21.3%</td><td>12-15%</td><td>Strong</td></tr>
+      </tbody>
+    </table>
+    <p>The stock appears cheap relative to its own 5-year averages on EV/EBITDA and attractive versus peers on profitability and leverage. The single most important ratio to watch going forward is EV/EBITDA (or FCF yield)-sustained pricing and low-carbon premiums could drive re-rating; any compression below 6x would signal deeper cycle concerns.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="card">
+    <div class="card-title">Comparison Table</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="num">Current Value</th>
+          <th class="num">5-yr Average</th>
+          <th class="num">Peer / Sector Avg</th>
+          <th>Interpretation / Flag</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>P/E (TTM)</td><td class="num">14.0x</td><td class="num">~12-15x</td><td class="num">15-18x <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Cheap vs. peers</td></tr>
+        <tr><td>P/E (Forward)</td><td class="num">13.5x</td><td class="num">N/A</td><td class="num">14-16x <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-warn">In-line</td></tr>
+        <tr><td>PEG Ratio</td><td class="num">0.42</td><td class="num">N/A</td><td class="num">1.0+ <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Attractive</td></tr>
+        <tr><td>EV/EBITDA</td><td class="num">6.4x</td><td class="num">~8.5x</td><td class="num">7.5-9x <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Discount</td></tr>
+        <tr><td>P/S</td><td class="num">2.7x</td><td class="num">~2.5x</td><td class="num">2.8-3.2x <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-warn">Fair</td></tr>
+        <tr><td>P/B</td><td class="num">4.0x</td><td class="num">~2.5x</td><td class="num">3-4x <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-warn">Premium on equity strength</td></tr>
+        <tr><td>P/FCF</td><td class="num">10.8x</td><td class="num">~9-11x</td><td class="num">12-15x <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Attractive yield</td></tr>
+        <tr><td>Debt/Equity</td><td class="num">0.41</td><td class="num">0.4-0.7</td><td class="num">0.5-0.8 <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Conservative</td></tr>
+        <tr><td>Net Debt/EBITDA</td><td class="num">~1.0x</td><td class="num">1-2x</td><td class="num">1.5-2.5x <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Strong</td></tr>
+        <tr><td>Current Ratio</td><td class="num">3.37</td><td class="num">~3.0</td><td class="num">2.0-2.5 <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Fortress liquidity</td></tr>
+        <tr><td>Quick Ratio</td><td class="num">2.93</td><td class="num">~2.7</td><td class="num">1.5-2.0 <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Excellent</td></tr>
+        <tr><td>Interest Coverage</td><td class="num">41.7x</td><td class="num">High</td><td class="num">15-25x <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Exceptional</td></tr>
+        <tr><td>Gross Margin</td><td class="num">38.5%</td><td class="num">40.1%</td><td class="num">30-35% <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Superior moat</td></tr>
+        <tr><td>Operating Margin</td><td class="num">32.4%</td><td class="num">33.9%</td><td class="num">20-25% <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Superior</td></tr>
+        <tr><td>Asset Turnover</td><td class="num">0.51</td><td class="num">0.5</td><td class="num">0.4-0.6 <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-warn">In-line</td></tr>
+        <tr><td>ROIC</td><td class="num">18.4%</td><td class="num">21.3%</td><td class="num">12-15% <span class="source-badge unverified">UNVERIFIED</span></td><td class="interpret-good">Strong</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted">Peers: Mosaic Co. (MOS), Nutrien Ltd. (NTR).</p>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">9. Additional Key Factors</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Insider ownership is low (0.4%); recent Form 4 filings show significant sales in March 2026 at elevated prices, primarily from retiring ex-CEO W. Anthony Will and routine officer vesting/forfeitures-no new CEO activity. Institutional ownership is high (106.6% of float) with stable top holders (Vanguard 12.7%, BlackRock 8.0%, State Street 5.1%); minor 13F tweaks, no blockbuster adds/trims.</p>
+    <p>Short interest 7.0% of shares outstanding / 8.4% of float (as of late Feb 2026), days-to-cover ~4.6; trend stable/slightly declining over last 3 months-not crowded.</p>
+    <p>Liquidity is excellent: average daily dollar volume ~$400-500M+, float ~153M shares. No meaningful lockup expirations.</p>
+    <p>Beta 0.69 (low); macro exposure tied to natural gas prices, USD strength (negative for exports), and agricultural commodity cycles. Sector tailwinds include sustained nitrogen tightness; headwinds from potential China re-entry or EU CBAM implementation.</p>
+    <p>Earnings surprise history: consistent beats over last 8 quarters (e.g., Q4 2025 beat by ~$0.09), with positive estimate revision trend-2026 EPS consensus up meaningfully in the last 30-60 days despite rating caution.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">Institutional Ownership</div>
+      <canvas id="ownershipChart"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Insider Activity</div>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Role</th><th>Action</th><th>Shares</th><th>Price Range</th><th>Source</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>W. Anthony Will</td><td>Retiring ex-CEO</td><td class="negative">Sell</td><td>N/D</td><td>$100-$136</td><td><span class="source-badge">SEC</span></td></tr>
+          <tr><td>Other officers</td><td>Management</td><td class="negative">Sell / vesting</td><td>N/D</td><td>$100-$136</td><td><span class="source-badge">SEC</span></td></tr>
+          <tr><td>Chris Bohn</td><td>CEO</td><td class="neutral">No sales</td><td>N/D</td><td>N/A</td><td><span class="source-badge">SEC</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Short Interest</div>
+      <div class="card-value">8.4%</div>
+      <div class="card-label">Of float; 7.0% of shares outstanding and ~4.6 days to cover <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Trading Liquidity</div>
+      <div class="card-value">$400-500M+</div>
+      <div class="card-label">Average daily dollar volume; float ~153M shares; beta 0.69 <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sentiment Summary</div>
+      <div class="card-value neutral">Hold</div>
+      <div class="card-label">Mean PT ~$102, range $72-$150, recent move from $137.44 high to ~$126 <span class="source-badge unverified">UNVERIFIED</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">10. Scenario Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Scenarios are consistent with the Section 7 forward model.</p>
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Probability</th>
+          <th>Key Assumptions</th>
+          <th>Target Price</th>
+          <th>Upside/Downside from Current (~$126)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Bull</strong></td><td>30%</td><td>Sustained tightness + low-carbon premiums expand; Yazoo insurance full; geo rerouting permanent</td><td>$155</td><td>+23%</td></tr>
+        <tr><td><strong>Base</strong></td><td>45%</td><td>Normalization post-geo; volume 9.5M tons; modest premium capture</td><td>$115</td><td>-9%</td></tr>
+        <tr><td><strong>Bear</strong></td><td>25%</td><td>Rapid price crash on China return + resolution; Yazoo prolonged drag</td><td>$85</td><td>-32%</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Bull case narrative:</strong> Geopolitical disruptions persist or lead to permanent U.S. supply rerouting; low-carbon contracts ramp faster than expected with Europe/Japan/ domestic demand. Nitrogen prices stay elevated, Yazoo restarts early with full insurance, and Blue Point de-risks. Key drivers: higher realized pricing + $150-200M incremental FCF from abatement/CCS. Leading indicator: if Q2 gross margin expands above 40% and new low-carbon offtake announced. Valuation bridge: 2026E EPS $10.50 (premium uplift) at 14.8x P/E = $155.</p>
+    <p><strong>Base case narrative:</strong> Nitrogen market normalizes gradually; production hits 9.5M tons with modest premium layer ($20-25/ton on portion of volume). Buybacks continue, balance sheet remains fortress. Steady-state looks like mid-cycle margins (~30% operating) with low-carbon providing a structural floor. Leading indicator: spring planting demand and India tenders meeting expectations. Valuation bridge: 2027E EPS $7.66 at 15x P/E = $115.</p>
+    <p><strong>Bear case narrative:</strong> Middle East tensions de-escalate quickly, China floods exports, and urea/ammonia prices collapse; Yazoo outage extends, low-carbon ramp slower than modeled. Regulatory scrutiny (DOJ/CBAM) adds costs. Leading indicator: if urea prices fall below $350/ton sustained or 2026 guidance cut. Valuation bridge: 2026E EPS $7.00 at 12x P/E = $84 (rounded).</p>
+    <p><strong>Probability-weighted expected value:</strong> (0.30 x $155) + (0.45 x $115) + (0.25 x $85) = $118.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-3">
+    <div class="scenario-card bull">
+      <div class="card-title">Bull Case</div>
+      <div class="card-value positive">30%</div>
+      <div class="card-label">Target $155 | +23%</div>
+      <p class="small" style="margin-top:10px">Sustained tightness, faster low-carbon ramp, early Yazoo restart, Blue Point de-risking.</p>
+      <p class="small"><strong>Bridge:</strong> 2026E EPS $10.50 x 14.8x = $155</p>
+      <p class="small"><strong>Leading indicator:</strong> Q2 gross margin above 40% and new low-carbon offtake.</p>
+    </div>
+    <div class="scenario-card base">
+      <div class="card-title">Base Case</div>
+      <div class="card-value neutral">45%</div>
+      <div class="card-label">Target $115 | -9%</div>
+      <p class="small" style="margin-top:10px">Gradual normalization, 9.5M tons, modest premium capture, continued buybacks.</p>
+      <p class="small"><strong>Bridge:</strong> 2027E EPS $7.66 x 15x = $115</p>
+      <p class="small"><strong>Leading indicator:</strong> Spring planting demand and India tenders meet expectations.</p>
+    </div>
+    <div class="scenario-card bear">
+      <div class="card-title">Bear Case</div>
+      <div class="card-value negative">25%</div>
+      <div class="card-label">Target $85 | -32%</div>
+      <p class="small" style="margin-top:10px">Rapid China return, lower prices, prolonged Yazoo drag, slower low-carbon ramp, added regulatory cost.</p>
+      <p class="small"><strong>Bridge:</strong> 2026E EPS $7.00 x 12x = $84 (rounded)</p>
+      <p class="small"><strong>Leading indicator:</strong> Urea below $350/ton sustained or 2026 guidance cut.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Probability-Weighted Expected Value</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap">
+      <div class="mono">0.30 x $155 = $46.50</div>
+      <div class="mono">0.45 x $115 = $51.75</div>
+      <div class="mono">0.25 x $85 = $21.25</div>
+      <div class="mono" style="font-weight:700;color:var(--gold)">Total = $118.00</div>
+    </div>
+    <div class="prob-bar-container">
+      <div class="seg" style="width:30%;background:var(--green)">30%</div>
+      <div class="seg" style="width:45%;background:var(--gold)">45%</div>
+      <div class="seg" style="width:25%;background:var(--red)">25%</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">11. Risks &amp; Opportunities</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Top 3-4 Risks</strong></p>
+    <ul>
+      <li>Nitrogen/urea price collapse (High severity / Medium likelihood) - would compress margins sharply and erase recent gains.</li>
+      <li>Regulatory scrutiny/DOJ probe or EU CBAM impact (Medium / Medium) - potential fines, export cost disadvantage, or headline risk.</li>
+      <li>Operational execution (Yazoo prolonged outage or Blue Point delays) (Medium / Low) - volume/Ebitda shortfalls.</li>
+      <li>Macro headwinds (higher NG prices or strong USD) (Medium / Medium) - erodes cost advantage.</li>
+    </ul>
+    <p><strong>Top 3-4 Opportunities</strong></p>
+    <ul>
+      <li>Sustained low-carbon premium monetization (High magnitude / Medium likelihood) - contracts already in place; could add $100M+ stable FCF.</li>
+      <li>Continued aggressive buybacks at attractive levels (High / High) - further share shrinkage and accretion.</li>
+      <li>Prolonged geopolitical tightness/rerouting (Medium / Medium) - higher realized pricing into 2026-27.</li>
+      <li>Further low-carbon platform expansion at Blue Point (High / Low) - scalable upside beyond current guidance.</li>
+    </ul>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Risk Matrix</div>
+      <table>
+        <thead>
+          <tr><th>Risk</th><th>Severity</th><th>Likelihood</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Nitrogen / urea price collapse</td><td class="negative">High</td><td class="neutral">Medium</td></tr>
+          <tr><td>Regulatory scrutiny / DOJ / EU CBAM</td><td class="neutral">Medium</td><td class="neutral">Medium</td></tr>
+          <tr><td>Operational execution at Yazoo / Blue Point</td><td class="neutral">Medium</td><td class="muted">Low</td></tr>
+          <tr><td>Macro: higher NG prices or strong USD</td><td class="neutral">Medium</td><td class="neutral">Medium</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Opportunity Matrix</div>
+      <table>
+        <thead>
+          <tr><th>Opportunity</th><th>Magnitude</th><th>Likelihood</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Sustained low-carbon premium monetization</td><td class="positive">High</td><td class="neutral">Medium</td></tr>
+          <tr><td>Continued aggressive buybacks</td><td class="positive">High</td><td class="positive">High</td></tr>
+          <tr><td>Prolonged geopolitical tightness / rerouting</td><td class="neutral">Medium</td><td class="neutral">Medium</td></tr>
+          <tr><td>Blue Point platform expansion</td><td class="positive">High</td><td class="muted">Low</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">12. Thesis Kill Criteria &amp; Catalyst Timeline</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>What would change my mind - Bullish thesis invalidated if:</strong></p>
+    <ul>
+      <li>[ ] Urea/ammonia prices normalize sharply and stay below $350/ton for two consecutive quarters (margin compression).</li>
+      <li>[ ] Low-carbon premiums fail to materialize in 2026 contracts or Blue Point delays/cost overruns &gt;10%.</li>
+      <li>[ ] Two consecutive quarters of negative FCF or halted buybacks.</li>
+    </ul>
+    <p><strong>What would change my mind - Bearish thesis invalidated if:</strong></p>
+    <ul>
+      <li>[ ] Nitrogen tightness persists (urea +20% sustained) with new low-carbon offtake announcements.</li>
+      <li>[ ] 2026 EPS beats consensus by &gt;15% and buybacks accelerate.</li>
+    </ul>
+    <p><strong>Upcoming Catalyst Timeline:</strong></p>
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th>Date (Est.)</th>
+          <th>Event</th>
+          <th>Potential Impact</th>
+          <th>Favors Bull/Bear/Neutral</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Early May 2026</td><td>Q1 2026 earnings</td><td>High (pricing/volume update)</td><td>Bull (if beat) / Bear</td></tr>
+        <tr><td>May/Jun 2026</td><td>Spring planting demand data</td><td>High</td><td>Bull/Neutral</td></tr>
+        <tr><td>Aug 2026</td><td>Q2 2026 earnings</td><td>High</td><td>Bull/Bear</td></tr>
+        <tr><td>Ongoing</td><td>Geopolitical (Hormuz/China) updates</td><td>High volatility</td><td>Bull</td></tr>
+        <tr><td>2029</td><td>Blue Point first production</td><td>Medium-long term</td><td>Bull</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Data as of:</strong> March 19, 2026. Data limitations: Management provides no full numeric guidance; forward estimates rely on consensus and production anchors. Analyst targets/revisions current as of March 18-19 searches. All figures from SEC filings (FY2025 10-K), Yahoo Finance/Finnhub, earnings transcripts, and recent analyst notes.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Bullish Thesis Invalidated If</div>
+      <div class="kill-item"><span class="checkbox"></span><span>Urea/ammonia prices stay below $350/ton for two consecutive quarters.</span></div>
+      <div class="kill-item"><span class="checkbox"></span><span>Low-carbon premiums fail in 2026 contracts or Blue Point delays / cost overruns exceed 10%.</span></div>
+      <div class="kill-item"><span class="checkbox"></span><span>Two consecutive quarters of negative FCF or halted buybacks.</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bearish Thesis Invalidated If</div>
+      <div class="kill-item"><span class="checkbox"></span><span>Nitrogen tightness persists with urea +20% sustained and new low-carbon offtake announcements.</span></div>
+      <div class="kill-item"><span class="checkbox"></span><span>2026 EPS beats consensus by more than 15% and buybacks accelerate.</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Catalyst Timeline</div>
+    <div class="timeline-item">
+      <div class="timeline-dot grey"></div>
+      <div><strong>Early May 2026</strong> - Q1 2026 earnings | Impact: High | Label: Bull (if beat) / Bear</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot grey"></div>
+      <div><strong>May/Jun 2026</strong> - Spring planting demand data | Impact: High | Label: Bull / Neutral</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot grey"></div>
+      <div><strong>Aug 2026</strong> - Q2 2026 earnings | Impact: High | Label: Bull / Bear</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot green"></div>
+      <div><strong>Ongoing</strong> - Geopolitical (Hormuz/China) updates | Impact: High volatility | Label: Bull</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot green"></div>
+      <div><strong>2029</strong> - Blue Point first production | Impact: Medium-long term | Label: Bull</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">Revisions</h2>
+  <div class="card">
+    <div class="card-title">Revision Summary</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      <span class="badge badge-blue">Verdict: Supplied Report Treated As Revised</span>
+      <span class="badge badge-gold">Explicit Corrections: 0</span>
+      <span class="badge badge-green">Confidence: Use Supplied Values</span>
+    </div>
+    <p class="small muted">No separate Revision Summary block was included in the supplied report text. This dashboard therefore uses the provided report as the revised baseline and does not infer any additional corrections.</p>
+  </div>
+  <div class="revision-card">
+    <div class="card-title">Revision Note</div>
+    <div style="display:inline-block;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-bottom:10px">INPUT NOTE</div>
+    <div style="text-decoration:line-through;color:var(--muted);margin-bottom:8px">Expected a separate correction log with original-versus-revised items.</div>
+    <div style="color:var(--green);margin-bottom:8px">Used the supplied March 19, 2026 report values directly as the revised data set.</div>
+    <div class="small muted">Why: the prompt references a revised report, but the attached content contains only the final sectioned report and no explicit amendment ledger.</div>
+  </div>
+</div>
+
+<script>
+const cfData = {
+  currentPrice: 125.56,
+  fairValuePE: 126.00,
+  fairValueFCF: 133.00,
+  revenueLabels: ['2022A','2023A','2024A','2025A','2026E','2027E','2028E'],
+  revenueActual: [11.20, 6.61, 5.95, 7.08, null, null, null],
+  revenueForward: [null, null, null, null, 6.64, 6.45, 6.50],
+  epsActual: [null, null, null, 8.97, null, null, null],
+  epsForward: [null, null, null, null, 9.35, 7.66, 8.00],
+  marginLabels: ['2023A','2024A','2025A'],
+  grossMargin: [38.4, 34.6, 38.5],
+  operatingMargin: [33.6, 29.4, 32.4],
+  fcfMarginShort: [null, 30.3, 25.4],
+  fcfLabels: ['2022A','2024A','2025A','2026E'],
+  ocf: [3.9, 2.3, 2.8, 2.65],
+  capex: [0.5, 0.5, 1.0, 0.95],
+  fcf: [3.4, 1.8, 1.8, 1.70],
+  fcfMarginLabels: ['2024A','2025A','2026E','2027E','2028E'],
+  fcfMargin: [30.3, 25.4, 25.6, 24.8, 25.4],
+  waterfallLabels: ['OCF','CapEx','FCF'],
+  waterfall: [2.8, -1.0, 1.8],
+  capitalAllocation: {
+    labels: ['Buybacks','Dividends','CapEx','M&A','Retained'],
+    values: [1.30, 0.31, 1.00, 0.00, 0.19]
+  },
+  ownership: {
+    labels: ['Vanguard 12.7%','BlackRock 8.0%','State Street 5.1%','Other Institutions 80.8%'],
+    values: [12.7, 8.0, 5.1, 80.8]
+  }
+};
+
+const chartState = {};
+
+function axisColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+}
+
+function gold() { return getComputedStyle(document.documentElement).getPropertyValue('--gold').trim(); }
+function green() { return getComputedStyle(document.documentElement).getPropertyValue('--green').trim(); }
+function red() { return getComputedStyle(document.documentElement).getPropertyValue('--red').trim(); }
+function blue() { return getComputedStyle(document.documentElement).getPropertyValue('--blue').trim(); }
+
+function baseScales(yTitle, y1Title) {
+  return {
+    x: { ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' } },
+    y: { beginAtZero: true, ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: yTitle, color: axisColor() } },
+    y1: y1Title ? { position: 'right', beginAtZero: true, ticks: { color: axisColor() }, grid: { drawOnChartArea: false }, title: { display: true, text: y1Title, color: axisColor() } } : undefined
+  };
+}
+
+function makeRevenueEpsChart() {
+  const ctx = document.getElementById('revenueEpsChart');
+  if (!ctx || chartState.revenueEps) return;
+  chartState.revenueEps = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: cfData.revenueLabels,
+      datasets: [
+        { label: 'Revenue Actual ($B)', data: cfData.revenueActual, backgroundColor: 'rgba(212,168,67,0.85)', borderColor: gold(), borderWidth: 1, yAxisID: 'y' },
+        { label: 'Revenue Forward ($B)', data: cfData.revenueForward, backgroundColor: 'rgba(212,168,67,0.35)', borderColor: gold(), borderWidth: 1, yAxisID: 'y' },
+        { label: 'EPS Actual', data: cfData.epsActual, type: 'line', borderColor: green(), backgroundColor: green(), tension: 0.3, yAxisID: 'y1' },
+        { label: 'EPS Forward', data: cfData.epsForward, type: 'line', borderColor: blue(), backgroundColor: blue(), borderDash: [6,4], tension: 0.3, yAxisID: 'y1' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: axisColor() } } },
+      scales: baseScales('Revenue ($B)', 'EPS')
+    }
+  });
+}
+
+function makeMarginChart() {
+  const ctx = document.getElementById('marginChart');
+  if (!ctx || chartState.margin) return;
+  chartState.margin = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: cfData.marginLabels,
+      datasets: [
+        { label: 'Gross Margin %', data: cfData.grossMargin, borderColor: gold(), backgroundColor: gold(), tension: 0.3 },
+        { label: 'Operating Margin %', data: cfData.operatingMargin, borderColor: blue(), backgroundColor: blue(), tension: 0.3 },
+        { label: 'FCF Margin %', data: cfData.fcfMarginShort, borderColor: green(), backgroundColor: 'rgba(76,175,80,0.18)', fill: false, tension: 0.3, spanGaps: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: axisColor() } } },
+      scales: { x: { ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { beginAtZero: true, ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' } } }
+    }
+  });
+}
+
+function makeFcfTrendChart() {
+  const ctx = document.getElementById('fcfTrendChart');
+  if (!ctx || chartState.fcfTrend) return;
+  chartState.fcfTrend = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: cfData.fcfLabels,
+      datasets: [
+        { label: 'OCF ($B)', data: cfData.ocf, backgroundColor: 'rgba(93,173,226,0.75)', stack: 'cash' },
+        { label: 'CapEx ($B)', data: cfData.capex.map(v => -v), backgroundColor: 'rgba(231,76,60,0.7)', stack: 'cash' },
+        { label: 'FCF ($B)', data: cfData.fcf, type: 'line', borderColor: gold(), backgroundColor: gold(), yAxisID: 'y', tension: 0.25 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: axisColor() } } },
+      scales: { x: { stacked: true, ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { stacked: true, ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' } } }
+    }
+  });
+}
+
+function makeFcfMarginChart() {
+  const ctx = document.getElementById('fcfMarginChart');
+  if (!ctx || chartState.fcfMargin) return;
+  chartState.fcfMargin = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: cfData.fcfMarginLabels,
+      datasets: [{
+        label: 'FCF Margin %',
+        data: cfData.fcfMargin,
+        borderColor: green(),
+        backgroundColor: 'rgba(76,175,80,0.18)',
+        fill: true,
+        tension: 0.25
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: axisColor() } } },
+      scales: { x: { ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { beginAtZero: true, ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' } } }
+    }
+  });
+}
+
+function makeWaterfallChart() {
+  const ctx = document.getElementById('waterfallChart');
+  if (!ctx || chartState.waterfall) return;
+  chartState.waterfall = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: cfData.waterfallLabels,
+      datasets: [{
+        data: cfData.waterfall,
+        backgroundColor: [blue(), red(), green()]
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: axisColor() }, grid: { display: false } } }
+    }
+  });
+}
+
+function makeCapitalAllocationChart() {
+  const ctx = document.getElementById('capitalAllocationChart');
+  if (!ctx || chartState.capitalAllocation) return;
+  chartState.capitalAllocation = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: cfData.capitalAllocation.labels,
+      datasets: [{
+        data: cfData.capitalAllocation.values,
+        backgroundColor: [gold(), green(), blue(), red(), 'rgba(138,138,122,0.8)'],
+        borderColor: '#141414',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: axisColor() } } }
+    }
+  });
+}
+
+function makeOwnershipChart() {
+  const ctx = document.getElementById('ownershipChart');
+  if (!ctx || chartState.ownership) return;
+  chartState.ownership = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: cfData.ownership.labels,
+      datasets: [{
+        data: cfData.ownership.values,
+        backgroundColor: [gold(), blue(), green(), 'rgba(138,138,122,0.8)'],
+        borderColor: '#141414',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: axisColor() } } }
+    }
+  });
+}
+
+function makeBridgeChart(id, label, targetValue, color) {
+  const ctx = document.getElementById(id);
+  if (!ctx || chartState[id]) return;
+  chartState[id] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Current', 'Target'],
+      datasets: [{
+        label,
+        data: [cfData.currentPrice, targetValue],
+        backgroundColor: ['rgba(138,138,122,0.7)', color]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: axisColor() }, grid: { display: false } }, y: { beginAtZero: false, ticks: { color: axisColor() }, grid: { color: 'rgba(255,255,255,0.05)' } } }
+    }
+  });
+}
+
+const tabInitializers = {
+  2: () => { makeRevenueEpsChart(); makeMarginChart(); },
+  4: () => { makeFcfTrendChart(); makeFcfMarginChart(); makeWaterfallChart(); makeCapitalAllocationChart(); },
+  6: () => { makeBridgeChart('peBridgeChart', 'P/E Fair Value', cfData.fairValuePE, gold()); makeBridgeChart('fcfBridgeChart', 'FCF Yield Fair Value', cfData.fairValueFCF, green()); },
+  8: () => { makeOwnershipChart(); }
+};
+
+function switchTab(idx) {
+  const tabs = document.querySelectorAll('.tab-content');
+  const buttons = document.querySelectorAll('.tab-btn');
+  tabs.forEach(tab => tab.classList.remove('active'));
+  buttons.forEach(btn => btn.classList.remove('active'));
+  tabs[idx].classList.add('active');
+  buttons[idx].classList.add('active');
+  if (tabInitializers[idx]) {
+    tabInitializers[idx]();
+  }
+}
+
+switchTab(0);
+</script>
+</body>
+</html>
