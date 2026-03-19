@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$UAN — CVR Partners, LP | Equity Research Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;
+  --card-bg:#141414;
+  --border:#2a2a2a;
+  --gold:#d4a843;
+  --text:#e8e0d0;
+  --muted:#8a8a7a;
+  --green:#4caf50;
+  --red:#e74c3c;
+  --yellow:#f1c40f;
+  --blue:#5dade2;
+  --radius:12px;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --mono:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace;
+  --shadow:0 18px 40px rgba(0,0,0,.28);
+}
+body{
+  background:
+    radial-gradient(circle at top right, rgba(212,168,67,.14), transparent 28%),
+    radial-gradient(circle at top left, rgba(93,173,226,.09), transparent 24%),
+    linear-gradient(180deg, #0b0b0b 0%, #090909 100%);
+  color:var(--text);
+  font-family:var(--sans);
+  line-height:1.65
+}
+.mono,.num{font-family:var(--mono)}
+.num{text-align:right}
+.positive{color:var(--green)}
+.negative{color:var(--red)}
+.neutral{color:var(--yellow)}
+.info{color:var(--blue)}
+.muted{color:var(--muted)}
+.header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:rgba(20,20,20,.96);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:18px 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap
+}
+.header-left h1{font-size:1.55rem;color:var(--gold);font-weight:700}
+.header-left .subtitle{font-size:.86rem;color:var(--muted)}
+.header-right{display:flex;gap:14px;flex-wrap:wrap}
+.header-badge{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));border:1px solid var(--border);border-radius:10px;padding:7px 14px;min-width:110px;text-align:center;box-shadow:var(--shadow)}
+.header-badge .val{font-size:1.02rem;font-weight:700;font-family:var(--mono)}
+.header-badge .lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:.55px;color:var(--muted);margin-top:2px}
+.tab-bar{display:flex;overflow-x:auto;background:#111;border-bottom:2px solid var(--border);padding:0 10px;scrollbar-width:thin;scrollbar-color:var(--border) #111}
+.tab-btn{flex-shrink:0;padding:10px 11px;font-size:12px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab-btn:hover{color:var(--gold);background:#181818}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);background:#1a1a14;font-weight:600}
+.tab-content{display:none;max-width:1480px;margin:0 auto;padding:26px 30px 46px}
+.tab-content.active{display:block}
+.section-header{color:var(--gold);font-size:1.32rem;font-weight:700;margin:0 0 18px}
+.section-divider{border:none;border-top:1px solid var(--border);margin:30px 0}
+.card{background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,.005));border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.card-title{color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px}
+.card-value{font-size:28px;font-weight:700;color:var(--text);font-family:var(--mono)}
+.card-label{font-size:12px;color:var(--muted);margin-top:5px}
+.grid-2,.grid-3,.grid-4{display:grid;gap:18px;margin-bottom:18px}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.metric-strip{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:22px}
+.metric-item{flex:1;min-width:120px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:10px;padding:13px 14px;box-shadow:var(--shadow)}
+.metric-item .card-value{font-size:18px}
+.analysis-prose{background:rgba(255,255,255,.02);border:1px solid #1f1f1f;border-radius:12px;padding:22px 24px;color:#d3ccbb;line-height:1.75;box-shadow:var(--shadow)}
+.analysis-prose p,.analysis-prose ul,.analysis-prose ol,.analysis-prose table{margin-bottom:14px}
+.analysis-prose ul,.analysis-prose ol{padding-left:20px}
+.analysis-prose li{margin-bottom:7px}
+.analysis-prose strong{color:var(--text)}
+.analysis-label{display:inline-block;background:var(--gold);color:#0a0a0a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:3px 10px;border-radius:999px;margin-bottom:14px}
+.thesis-box{background:linear-gradient(135deg, rgba(212,168,67,.14), rgba(212,168,67,.04));border:1px solid rgba(212,168,67,.35);border-radius:var(--radius);padding:22px 24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.scenario-card{background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,.005));border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)}
+.scenario-card.bull{border-left-color:var(--green)}
+.scenario-card.base{border-left-color:var(--gold)}
+.scenario-card.bear{border-left-color:var(--red)}
+.timeline-item{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.timeline-item:last-child{border-bottom:none}
+.timeline-dot{width:14px;height:14px;border-radius:50%;margin-top:6px;flex-shrink:0}
+.timeline-dot.green{background:var(--green)}
+.timeline-dot.red{background:var(--red)}
+.timeline-dot.grey{background:var(--muted)}
+.kill-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.kill-item .checkbox{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:3px}
+.revision-card{background:rgba(231,76,60,.07);border:1px solid rgba(231,76,60,.28);border-radius:var(--radius);padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.source-badge{display:inline-block;background:var(--gold);color:#0a0a0a;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:3px;vertical-align:middle;letter-spacing:.3px;margin-left:4px}
+.source-badge.unverified{background:var(--red);color:#fff}
+.badge{display:inline-block;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:700;border:1px solid transparent}
+.badge-green{background:rgba(76,175,80,.15);color:var(--green);border-color:rgba(76,175,80,.28)}
+.badge-red{background:rgba(231,76,60,.15);color:var(--red);border-color:rgba(231,76,60,.28)}
+.badge-yellow{background:rgba(241,196,15,.15);color:var(--yellow);border-color:rgba(241,196,15,.28)}
+.badge-gold{background:rgba(212,168,67,.15);color:var(--gold);border-color:rgba(212,168,67,.28)}
+.badge-blue{background:rgba(93,173,226,.15);color:var(--blue);border-color:rgba(93,173,226,.28)}
+.prob-bar-container{display:flex;height:28px;border-radius:6px;overflow:hidden;margin:12px 0}
+.prob-bar-container .seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#0a0a0a}
+.chart-box{background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,.005));border:1px solid var(--border);border-radius:var(--radius);padding:18px 18px 10px;margin-bottom:18px;box-shadow:var(--shadow)}
+.chart-box canvas{max-height:360px}
+.two-col-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.signal-list{list-style:none;padding-left:0}
+.signal-list li{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.signal-list li:last-child{border-bottom:none}
+.grade-circle{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;font-family:var(--mono);background:rgba(76,175,80,.12);border:2px solid rgba(76,175,80,.28);color:var(--green)}
+.callout-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.mini-note{font-size:12px;color:var(--muted)}
+.waterfall-row{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.waterfall-label{width:110px;font-size:12px;color:var(--muted)}
+.waterfall-bar{flex:1;height:28px;border-radius:8px;position:relative;overflow:hidden;background:#1b1b1b;border:1px solid var(--border)}
+.waterfall-fill{height:100%;display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:700}
+.waterfall-fill.gold{background:rgba(212,168,67,.6);color:#0a0a0a}
+.waterfall-fill.red{background:rgba(231,76,60,.78);color:#fff}
+.waterfall-fill.green{background:rgba(76,175,80,.78);color:#fff}
+.split-card{display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.risk-table td,.opp-table td{font-size:13px}
+.severity-high,.likelihood-high,.magnitude-high{color:var(--red);font-weight:700}
+.severity-medium,.likelihood-medium,.magnitude-medium{color:var(--yellow);font-weight:700}
+.severity-low,.likelihood-low,.magnitude-low{color:var(--muted);font-weight:700}
+.thesis-grid-note{font-size:13px;color:var(--muted);margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{background:rgba(212,168,67,.15);color:var(--gold);padding:10px 12px;text-align:left;font-size:11px;letter-spacing:.75px;text-transform:uppercase;border-bottom:2px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.interpret-good{color:var(--green);font-weight:600}
+.interpret-warn{color:var(--yellow);font-weight:600}
+.interpret-bad{color:var(--red);font-weight:600}
+.table-note{font-size:12px;color:var(--muted);margin-top:-6px;margin-bottom:16px}
+.strike{color:var(--muted);text-decoration:line-through}
+@media(max-width:980px){
+  .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:768px){
+  .grid-2,.grid-3,.grid-4,.two-col-list{grid-template-columns:1fr}
+  .header{padding:14px 16px}
+  .tab-content{padding:18px 14px 34px}
+  .tab-btn{padding:8px 9px;font-size:10.5px}
+  .metric-strip{flex-direction:column}
+  .waterfall-row{flex-direction:column;align-items:stretch}
+  .waterfall-label{width:auto}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>$UAN — CVR Partners, LP</h1>
+    <div class="subtitle">Equity Research Dashboard | Data as of March 19, 2026</div>
+  </div>
+  <div class="header-right">
+    <div class="header-badge"><div class="val">$133</div><div class="lbl">Current Price</div></div>
+    <div class="header-badge"><div class="val" style="color:#f1c40f">Hold / Buy</div><div class="lbl">Quick Rating</div></div>
+    <div class="header-badge"><div class="val" style="color:#d4a843">Medium</div><div class="lbl">Conviction</div></div>
+    <div class="header-badge"><div class="val" style="color:#d4a843">~$146</div><div class="lbl">Target Price</div></div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab(0)">1. Executive</button>
+  <button class="tab-btn" onclick="switchTab(1)">2. Narrative</button>
+  <button class="tab-btn" onclick="switchTab(2)">3. Fundamentals</button>
+  <button class="tab-btn" onclick="switchTab(3)">4. Balance Sheet</button>
+  <button class="tab-btn" onclick="switchTab(4)">5. Cash Flow</button>
+  <button class="tab-btn" onclick="switchTab(5)">6. Earnings Quality</button>
+  <button class="tab-btn" onclick="switchTab(6)">7. Forward Model</button>
+  <button class="tab-btn" onclick="switchTab(7)">8. Key Ratios</button>
+  <button class="tab-btn" onclick="switchTab(8)">9. Ownership</button>
+  <button class="tab-btn" onclick="switchTab(9)">10. Scenarios</button>
+  <button class="tab-btn" onclick="switchTab(10)">11. Risks</button>
+  <button class="tab-btn" onclick="switchTab(11)">12. Catalysts</button>
+  <button class="tab-btn" onclick="switchTab(12)">Revisions</button>
+</div>
+
+<div class="tab-content active">
+  <h2 class="section-header">1. Executive Summary</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <ul>
+      <li>UAN (CVR Partners LP) is a variable-distribution MLP producing ammonia and UAN fertilizer at two U.S. plants, benefiting from low-cost U.S. feedstock (pet-coke gasification at Coffeyville, nat-gas at East Dubuque) amid global supply tightness.</li>
+      <li>Recent Middle East disruptions (Iran missile attacks on Qatar Ras Laffan LNG facilities March 18-19, 2026) are tightening nitrogen supply and lifting prices, supporting robust spring 2026 demand and distributions.</li>
+      <li>FY2025 results solid (Rev $606M +15% YoY, EPS $9.33, EBITDA $211M) despite Q4 turnaround drag; 2025 distributions totaled $10.54/unit.</li>
+      <li>Balance sheet levered (debt $550M notes due 2028) but liquidity strong (cash $69M + $48M ABL undrawn, current ratio 2.21); no goodwill impairments.</li>
+      <li>Minimal analyst coverage (sparse “Hold” ratings, no consensus targets).</li>
+      <li><strong>Conviction level: Medium</strong> for swing (momentum from geo/pricing) | <strong>Medium</strong> for position (cyclical fundamentals with execution risks).</li>
+      <li><strong>Quick rating: Hold</strong> for swing (near-term volatility); <strong>Buy</strong> for position. Expected upside ~10% over 6-12 months to ~$146 (2026E EPS bridge below in Section 7).</li>
+    </ul>
+    <p>The single most important thing an investor needs to know right now: Geopolitical supply shocks are the dominant near-term driver, but UAN’s value ultimately hinges on sustained high utilization (&gt;95%) and pricing power vs. its concentrated two-plant operations.</p>
+    <p><strong>Data as of: March 19, 2026</strong> (10-K filed Feb 18, 2026; earnings call Feb 18, 2026; Finnhub/Yahoo stats Mar 19, 2026; Reuters news Mar 18-19, 2026). Limited analyst consensus and no sell-side revenue/EPS estimates available.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="thesis-box">
+    <div class="card-title">Investment Thesis</div>
+    <p style="margin-bottom:9px"><strong>Asset setup:</strong> Variable-distribution MLP with ammonia and UAN output from Coffeyville and East Dubuque, leveraging low-cost U.S. feedstock and advantaged logistics into the Corn Belt <span class="source-badge">SEC</span></p>
+    <p style="margin-bottom:9px"><strong>Near-term catalyst:</strong> March 18-19, 2026 Middle East disruptions tightened global nitrogen supply and supported higher spring pricing <span class="source-badge">Reuters</span></p>
+    <p style="margin-bottom:9px"><strong>Cash return frame:</strong> FY2025 distributions totaled $10.54/unit, with upside tied to sustained utilization and pricing power <span class="source-badge">SEC</span> <span class="source-badge">Earnings Call</span></p>
+    <p><strong>Key risk:</strong> Concentrated two-plant operations and cyclical fertilizer pricing can overwhelm the distribution story if utilization slips <span class="source-badge">SEC</span></p>
+  </div>
+  <div class="callout-row">
+    <span class="badge badge-gold">Conviction: Medium (Swing)</span>
+    <span class="badge badge-gold">Conviction: Medium (Position)</span>
+    <span class="badge badge-yellow">Rating: Hold (Swing)</span>
+    <span class="badge badge-green">Rating: Buy (Position)</span>
+  </div>
+  <div class="metric-strip" id="executive-metrics"></div>
+  <div class="grid-3" id="executive-pillars"></div>
+  <div id="executive-expected-value"></div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">2. Current Narrative &amp; Sentiment</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>The dominant storyline is <strong>global nitrogen supply tightness</strong> from Middle East disruptions—specifically Iranian missile strikes damaging QatarEnergy’s Ras Laffan LNG/fertilizer infrastructure (March 18-19, 2026)—combined with ongoing offline capacity in Egypt, India, Iran, and Europe’s high nat-gas costs. This has driven sharp urea/ammonia price spikes (UAN gate prices already +55% YoY in recent quarters) and early spring ammonia movement, benefiting advantaged U.S. producers like UAN.</p>
+    <p>Q4 2025 results (reported Feb 18, 2026) missed on operations: net loss $10M ($0.97/unit) on $131M sales due to 32-day Coffeyville turnaround + 3-week third-party air separation issues (utilization 64% vs. guided 80-85%); however, full-year 2025 was strong (Rev $606M +15% YoY, NI $99M/EPS $9.33, EBITDA $211M). Q4 distribution slashed to $0.37/unit (full-year total $10.54/unit). Management guidance for Q1 2026: 95-100% ammonia utilization, direct operating expenses $57-62M (excl. inventory), total 2026 capex $60-75M ($35-45M maint, $25-30M growth funded by prior reserves). No revenue/EPS guidance issued.</p>
+    <p>Wall Street coverage is extremely sparse: ~1 analyst rating (“Hold” per MarketBeat), no meaningful consensus price targets or recent revisions in last 30/90 days. Market sentiment is <strong>bullish but quiet</strong>—retail/Fintwit spike on Qatar news (supply crunch narrative), with traders highlighting U.S. feedstock edge and MLP cash-flow pass-through. No major controversies beyond routine cyclicality.</p>
+    <p><strong>Contrarian Signal Check</strong> (consensus mildly bullish on geo): The strongest differentiated bear argument (from limited retail commentary) is that the trade is already “crowded” and priced in after UAN’s ~70% 52-week gain and 25%+ 3-week surge—better relative value exists in discounted peers like MOS (P/B ~0.8x) or ICL. Core logic: Geo tailwinds are obvious and short-lived; UAN’s two-plant concentration and historical distribution volatility make it riskier than diversified peers despite the headline catalyst.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-3" id="narrative-cards"></div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">3. Fundamental Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>CVR Partners LP is a pure-play nitrogen fertilizer MLP operating two U.S. facilities: Coffeyville, KS (1,300 tpd ammonia + pet-coke gasification for hydrogen, unique North American asset) and East Dubuque, IL (1,075 tpd ammonia + nat-gas feedstock). Single reportable segment; products are ammonia (direct application or feedstock) and UAN solution (67%+ of sales). Revenue model is wholesale spot/contract sales (terms &lt;1 year) to ag customers in the Midwest/Plains Corn Belt; recognized at delivery. Recurring revenue tied to seasonal spring/fall applications; ~90%+ U.S.-focused with rail/truck/barge logistics. No international exposure or diversified segments.</p>
+    <p>Historical growth volatile: 3-5yr Rev CAGR ~11.6% (driven by 2022 peak pricing); EPS CAGR negative (~-30% 3yr) due to cyclical swings (2020 loss to 2022 $27 EPS). 2025 Rev +15% YoY on pricing despite volume dip. Forward: 2026 expected rebound on high utilization.</p>
+    <p>Profitability: Gross margin TTM 40.5% (5yr avg ~44%); operating margin TTM 21.2% (5yr 26%); net 16.3% (5yr 20%). Trailing 8 quarters show compression in weak periods (Q4 2025 OM hit by turnaround) but strong expansion in pricing spikes (2022 peaks &gt;38% OM). ROE TTM 32.8% (5yr 41%), ROA 9.8% (5yr 13%), ROIC ~11-15%. Margins highly sensitive to product prices vs. feedstock (pet-coke advantage at Coffeyville).</p>
+    <p>Competitive moat is <strong>moderate and cost-based</strong> rather than structural: Primary competition from CF Industries, Nutrien, Mosaic, LSB, and imports. Pricing is the main differentiator; UAN’s geographic proximity to Corn Belt provides freight/logistics edge during peak seasons. Coffeyville’s pet-coke gasification (by-product from parent CVR Energy refinery) offers feedstock diversification and cost advantage vs. pure nat-gas peers during high European/Asian energy prices. MD&amp;A (10-K) notes “intense competition” but highlights reliability/debottlenecking projects and carbon-reduction initiatives (N2O abatement) as positioning strengths. Switching costs low; no network effects or scale dominance (UAN is small vs. peers).</p>
+    <p>Management: CEO Mark Pytosh (long tenure, also leads parent CVI); strong insider alignment via Carl Icahn (~39.7% ownership, added shares April 2025 at $66-75 range). Capital allocation disciplined for MLP—variable distributions maximize cash return (2025 $10.54/unit); growth capex brownfield (debottlenecking, feedstock flexibility up to 8% capacity at Coffeyville) funded internally from reserves; no major M&amp;A destruction. Track record mixed: strong cash generation in up-cycles, transparent on turnaround issues.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-4" id="fundamental-q1-cards"></div>
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">Revenue &amp; EPS</div>
+      <canvas id="fundamentalsRevenueChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">Margin Trends</div>
+      <canvas id="fundamentalsMarginChart"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Growth Rates Table</div>
+    <div id="fundamental-growth-table"></div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">4. Balance Sheet Deep Dive</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Asset quality</strong>: No goodwill or significant intangibles on balance sheet (0% of $969.5M total assets/equity). No impairments reported in last 3 years (10-K notes none). Assets primarily PP&amp;E (plants), inventory ($83M), receivables ($59M). Clean—no write-down flags.</p>
+    <p><strong>Debt structure</strong>: Total debt ~$548-570M (primarily $550M 6.125% senior secured notes due June 2028; plus minor finance leases). Weighted average cost ~6.125% fixed on notes; ABL revolver variable (SOFR + margin). Fixed-rate dominant; no floating exposure of note. Debt maturity schedule: Major bullet $550M due 2028; ABL matures Sept 2028 (undrawn). Interest payments ~$34M short-term, $51M longer-term (10-K cash requirements table). No near-term maturities.</p>
+    <p><strong>Covenant and credit risk</strong>: Covenants restrict additional debt, distributions, investments, asset sales, affiliate transactions; require fixed-charge coverage compliance (met as of Dec 31, 2025). No Moody’s/S&amp;P rating disclosed for UAN (affiliate context BB-/B+ range per related filings). Debt/EBITDA ~2.4-2.6x (well below typical MLP covenants ~4-5x threshold). Low covenant breach risk.</p>
+    <p><strong>Off-balance-sheet exposure</strong>: Operating leases capitalized ~$17M; finance leases ~$41M (post-ASC 842). Minor equity-method JV for carbon credits (45Q); no material guarantees, VIE consolidation, or pension/OPEB. Purchase commitments $96M (feedstock/utilities), transport agreements $11M—standard for industry. No hidden liabilities flagged.</p>
+    <p><strong>Liquidity position</strong>: Cash + ST investments $69M; undrawn ABL revolver ~$48M (total liquidity $117M). Current ratio 2.21; quick 1.34. Profitable—OCF covers needs; no cash burn. Months of liquidity ample (&gt;12).</p>
+    <p><strong>Net-net assessment</strong>: Balance sheet is a <strong>neutral-to-mild strength</strong>—levered but manageable maturity (2028), solid liquidity, and high cash-generation potential in up-cycles; risk is cyclical cash-flow volatility.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-3" id="balance-cards"></div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">5. Cash Flow Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>OCF trends solid but lumpy: 2025 $150M (flat YoY despite higher EBITDA due to WC swings); prior years $244M (2023), $302M (2022 peak). FCF: 2025 ~$100M range (OCF less capex/turnaround); TTM FCF yield ~6-9% at $1.4B cap (levered FCF TTM ~$87M per stats). Capex % revenue ~8-10% (2025 $57M total incl. turnaround); FCF conversion ~80-100% of NI in good years.</p>
+    <p>Cash flow quality high: OCF generally tracks or exceeds NI (no growing gap); cash conversion cycle stable (inventory/DIO ~80 days, receivables ~35 days, payables supportive). Minor WC swings from deferred revenue/prepaids and seasonal fertilizer demand—no distortions flagged.</p>
+    <p><strong>Capital allocation scorecard</strong>:</p>
+    <ul>
+      <li><strong>Buybacks</strong>: Minimal/none material; shares stable ~10.57M (no dilution offset needed).</li>
+      <li><strong>Dividends</strong>: Variable MLP model—yield TTM ~9.2% (indicated 8.2%); payout 75-128% of earnings/FCF (lumpy, e.g., Q4 2025 cut). 2025 total $10.54/unit; no fixed growth rate (3-5yr variable).</li>
+      <li><strong>Debt management</strong>: Stable ~$550M; no net reduction/increase material; interest covered 4.3x.</li>
+      <li><strong>M&amp;A track record</strong>: None material last 5 years—no value destruction or goodwill hits.</li>
+    </ul>
+    <p><strong>Sustainability verdict</strong>: Company comfortably funds distributions, capex, and debt service from OCF/FCF in normal-to-strong cycles (reserves used for growth); no reliance on issuance. Variable policy allows flexibility.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">FCF Trend</div>
+      <canvas id="cashFlowTrendChart"></canvas>
+      <div class="table-note">2025 FCF is plotted at the report’s stated “~$100M range.”</div>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">FCF Margin Trend</div>
+      <canvas id="cashFlowMarginChart"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">FY Waterfall</div>
+      <div id="cash-waterfall"></div>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">Capital Allocation Doughnut</div>
+      <canvas id="capitalAllocationChart"></canvas>
+      <div class="table-note">Chart reflects the scorecard mix disclosed in the report; buybacks and M&amp;A were described as immaterial.</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">6. Earnings Quality &amp; Accounting Red Flags</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>GAAP vs. Non-GAAP</strong>: Limited adjustments—EBITDA reported (standard add-backs: interest, taxes, D&amp;A); no aggressive stock-based comp or “one-time” restructuring inflating EPS. Gap minimal and consistent.</p>
+    <p><strong>“One-time” charge frequency</strong>: Turnaround expenses recur every ~3 years ($17M 2025, none 2024); air-separation issues one-off. Not &gt;50% of quarters.</p>
+    <p><strong>Revenue recognition</strong>: Point-in-time at delivery (standard per ASC 606); no changes disclosed. Deferred revenue fluctuates seasonally but tied to prepaids—no pull-forward flags (declines aligned with volume). Contract assets normal.</p>
+    <p><strong>Accrual quality</strong>: NI vs. OCF aligned over 3 years (no persistent NI &gt; OCF). Sloan Accrual Ratio not calculable precisely but low given stable WC trends.</p>
+    <p><strong>Audit and disclosure flags</strong>: Auditor Grant Thornton LLP (unqualified opinion on FS and internal controls as of Dec 31, 2025; no changes last 3 years). No qualified opinions, going-concern, SOX material weaknesses, or restatements. No 10-K/Q amendments.</p>
+    <p><strong>Insider signals</strong>: Icahn (39.7%) added shares April 2025 at $66-75 (well below current ~$133); other insider activity routine vesting/sales—no beats-timed large sells.</p>
+    <p><strong>Overall accounting confidence: Clean</strong>—transparent MLP reporting, standard industry practices, no red flags.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Management Credibility</div>
+      <div class="split-card">
+        <div class="grade-circle">A</div>
+        <div style="flex:1;min-width:220px">
+          <p>Letter grade reflects clean reporting, limited GAAP/non-GAAP drift, unqualified audits, and transparent disclosure around the Q4 2025 turnaround miss.</p>
+          <p class="mini-note">No restatements, no SOX weaknesses, no amended filings <span class="source-badge">SEC</span></p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cash Conversion Quality</div>
+      <div class="grid-2" style="margin-bottom:0">
+        <div class="card" style="margin-bottom:0;padding:16px">
+          <div class="card-title">Net Income</div>
+          <div class="card-value">$99M</div>
+          <div class="card-label">FY2025 net income <span class="source-badge">SEC</span></div>
+        </div>
+        <div class="card" style="margin-bottom:0;padding:16px">
+          <div class="card-title">Operating Cash Flow</div>
+          <div class="card-value">$150M</div>
+          <div class="card-label">FY2025 operating cash flow <span class="source-badge">SEC</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Bullish Signals</div>
+      <ul class="signal-list">
+        <li><span class="positive">Check</span> OCF generally tracks or exceeds net income.</li>
+        <li><span class="positive">Check</span> Grant Thornton LLP issued unqualified opinions on financials and internal controls.</li>
+        <li><span class="positive">Check</span> Limited EBITDA adjustments and no aggressive stock-based compensation overlays.</li>
+        <li><span class="positive">Check</span> No 10-K/Q amendments, restatements, or going-concern warnings.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Caution / Watch Items</div>
+      <ul class="signal-list">
+        <li><span class="neutral">Watch</span> Turnaround expenses recur every ~3 years and were $17M in 2025.</li>
+        <li><span class="neutral">Watch</span> Two-plant operating model can turn execution issues into sharp quarterly earnings swings.</li>
+        <li><span class="neutral">Watch</span> Sparse sell-side coverage limits external estimate triangulation.</li>
+        <li><span class="neutral">Watch</span> Revenue and deferred revenue remain seasonal, even if no pull-forward flags were identified.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">7. Forward Model &amp; Valuation Bridge</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Forward model anchored on management guidance (Q1 2026 95-100% utilization, 2026 capex $60-75M, optimistic spring demand) and earnings-call commentary (constructive pricing, tight global supply). No revenue/EPS guidance provided; all non-utilization items inferred from historical trends (2025 OM 21%, volume recovery), pricing momentum (geo-driven), and business mix.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>2026E</th>
+          <th>2027E</th>
+          <th>2028E</th>
+          <th>Basis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Revenue</td><td>$680M</td><td>$700M</td><td>$720M</td><td>Assumed (util recovery + sustained pricing vs. 2025 $606M); guided util + geo catalyst</td></tr>
+        <tr><td>Gross Margin</td><td>42%</td><td>43%</td><td>43%</td><td>Inferred (historical avg + pricing tailwinds)</td></tr>
+        <tr><td>Operating Margin</td><td>23%</td><td>24%</td><td>24%</td><td>Inferred (2025 21% + volume leverage)</td></tr>
+        <tr><td>EPS</td><td>$11.00</td><td>$11.50</td><td>$12.00</td><td>Inferred (historical conversion)</td></tr>
+        <tr><td>Free Cash Flow</td><td>$150M</td><td>$155M</td><td>$160M</td><td>Inferred (OCF less $60-75M capex)</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Management vs. sell-side consensus comparison</strong> (next relevant period FY2026): Limited sell-side coverage (no reliable consensus estimates available from Yahoo/others); management provides only operational metrics—delta N/A. Interpretation: Sparse data; model relies on guidance + assumptions.</p>
+    <p><strong>Valuation bridge</strong> (using 2026E as forecast year):</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Valuation Method</th>
+          <th>Forecast Year Used</th>
+          <th>Forecast Metric</th>
+          <th>Target Multiple / FCF Yield</th>
+          <th>Implied Target Price</th>
+          <th>Current Price (~$133)</th>
+          <th>Upside / Downside</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>P/E</td><td>2026E</td><td>EPS $11.00</td><td>13x (near TTM 13.8x, cyclical norm)</td><td>$143</td><td>$133</td><td>+8%</td></tr>
+        <tr><td>FCF Yield</td><td>2026E</td><td>FCF $150M</td><td>10% yield (MLP up-cycle target)</td><td>~$142 (implied equity value)</td><td>$133</td><td>+7%</td></tr>
+      </tbody>
+    </table>
+    <p>Upside driven mainly by earnings growth (util/pricing) with modest multiple re-rating potential if geo tightness persists. Current valuation is <strong>justified by the forward model</strong> assuming sustained constructive conditions; cheap on cash-flow basis if distributions normalize higher.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Forward Model Table</div>
+      <div id="forward-model-table"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Management vs. Consensus</div>
+      <div id="consensus-table"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Valuation Bridge Table</div>
+    <div id="valuation-bridge-table"></div>
+  </div>
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">P/E Method Bridge</div>
+      <canvas id="peBridgeChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="card-title">FCF Yield Method Bridge</div>
+      <canvas id="fcfBridgeChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">8. Key Ratios &amp; Comparisons</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Peers: CF Industries (CF), Mosaic (MOS), Nutrien (NTR).</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Current Value</th>
+          <th>5-yr Company Avg</th>
+          <th>Peer/Sector Avg</th>
+          <th>Interpretation / Flag</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>P/E (TTM)</td><td>13.8x</td><td>~12-15x</td><td>12-18x (CF/MOS)</td><td>Fair; cyclical discount</td></tr>
+        <tr><td>P/E (Forward)</td><td>~12.1x (inferred)</td><td>—</td><td>10-15x</td><td>Attractive if EPS grows</td></tr>
+        <tr><td>PEG Ratio</td><td>0.22</td><td>Low</td><td>1.0+</td><td>Very cheap on growth</td></tr>
+        <tr><td>EV/EBITDA</td><td>8.8x</td><td>~9-10x</td><td>6-10x</td><td>Reasonable vs. peers</td></tr>
+        <tr><td>P/S</td><td>2.25x</td><td>~2.0x</td><td>1.5-5x</td><td>Inline</td></tr>
+        <tr><td>P/B</td><td>5.13x</td><td>~4-5x</td><td>2-4x</td><td>Premium (low book)</td></tr>
+        <tr><td>P/FCF</td><td>~9.5x</td><td>~10x</td><td>8-12x</td><td>Attractive yield</td></tr>
+        <tr><td>Debt/Equity</td><td>2.14x</td><td>~2.0x</td><td>0.5-1.5x</td><td>Higher leverage (MLP norm)</td></tr>
+        <tr><td>Net Debt/EBITDA</td><td>~2.4x</td><td>~2.5x</td><td>1-2.5x</td><td>Manageable</td></tr>
+        <tr><td>Current Ratio</td><td>2.21</td><td>~2.0x</td><td>1.5-2.5x</td><td>Strong liquidity</td></tr>
+        <tr><td>Quick Ratio</td><td>1.34</td><td>~1.3x</td><td>1.0-1.5x</td><td>Solid</td></tr>
+        <tr><td>Interest Coverage</td><td>4.3x</td><td>~4-5x</td><td>8-12x</td><td>Adequate</td></tr>
+        <tr><td>Gross Margin</td><td>40.5%</td><td>44%</td><td>35-45%</td><td>Competitive</td></tr>
+        <tr><td>Operating Margin</td><td>21.2%</td><td>26%</td><td>20-30%</td><td>Solid</td></tr>
+        <tr><td>Asset Turnover</td><td>0.60</td><td>~0.6x</td><td>0.4-0.8x</td><td>Efficient</td></tr>
+        <tr><td>ROIC</td><td>11.3%</td><td>15%</td><td>10-15%</td><td>Good</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Synthesis</strong>: Stock appears <strong>fairly valued to slightly cheap</strong> relative to history and peers on cash-flow/earnings yield, especially with geo tailwinds; premium P/B reflects low equity base. Single most important ratio to watch: Net Debt/EBITDA (rising leverage in down-cycles could pressure distributions).</p>
+  </div>
+  <hr class="section-divider">
+  <div class="card">
+    <div class="card-title">Comparison Table</div>
+    <div id="ratios-table"></div>
+    <div class="table-note">Peer names referenced in the source report: CF Industries (CF), Mosaic (MOS), Nutrien (NTR). Peer average fields are sparse and should be read as directional. <span class="source-badge unverified">UNVERIFIED</span></div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">9. Additional Key Factors</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p>Insider/institutional: Icahn ~39.7% (added ~50k shares April 2025 at ~$70 avg); institutions 52.5% (Morgan Stanley, JPM top). Recent insider buys supportive.</p>
+    <p>Short interest: 1.7% of shares / 2.9% float; days-to-cover ~4.25; trend decreasing last 3 months (low pressure).</p>
+    <p>Liquidity: Avg daily $ volume low (~$20-25M est.); float 10.26M; no lockups.</p>
+    <p>Beta 0.24 (low); macro exposure to nat-gas spreads, grain prices, USD; sector tailwinds from global supply constraints/headwinds from weather/imports.</p>
+    <p>Earnings surprise: Consistent beats on pricing in up-cycles; recent Q4 miss operational (turnaround). Estimate revisions: Sparse coverage, no material FY1/FY2 shifts noted.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="card-title">Ownership Mix</div>
+      <canvas id="ownershipChart"></canvas>
+      <div class="table-note">The source report identified Icahn’s stake and aggregate institutional ownership, but did not provide precise percentages for individual institutions.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Insider Activity</div>
+      <div id="insider-table"></div>
+    </div>
+  </div>
+  <div class="grid-3" id="ownership-metric-cards"></div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">10. Scenario Analysis</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Probability</th>
+          <th>Key Assumptions</th>
+          <th>Target Price</th>
+          <th>Upside/Downside from Current (~$133)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Bull</strong></td><td>30%</td><td>Geo disruptions persist (sustained high prices + high util); debottlenecking adds capacity; strong spring demand</td><td>$165</td><td>+24%</td></tr>
+        <tr><td><strong>Base</strong></td><td>50%</td><td>Pricing normalizes moderately; 95%+ util; standard cycle</td><td>$145</td><td>+9%</td></tr>
+        <tr><td><strong>Bear</strong></td><td>20%</td><td>Prices fall on resolved supply/strong imports; utilization slips on issues</td><td>$95</td><td>-29%</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Bull case narrative</strong>: Geopolitical shocks linger (ongoing ME/Hormuz risks), keeping nitrogen tight; U.S. producers capture premium pricing + full utilization. Debottlenecking and feedstock flexibility deliver upside volume. Catalyst: Continued early ammonia movement and high distributions. Leading indicator: Q2 gross margin &gt;42%. Valuation bridge: 2026E FCF $180M at 8.5% yield → ~$165.</p>
+    <p><strong>Base case narrative</strong>: Steady-state spring demand with moderate pricing; utilization hits guided levels; East Dubuque 2026 turnaround executed smoothly. Cash flow supports ~$12-13/unit distributions. Status quo for MLP. Leading indicator: Q1 utilization &gt;95%. Valuation bridge: 2026E EPS $11 at 13x P/E → $143 (adjusted to $145).</p>
+    <p><strong>Bear case narrative</strong>: Geo tensions ease and global capacity returns (Trinidad/Russia imports surge); feed-stock costs rise or utilization falls below 90%. Cyclical downturn pressures margins/distributions. Leading indicator: Realized ammonia prices &lt;2025 avg. Valuation bridge: 2026E EPS $7 at 13.5x → ~$95.</p>
+    <p><strong>Probability-weighted expected value</strong>: (0.3×165) + (0.5×145) + (0.2×95) = $141.</p>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-3" id="scenario-cards"></div>
+  <div id="scenario-expected-value"></div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">11. Risks &amp; Opportunities</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>Top Risks</strong>:</p>
+    <ul>
+      <li>Commodity price volatility (High severity / High likelihood) — Sharp fertilizer price drop erodes margins/distributions rapidly.</li>
+      <li>Operational concentration/turnaround execution (High / Medium) — Two-plant model; delays (as in Q4 2025) crush quarterly cash flow.</li>
+      <li>Debt covenant or refinancing risk at 2028 maturity (Medium / Low) — Leverage amplifies downturns.</li>
+      <li>Regulatory/geopolitical backlash (Medium / Medium) — Tariffs, carbon rules, or escalated conflicts disrupt exports.</li>
+    </ul>
+    <p><strong>Top Opportunities</strong>:</p>
+    <ul>
+      <li>Prolonged global supply tightness (High magnitude / High likelihood) — ME disruptions drive multi-quarter pricing power and record distributions.</li>
+      <li>Brownfield debottlenecking success (Medium / Medium) — Low-cost capacity adds boost utilization/FCF.</li>
+      <li>MLP cash-return appeal in high-yield environment (Medium / Medium) — Variable distributions attract income investors if prices hold.</li>
+      <li>Potential strategic transaction (M&amp;A/parent) (Low / Low) — Icahn/CVR Energy involvement could unlock value.</li>
+    </ul>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Risk Matrix</div>
+      <div id="risk-table"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Opportunity Matrix</div>
+      <div id="opportunity-table"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">12. Thesis Kill Criteria &amp; Catalyst Timeline</h2>
+  <div class="analysis-prose">
+    <span class="analysis-label">Full Analysis</span>
+    <p><strong>What would change my mind — Bullish thesis invalidated if</strong>:</p>
+    <ul>
+      <li>[ ] Gross margin falls below 38% for two consecutive quarters (pricing collapse).</li>
+      <li>[ ] Ammonia utilization &lt;90% in Q1/Q2 2026 (execution failure).</li>
+      <li>[ ] Net debt/EBITDA exceeds 3.5x (balance-sheet stress).</li>
+    </ul>
+    <p><strong>What would change my mind — Bearish thesis invalidated if</strong>:</p>
+    <ul>
+      <li>[ ] Urea/ammonia prices sustain &gt;20% above 2025 avg into Q3 (geo tailwind persists).</li>
+      <li>[ ] Distributions exceed $12/unit annualized (cash flow strength).</li>
+    </ul>
+    <p><strong>Upcoming Catalyst Timeline</strong>:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Date (Est.)</th>
+          <th>Event</th>
+          <th>Potential Impact</th>
+          <th>Favors Bull/Bear/Neutral</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Late April 2026</td><td>Q1 2026 earnings</td><td>High (util/pricing read)</td><td>Bull (if strong)</td></tr>
+        <tr><td>May 2026</td><td>Q1 distribution announcement</td><td>High (cash return signal)</td><td>Bull</td></tr>
+        <tr><td>Aug 2026</td><td>East Dubuque turnaround</td><td>Medium (execution risk)</td><td>Bear/Neutral</td></tr>
+        <tr><td>Ongoing</td><td>ME geopolitical developments</td><td>High</td><td>Bull</td></tr>
+        <tr><td>June 2028</td><td>Note maturity</td><td>Medium-long</td><td>Neutral (refi risk)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <hr class="section-divider">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Catalyst Timeline</div>
+      <div id="timeline-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Kill Criteria</div>
+      <div class="grid-2" style="margin-bottom:0">
+        <div>
+          <div class="card-title" style="margin-bottom:14px">Bullish Thesis Invalidated If</div>
+          <div id="bull-kill-list"></div>
+        </div>
+        <div>
+          <div class="card-title" style="margin-bottom:14px">Bearish Thesis Invalidated If</div>
+          <div id="bear-kill-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content">
+  <h2 class="section-header">Revision Summary</h2>
+  <div class="card">
+    <div class="card-title">Revision Summary</div>
+    <div class="split-card">
+      <div>
+        <span class="badge badge-gold">Verdict: Revised Values Applied</span>
+        <p style="margin-top:12px">The supplied prompt references a revised report, but it does not include a separate revision log or itemized correction list. This dashboard therefore uses the revised values embedded in the 12 sections above and preserves them as provided.</p>
+      </div>
+      <div style="min-width:180px">
+        <div class="card-value">0</div>
+        <div class="card-label">Explicit corrections listed</div>
+      </div>
+    </div>
+  </div>
+  <div class="revision-card">
+    <div class="card-title">Note</div>
+    <p>No standalone Revision Summary text was included in the source prompt. To avoid inventing corrections, this tab records that absence rather than fabricating original-versus-revised deltas.</p>
+    <p class="mini-note">Overall confidence: Medium, consistent with the source report’s own conviction framing.</p>
+  </div>
+</div>
+
+<script>
+const dashboardData = {
+  executiveMetrics: [
+    { label: 'Current Price', value: '~$133', badge: 'Yahoo' },
+    { label: 'Market Cap', value: '~$1.4B', badge: 'Yahoo' },
+    { label: 'P/E (TTM)', value: '13.8x', badge: 'Yahoo' },
+    { label: 'P/E (Forward)', value: '~12.1x', badge: 'Calc' },
+    { label: 'EV/EBITDA', value: '8.8x', badge: 'Yahoo' },
+    { label: 'FCF Yield', value: '~6-9%', badge: 'Calc' },
+    { label: 'Dividend Yield', value: '~9.2%', badge: 'Yahoo' },
+    { label: 'Target Price', value: '~$146', badge: 'Calc' }
+  ],
+  executivePillars: [
+    { title: 'Pillar 1', text: 'Low-cost U.S. feedstock across pet-coke gasification at Coffeyville and natural gas at East Dubuque underpins the near-term supply-shock thesis.', badge: 'SEC' },
+    { title: 'Pillar 2', text: 'Spring 2026 pricing is being lifted by global nitrogen tightness tied to Middle East disruptions and other offline capacity.', badge: 'Reuters' },
+    { title: 'Pillar 3', text: 'Cash generation and the variable-distribution structure allow upside participation when utilization stays above 95% and distributions normalize higher.', badge: 'Earnings Call' }
+  ],
+  narrativeCards: [
+    { title: 'Q1 Headline Numbers', value: '95-100%', label: 'Q1 2026 ammonia utilization guidance; direct operating expenses $57-62M, 2026 capex $60-75M', badge: 'Earnings Call' },
+    { title: 'Market Sentiment', value: 'Bullish but Quiet', label: 'Retail/Fintwit responded to Qatar supply-crunch news while Wall Street coverage remains sparse', badge: 'UNVERIFIED' },
+    { title: 'Bear Thesis', value: 'Crowded Trade', label: 'A ~70% 52-week gain and 25%+ 3-week surge raise concern that geo upside is already priced in', badge: 'UNVERIFIED' }
+  ],
+  q1Cards: [
+    { title: 'Revenue', value: '$131M', label: 'Q4 2025 sales, reported Feb. 18, 2026', badge: 'SEC' },
+    { title: 'GAAP EPS', value: '($0.97)', label: 'Q4 2025 net loss per unit from turnaround drag', badge: 'SEC' },
+    { title: 'Op. Margin Context', value: '21.2%', label: 'TTM operating margin; Q4 2025 hit by turnaround compression', badge: 'Calc' },
+    { title: 'Segment Growth', value: '+15%', label: 'FY2025 revenue growth YoY despite lower volume', badge: 'SEC' }
+  ],
+  growthTable: {
+    columns: ['Period', 'Revenue', 'Growth %', 'Gross Margin', 'Operating Margin', 'EPS', 'FCF'],
+    numericCols: [1, 2, 3, 4, 5, 6],
+    rows: [
+      ['2025A', '$606M', '+15%', '40.5%', '21.2%', '$9.33', '~$100M'],
+      ['2026E', '$680M', '+12.2%', '42%', '23%', '$11.00', '$150M'],
+      ['2027E', '$700M', '+2.9%', '43%', '24%', '$11.50', '$155M'],
+      ['2028E', '$720M', '+2.9%', '43%', '24%', '$12.00', '$160M']
+    ]
+  },
+  balanceCards: [
+    {
+      title: 'Liquidity',
+      value: '$117M',
+      label: 'Cash $69M + undrawn ABL $48M; current ratio 2.21; quick ratio 1.34',
+      badge: 'SEC'
+    },
+    {
+      title: 'Leverage',
+      value: '~2.5x',
+      label: 'Debt/EBITDA ~2.4-2.6x with $550M 6.125% notes due 2028 and interest coverage 4.3x',
+      badge: 'SEC'
+    },
+    {
+      title: 'Asset Quality',
+      value: '0%',
+      label: 'Goodwill/intangibles as a share of $969.5M assets/equity; no impairments reported',
+      badge: 'SEC'
+    }
+  ],
+  forwardModel: {
+    columns: ['Metric', '2026E', '2027E', '2028E', 'Basis'],
+    numericCols: [1, 2, 3],
+    rows: [
+      ['Revenue', '$680M', '$700M', '$720M', 'Assumed (util recovery + sustained pricing vs. 2025 $606M); guided util + geo catalyst'],
+      ['Gross Margin', '42%', '43%', '43%', 'Inferred (historical avg + pricing tailwinds)'],
+      ['Operating Margin', '23%', '24%', '24%', 'Inferred (2025 21% + volume leverage)'],
+      ['EPS', '$11.00', '$11.50', '$12.00', 'Inferred (historical conversion)'],
+      ['Free Cash Flow', '$150M', '$155M', '$160M', 'Inferred (OCF less $60-75M capex)']
+    ]
+  },
+  consensus: {
+    columns: ['Item', 'Management Guidance', 'Sell-side Consensus', 'Delta', 'Interpretation'],
+    rows: [
+      ['Revenue', 'No revenue guidance', 'N/A', 'N/A', 'Sparse data; model relies on guidance + assumptions <span class="source-badge unverified">UNVERIFIED</span>'],
+      ['EPS', 'No EPS guidance', 'N/A', 'N/A', 'No reliable consensus estimates available from Yahoo/others <span class="source-badge unverified">UNVERIFIED</span>'],
+      ['Utilization', '95-100% ammonia utilization for Q1 2026', 'N/A', 'N/A', 'Operational guidance only <span class="source-badge">Earnings Call</span>'],
+      ['Capex', '$60-75M total 2026 capex', 'N/A', 'N/A', 'Model anchors on management’s range <span class="source-badge">Earnings Call</span>']
+    ]
+  },
+  valuationBridge: {
+    columns: ['Method', 'Forecast Year', 'Metric', 'Multiple / Yield', 'Implied Target', 'Current Price', 'Upside'],
+    numericCols: [4, 5, 6],
+    rows: [
+      ['P/E', '2026E', 'EPS $11.00', '13x', '$143', '$133', '+8%'],
+      ['FCF Yield', '2026E', 'FCF $150M', '10% yield', '~$142', '$133', '+7%']
+    ]
+  },
+  ratios: {
+    columns: ['Metric', 'Current Value', '5-yr Company Avg', 'Peer/Sector Avg', 'Interpretation / Flag'],
+    numericCols: [1, 2, 3],
+    rows: [
+      ['P/E (TTM)', '13.8x', '~12-15x', '12-18x (CF/MOS)', '<span class="interpret-warn">Fair; cyclical discount</span>'],
+      ['P/E (Forward)', '~12.1x (inferred)', '—', '10-15x', '<span class="interpret-good">Attractive if EPS grows</span>'],
+      ['PEG Ratio', '0.22', 'Low', '1.0+', '<span class="interpret-good">Very cheap on growth</span>'],
+      ['EV/EBITDA', '8.8x', '~9-10x', '6-10x', '<span class="interpret-warn">Reasonable vs. peers</span>'],
+      ['P/S', '2.25x', '~2.0x', '1.5-5x', '<span class="interpret-warn">Inline</span>'],
+      ['P/B', '5.13x', '~4-5x', '2-4x', '<span class="interpret-bad">Premium (low book)</span>'],
+      ['P/FCF', '~9.5x', '~10x', '8-12x', '<span class="interpret-good">Attractive yield</span>'],
+      ['Debt/Equity', '2.14x', '~2.0x', '0.5-1.5x', '<span class="interpret-bad">Higher leverage (MLP norm)</span>'],
+      ['Net Debt/EBITDA', '~2.4x', '~2.5x', '1-2.5x', '<span class="interpret-warn">Manageable</span>'],
+      ['Current Ratio', '2.21', '~2.0x', '1.5-2.5x', '<span class="interpret-good">Strong liquidity</span>'],
+      ['Quick Ratio', '1.34', '~1.3x', '1.0-1.5x', '<span class="interpret-good">Solid</span>'],
+      ['Interest Coverage', '4.3x', '~4-5x', '8-12x', '<span class="interpret-warn">Adequate</span>'],
+      ['Gross Margin', '40.5%', '44%', '35-45%', '<span class="interpret-good">Competitive</span>'],
+      ['Operating Margin', '21.2%', '26%', '20-30%', '<span class="interpret-good">Solid</span>'],
+      ['Asset Turnover', '0.60', '~0.6x', '0.4-0.8x', '<span class="interpret-good">Efficient</span>'],
+      ['ROIC', '11.3%', '15%', '10-15%', '<span class="interpret-good">Good</span>']
+    ]
+  },
+  insiderTable: {
+    columns: ['Name', 'Role', 'Action', 'Shares', 'Price Range'],
+    numericCols: [3, 4],
+    rows: [
+      ['Carl Icahn', 'Large owner / insider-aligned sponsor', 'Buy', '~50k', '$66-75 <span class="source-badge">SEC</span>'],
+      ['Other insiders', 'Routine vesting / sales', 'Mixed', 'Routine', 'Not quantified in source <span class="source-badge unverified">UNVERIFIED</span>']
+    ]
+  },
+  ownershipMetricCards: [
+    { title: 'Short Interest', value: '1.7%', label: 'Of shares; 2.9% of float, ~4.25 days to cover', badge: 'Yahoo' },
+    { title: 'Trading Liquidity', value: '$20-25M', label: 'Estimated average daily dollar volume; float 10.26M; beta 0.24', badge: 'UNVERIFIED' },
+    { title: 'Sentiment Summary', value: 'Sparse Hold', label: '~1 analyst rating (“Hold”), no meaningful target range or estimate revisions', badge: 'UNVERIFIED' }
+  ],
+  scenarios: [
+    {
+      cls: 'bull',
+      title: 'Bull',
+      probability: '30%',
+      target: '$165',
+      move: '+24%',
+      assumptions: 'Geo disruptions persist, debottlenecking adds capacity, and spring demand stays strong.',
+      bridge: '2026E FCF $180M at 8.5% yield → ~$165',
+      indicator: 'Q2 gross margin >42%'
+    },
+    {
+      cls: 'base',
+      title: 'Base',
+      probability: '50%',
+      target: '$145',
+      move: '+9%',
+      assumptions: 'Pricing normalizes moderately, utilization stays above 95%, and the cycle remains standard.',
+      bridge: '2026E EPS $11 at 13x P/E → $143 (adjusted to $145)',
+      indicator: 'Q1 utilization >95%'
+    },
+    {
+      cls: 'bear',
+      title: 'Bear',
+      probability: '20%',
+      target: '$95',
+      move: '-29%',
+      assumptions: 'Supply normalizes, imports rise, and utilization falls below 90% on operating issues.',
+      bridge: '2026E EPS $7 at 13.5x → ~$95',
+      indicator: 'Realized ammonia prices <2025 avg'
+    }
+  ],
+  risks: {
+    columns: ['Risk', 'Severity', 'Likelihood'],
+    rows: [
+      ['Commodity price volatility', '<span class="severity-high">High</span>', '<span class="likelihood-high">High</span>'],
+      ['Operational concentration / turnaround execution', '<span class="severity-high">High</span>', '<span class="likelihood-medium">Medium</span>'],
+      ['Debt covenant or refinancing risk at 2028 maturity', '<span class="severity-medium">Medium</span>', '<span class="likelihood-low">Low</span>'],
+      ['Regulatory / geopolitical backlash', '<span class="severity-medium">Medium</span>', '<span class="likelihood-medium">Medium</span>']
+    ]
+  },
+  opportunities: {
+    columns: ['Opportunity', 'Magnitude', 'Likelihood'],
+    rows: [
+      ['Prolonged global supply tightness', '<span class="magnitude-high">High</span>', '<span class="likelihood-high">High</span>'],
+      ['Brownfield debottlenecking success', '<span class="magnitude-medium">Medium</span>', '<span class="likelihood-medium">Medium</span>'],
+      ['MLP cash-return appeal in high-yield environment', '<span class="magnitude-medium">Medium</span>', '<span class="likelihood-medium">Medium</span>'],
+      ['Potential strategic transaction (M&A / parent)', '<span class="magnitude-low">Low</span>', '<span class="likelihood-low">Low</span>']
+    ]
+  },
+  timeline: [
+    { date: 'Late April 2026', event: 'Q1 2026 earnings', impact: 'High (util/pricing read)', bias: 'Bull (if strong)', dot: 'green' },
+    { date: 'May 2026', event: 'Q1 distribution announcement', impact: 'High (cash return signal)', bias: 'Bull', dot: 'green' },
+    { date: 'Aug 2026', event: 'East Dubuque turnaround', impact: 'Medium (execution risk)', bias: 'Bear/Neutral', dot: 'red' },
+    { date: 'Ongoing', event: 'ME geopolitical developments', impact: 'High', bias: 'Bull', dot: 'green' },
+    { date: 'June 2028', event: 'Note maturity', impact: 'Medium-long', bias: 'Neutral (refi risk)', dot: 'grey' }
+  ],
+  bullKill: [
+    'Gross margin falls below 38% for two consecutive quarters (pricing collapse).',
+    'Ammonia utilization <90% in Q1/Q2 2026 (execution failure).',
+    'Net debt/EBITDA exceeds 3.5x (balance-sheet stress).'
+  ],
+  bearKill: [
+    'Urea/ammonia prices sustain >20% above 2025 avg into Q3 (geo tailwind persists).',
+    'Distributions exceed $12/unit annualized (cash flow strength).'
+  ],
+  charts: {
+    revenueEps: {
+      labels: ['2025A', '2026E', '2027E', '2028E'],
+      revenueActual: [606, null, null, null],
+      revenueForward: [null, 680, 700, 720],
+      eps: [9.33, 11.0, 11.5, 12.0]
+    },
+    margins: {
+      labels: ['2025A', '2026E', '2027E', '2028E'],
+      gross: [40.5, 42, 43, 43],
+      operating: [21.2, 23, 24, 24],
+      fcf: [16.5, 22.1, 22.1, 22.2]
+    },
+    cashFlowTrend: {
+      labels: ['2022A', '2023A', '2025A'],
+      ocf: [302, 244, 150],
+      capex: [null, null, -57],
+      fcf: [null, null, 100]
+    },
+    capitalAllocation: {
+      labels: ['Dividends', 'CapEx', 'Buybacks', 'M&A', 'Retained / Other'],
+      values: [10.54, 57, 0, 0, 1]
+    },
+    ownership: {
+      labels: ['Institutional Ownership', 'Carl Icahn', 'Other / Float'],
+      values: [52.5, 39.7, 7.8]
+    },
+    peBridge: {
+      labels: ['Current', 'Upside', 'Target'],
+      values: [133, 10, 143]
+    },
+    fcfBridge: {
+      labels: ['Current', 'Upside', 'Target'],
+      values: [133, 9, 142]
+    }
+  }
+};
+
+const chartRegistry = {};
+
+function badge(label) {
+  if (!label) return '';
+  const extra = label === 'UNVERIFIED' ? ' unverified' : '';
+  return `<span class="source-badge${extra}">${label}</span>`;
+}
+
+function renderMetricStrip(id, items) {
+  const el = document.getElementById(id);
+  el.innerHTML = items.map(item => `
+    <div class="metric-item">
+      <div class="card-label">${item.label}</div>
+      <div class="card-value">${item.value}</div>
+      <div class="card-label">${badge(item.badge)}</div>
+    </div>
+  `).join('');
+}
+
+function renderCards(id, items) {
+  const el = document.getElementById(id);
+  el.innerHTML = items.map(item => `
+    <div class="card">
+      <div class="card-title">${item.title}</div>
+      ${item.value ? `<div class="card-value">${item.value}</div>` : ''}
+      <div class="card-label">${item.text || item.label || ''} ${badge(item.badge)}</div>
+    </div>
+  `).join('');
+}
+
+function renderTable(id, table) {
+  const el = document.getElementById(id);
+  const numericCols = new Set(table.numericCols || []);
+  const head = table.columns.map((col, idx) => `<th class="${numericCols.has(idx) ? 'num' : ''}">${col}</th>`).join('');
+  const body = table.rows.map(row => `
+    <tr>${row.map((cell, idx) => `<td class="${numericCols.has(idx) ? 'num' : ''}">${cell}</td>`).join('')}</tr>
+  `).join('');
+  el.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function renderExpectedValue(id, scenarios, expectedValue) {
+  const el = document.getElementById(id);
+  const segments = scenarios.map(s => {
+    const width = s.probability;
+    const color = s.cls === 'bull' ? 'var(--green)' : s.cls === 'bear' ? 'var(--red)' : 'var(--gold)';
+    return `<div class="seg" style="width:${width};background:${color}">${s.title} ${width}</div>`;
+  }).join('');
+  const math = scenarios.map(s => {
+    const prob = parseFloat(s.probability) / 100;
+    const target = parseFloat(s.target.replace(/[$,]/g, ''));
+    const weighted = (prob * target).toFixed(2);
+    const cls = s.cls === 'bull' ? 'positive' : s.cls === 'bear' ? 'negative' : 'neutral';
+    return `<div><span class="${cls}">${s.title} ${s.probability}</span> x <span class="mono">${s.target}</span> = <span class="mono">$${weighted}</span></div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">Probability-Weighted Expected Value</div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:10px">${math}<div style="font-weight:700;color:var(--gold)" class="mono">$${expectedValue} ${badge('Calc')}</div></div>
+      <div class="prob-bar-container">${segments}</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+        ${scenarios.map(s => `<span>${s.title}: ${s.target}</span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderScenarioCards(id, scenarios) {
+  const el = document.getElementById(id);
+  el.innerHTML = scenarios.map(s => `
+    <div class="scenario-card ${s.cls}">
+      <div class="card-title">${s.title} Case</div>
+      <div class="card-value">${s.target}</div>
+      <div class="card-label">${s.probability} probability | ${s.move} vs. current <span class="source-badge">Calc</span></div>
+      <p style="margin:12px 0 10px">${s.assumptions}</p>
+      <p class="mini-note"><strong>Bridge:</strong> ${s.bridge}</p>
+      <p class="mini-note"><strong>Leading indicator:</strong> ${s.indicator}</p>
+    </div>
+  `).join('');
+}
+
+function renderWaterfall(id) {
+  const el = document.getElementById(id);
+  el.innerHTML = `
+    <div class="waterfall-row">
+      <div class="waterfall-label">OCF</div>
+      <div class="waterfall-bar"><div class="waterfall-fill gold" style="width:100%">$150M ${badge('SEC')}</div></div>
+    </div>
+    <div class="waterfall-row">
+      <div class="waterfall-label">CapEx</div>
+      <div class="waterfall-bar"><div class="waterfall-fill red" style="width:38%">($57M) ${badge('SEC')}</div></div>
+    </div>
+    <div class="waterfall-row">
+      <div class="waterfall-label">FCF</div>
+      <div class="waterfall-bar"><div class="waterfall-fill green" style="width:67%">~$100M ${badge('Calc')}</div></div>
+    </div>
+  `;
+}
+
+function renderTimeline(id, items) {
+  const el = document.getElementById(id);
+  el.innerHTML = items.map(item => `
+    <div class="timeline-item">
+      <div class="timeline-dot ${item.dot}"></div>
+      <div>
+        <div style="font-weight:700">${item.date}</div>
+        <div>${item.event}</div>
+        <div class="mini-note">Impact: ${item.impact} | Bias: ${item.bias}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderKillList(id, items) {
+  const el = document.getElementById(id);
+  el.innerHTML = items.map(item => `
+    <div class="kill-item">
+      <div class="checkbox"></div>
+      <div>${item}</div>
+    </div>
+  `).join('');
+}
+
+function initChartsForTab(idx) {
+  if (chartRegistry[idx]) return;
+  const baseGrid = 'rgba(255,255,255,0.08)';
+  const tickColor = '#8a8a7a';
+  if (idx === 2) {
+    chartRegistry[idx] = true;
+    new Chart(document.getElementById('fundamentalsRevenueChart'), {
+      type: 'bar',
+      data: {
+        labels: dashboardData.charts.revenueEps.labels,
+        datasets: [
+          { label: 'Revenue Actual ($M)', data: dashboardData.charts.revenueEps.revenueActual, backgroundColor: '#d4a843', borderRadius: 6, yAxisID: 'y' },
+          { label: 'Revenue Forward ($M)', data: dashboardData.charts.revenueEps.revenueForward, backgroundColor: 'rgba(212,168,67,0.45)', borderColor: '#d4a843', borderWidth: 1, borderRadius: 6, yAxisID: 'y' },
+          { label: 'EPS', data: dashboardData.charts.revenueEps.eps, type: 'line', borderColor: '#5dade2', backgroundColor: '#5dade2', tension: 0.3, yAxisID: 'y1' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: tickColor }, grid: { color: baseGrid } },
+          y: { ticks: { color: tickColor }, grid: { color: baseGrid } },
+          y1: { position: 'right', ticks: { color: tickColor }, grid: { drawOnChartArea: false } }
+        },
+        plugins: { legend: { labels: { color: '#e8e0d0' } } }
+      }
+    });
+    new Chart(document.getElementById('fundamentalsMarginChart'), {
+      type: 'line',
+      data: {
+        labels: dashboardData.charts.margins.labels,
+        datasets: [
+          { label: 'Gross Margin %', data: dashboardData.charts.margins.gross, borderColor: '#d4a843', backgroundColor: '#d4a843', tension: 0.3 },
+          { label: 'Operating Margin %', data: dashboardData.charts.margins.operating, borderColor: '#5dade2', backgroundColor: '#5dade2', tension: 0.3 },
+          { label: 'FCF Margin %', data: dashboardData.charts.margins.fcf, borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.18)', fill: true, tension: 0.3 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: tickColor }, grid: { color: baseGrid } },
+          y: { ticks: { color: tickColor }, grid: { color: baseGrid } }
+        },
+        plugins: { legend: { labels: { color: '#e8e0d0' } } }
+      }
+    });
+  }
+  if (idx === 4) {
+    chartRegistry[idx] = true;
+    new Chart(document.getElementById('cashFlowTrendChart'), {
+      data: {
+        labels: dashboardData.charts.cashFlowTrend.labels,
+        datasets: [
+          { type: 'bar', label: 'Operating Cash Flow ($M)', data: dashboardData.charts.cashFlowTrend.ocf, backgroundColor: '#d4a843', stack: 'cash' },
+          { type: 'bar', label: 'CapEx ($M)', data: dashboardData.charts.cashFlowTrend.capex, backgroundColor: '#e74c3c', stack: 'cash' },
+          { type: 'line', label: 'FCF ($M)', data: dashboardData.charts.cashFlowTrend.fcf, borderColor: '#4caf50', backgroundColor: '#4caf50', tension: 0.25, yAxisID: 'y' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { stacked: true, ticks: { color: tickColor }, grid: { color: baseGrid } },
+          y: { stacked: true, ticks: { color: tickColor }, grid: { color: baseGrid } }
+        },
+        plugins: { legend: { labels: { color: '#e8e0d0' } } }
+      }
+    });
+    new Chart(document.getElementById('cashFlowMarginChart'), {
+      type: 'line',
+      data: {
+        labels: dashboardData.charts.margins.labels,
+        datasets: [
+          { label: 'FCF Margin %', data: dashboardData.charts.margins.fcf, borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.22)', fill: true, tension: 0.25 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: tickColor }, grid: { color: baseGrid } },
+          y: { ticks: { color: tickColor }, grid: { color: baseGrid } }
+        },
+        plugins: { legend: { labels: { color: '#e8e0d0' } } }
+      }
+    });
+    new Chart(document.getElementById('capitalAllocationChart'), {
+      type: 'doughnut',
+      data: {
+        labels: dashboardData.charts.capitalAllocation.labels,
+        datasets: [{
+          data: dashboardData.charts.capitalAllocation.values,
+          backgroundColor: ['#d4a843', '#5dade2', '#4caf50', '#e74c3c', '#8a8a7a']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#e8e0d0' } } }
+      }
+    });
+  }
+  if (idx === 6) {
+    chartRegistry[idx] = true;
+    const commonBarOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: tickColor }, grid: { color: baseGrid } },
+        y: { ticks: { color: tickColor }, grid: { color: baseGrid } }
+      },
+      plugins: { legend: { display: false } }
+    };
+    new Chart(document.getElementById('peBridgeChart'), {
+      type: 'bar',
+      data: { labels: dashboardData.charts.peBridge.labels, datasets: [{ data: dashboardData.charts.peBridge.values, backgroundColor: ['#8a8a7a', '#4caf50', '#d4a843'] }] },
+      options: commonBarOptions
+    });
+    new Chart(document.getElementById('fcfBridgeChart'), {
+      type: 'bar',
+      data: { labels: dashboardData.charts.fcfBridge.labels, datasets: [{ data: dashboardData.charts.fcfBridge.values, backgroundColor: ['#8a8a7a', '#4caf50', '#d4a843'] }] },
+      options: commonBarOptions
+    });
+  }
+  if (idx === 8) {
+    chartRegistry[idx] = true;
+    new Chart(document.getElementById('ownershipChart'), {
+      type: 'doughnut',
+      data: {
+        labels: dashboardData.charts.ownership.labels,
+        datasets: [{
+          data: dashboardData.charts.ownership.values,
+          backgroundColor: ['#5dade2', '#d4a843', '#8a8a7a']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#e8e0d0' } } }
+      }
+    });
+  }
+}
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content')[idx].classList.add('active');
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  initChartsForTab(idx);
+}
+
+function initPage() {
+  renderMetricStrip('executive-metrics', dashboardData.executiveMetrics);
+  renderCards('executive-pillars', dashboardData.executivePillars);
+  renderExpectedValue('executive-expected-value', dashboardData.scenarios, 141);
+  renderCards('narrative-cards', dashboardData.narrativeCards);
+  renderCards('fundamental-q1-cards', dashboardData.q1Cards);
+  renderTable('fundamental-growth-table', dashboardData.growthTable);
+  renderCards('balance-cards', dashboardData.balanceCards);
+  renderWaterfall('cash-waterfall');
+  renderTable('forward-model-table', dashboardData.forwardModel);
+  renderTable('consensus-table', dashboardData.consensus);
+  renderTable('valuation-bridge-table', dashboardData.valuationBridge);
+  renderTable('ratios-table', dashboardData.ratios);
+  renderTable('insider-table', dashboardData.insiderTable);
+  renderCards('ownership-metric-cards', dashboardData.ownershipMetricCards);
+  renderScenarioCards('scenario-cards', dashboardData.scenarios);
+  renderExpectedValue('scenario-expected-value', dashboardData.scenarios, 141);
+  renderTable('risk-table', dashboardData.risks);
+  renderTable('opportunity-table', dashboardData.opportunities);
+  renderTimeline('timeline-list', dashboardData.timeline);
+  renderKillList('bull-kill-list', dashboardData.bullKill);
+  renderKillList('bear-kill-list', dashboardData.bearKill);
+  initChartsForTab(0);
+}
+
+document.addEventListener('DOMContentLoaded', initPage);
+</script>
+</body>
+</html>
